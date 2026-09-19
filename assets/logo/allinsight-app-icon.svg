@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="AllInsight">
+  <title>AllInsight application icon</title>
+  <!--
+    The taskbar version. The core is scaled to fill more of the canvas than the
+    web mark does, the strokes are heavier, and the orbit arcs are trimmed, so
+    the silhouette still reads at 16 px where a thin arc would disappear into a
+    single grey pixel.
+
+    The aperture is centred at y=248 rather than at the hexagon's geometric
+    centre: the shell is wider at the top, and the ring sits optically centred
+    a few pixels high.
+  -->
+  <defs>
+    <clipPath id="app-core">
+      <path d="M256 26 434 128v232L256 462 78 360V128z" />
+    </clipPath>
+    <linearGradient id="app-shell" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#16242B" />
+      <stop offset="1" stop-color="#0A1115" />
+    </linearGradient>
+  </defs>
+
+  <g fill="none" stroke="#31B0C6" stroke-width="16" stroke-linecap="round" opacity="0.5">
+    <path d="M396 60a232 232 0 0 1 52 108" />
+    <path d="M116 452a232 232 0 0 1-52-108" />
+  </g>
+
+  <path d="M256 26 434 128v232L256 462 78 360V128z"
+        fill="url(#app-shell)" stroke="#31B0C6" stroke-width="22" stroke-linejoin="round" />
+
+  <g clip-path="url(#app-core)" fill="none" stroke-width="30" stroke-linecap="round">
+    <path d="M338.7 278.1A88 88 0 1 1 300 171.8" stroke="#EAF6F8" />
+    <path d="M318.2 185.8A88 88 0 0 1 343.7 255.7" stroke="#31B0C6" />
+  </g>
+
+  <circle cx="256" cy="248" r="28" fill="#EAF6F8" clip-path="url(#app-core)" />
+</svg>

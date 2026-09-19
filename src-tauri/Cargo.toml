@@ -1,0 +1,87 @@
+[package]
+name = "allinsight"
+version = "1.0.0"
+description = "AllInsight - local device intelligence and storage manager"
+authors = ["AllInsight"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+# The `_lib` suffix keeps the library name distinct from the binary name,
+# which Windows requires. See rust-lang/cargo#8519.
+name = "allinsight_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-opener = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-dialog = "2"
+# Focuses the running window instead of starting a second copy, which is what
+# happens otherwise when the window is hidden in the notification area.
+tauri-plugin-single-instance = "2"
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Storage, system and process data.
+sysinfo = "0.33"
+blake3 = "1"
+rayon = "1"
+num_cpus = "1"
+trash = "5"
+dirs = "5"
+
+# Local persistence. `bundled` compiles SQLite into the binary so the
+# installer never has to ship a loose DLL.
+rusqlite = { version = "0.32", features = ["bundled", "chrono"] }
+
+# Windows platform access.
+winreg = "0.52"
+wmi = "0.14"
+
+# Support.
+parking_lot = "0.12"
+once_cell = "1"
+chrono = { version = "0.4", features = ["serde"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-appender = "0.2"
+
+# Talks to the local llama.cpp server over loopback only. TLS is disabled
+# because AllInsight never makes an outbound request.
+ureq = { version = "2", default-features = false, features = ["json"] }
+
+[target.'cfg(windows)'.dependencies.windows-sys]
+version = "0.59"
+features = [
+  "Win32_Foundation",
+  "Win32_Security",
+  "Win32_Storage_FileSystem",
+  "Win32_System_Threading",
+  "Win32_System_IO",
+  "Win32_System_Ioctl",
+  "Win32_System_Power",
+  "Win32_System_SystemInformation",
+  "Win32_System_ProcessStatus",
+  "Win32_System_Com",
+  "Win32_UI_Shell",
+  "Win32_UI_WindowsAndMessaging",
+]
+
+[dev-dependencies]
+tempfile = "3"
+# Integration tests only see the library plus dev-dependencies, and the
+# end-to-end safety tests resolve Windows known folders.
+dirs = "5"
+
+[profile.release]
+codegen-units = 1
+lto = true
+# Panics unwind rather than abort: a failure inside one command must not
+# take the whole application down with it.
+opt-level = "s"
+strip = true

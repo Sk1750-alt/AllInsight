@@ -1,0 +1,60 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "AllInsight",
+  "version": "1.0.0",
+  "identifier": "info.allinsight.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "AllInsight",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 1024,
+        "minHeight": 640,
+        "resizable": true,
+        "center": true,
+        "theme": "Dark",
+        "decorations": true,
+        "visible": true
+      }
+    ],
+    "security": {
+      "assetProtocol": {
+        "enable": false
+      },
+      "capabilities": ["default"],
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src ipc: http://ipc.localhost; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "publisher": "AllInsight",
+    "category": "Utility",
+    "shortDescription": "Local device intelligence and storage manager",
+    "longDescription": "AllInsight analyses storage, monitors device health, finds what is safe to clean, and explains what it finds. Everything happens on this device: no account, no server, no telemetry.",
+    "copyright": "AllInsight",
+    "licenseFile": "../LICENSE",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "displayLanguageSelector": false,
+        "languages": ["English"],
+        "installerIcon": "icons/icon.ico",
+        "startMenuFolder": "AllInsight"
+      }
+    }
+  }
+}

@@ -1,0 +1,315 @@
+@import "tailwindcss";
+
+/*
+  AllInsight design tokens.
+
+  The palette is deliberately narrow: two greys for surfaces, one accent, and
+  four semantic colours. A device utility earns trust by being legible and
+  consistent, not by being colourful, so colour is reserved for state that
+  actually means something.
+
+  Type is Segoe UI Variable where Windows 11 provides it, falling back to
+  Segoe UI on Windows 10. Numbers are tabular everywhere so figures line up in
+  tables and stop jittering while they update.
+*/
+
+@theme {
+  --font-sans: "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, -apple-system, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI Semibold", "Segoe UI", Inter, system-ui, sans-serif;
+  --font-mono: "Cascadia Mono", "Cascadia Code", Consolas, "SF Mono", monospace;
+
+  --color-canvas: #0b0e11;
+  --color-surface: #12161a;
+  --color-surface-raised: #171d22;
+  --color-surface-hover: #1c232a;
+  --color-line: #232b32;
+  --color-line-strong: #2f3941;
+
+  --color-ink: #e8eff3;
+  --color-ink-muted: #96a4ad;
+  --color-ink-subtle: #6c7a84;
+
+  --color-accent: #31b0c6;
+  --color-accent-hover: #45c8de;
+  --color-accent-ink: #04171c;
+  --color-accent-soft: #123840;
+
+  --color-ok: #3fb950;
+  --color-ok-soft: #10291a;
+  --color-warn: #d8a02a;
+  --color-warn-soft: #2e2410;
+  --color-danger: #e05a52;
+  --color-danger-soft: #33191a;
+  --color-unknown: #7d8b94;
+  --color-unknown-soft: #1e252a;
+
+  --radius-panel: 10px;
+
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+}
+
+/* Light theme. Same token names, so no component knows which one is active. */
+:root[data-theme="light"] {
+  --color-canvas: #f3f5f7;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-hover: #eef1f4;
+  --color-line: #dfe4e8;
+  --color-line-strong: #c8d0d6;
+
+  --color-ink: #101619;
+  --color-ink-muted: #55636c;
+  --color-ink-subtle: #78848c;
+
+  --color-accent: #1c8ba1;
+  --color-accent-hover: #157689;
+  --color-accent-ink: #ffffff;
+  --color-accent-soft: #dcf0f4;
+
+  --color-ok: #1a7f37;
+  --color-ok-soft: #dcf5e3;
+  --color-warn: #9a6700;
+  --color-warn-soft: #fbf0d5;
+  --color-danger: #c0362e;
+  --color-danger-soft: #fbe3e1;
+  --color-unknown: #6c7a84;
+  --color-unknown-soft: #eaeef1;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-line);
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    font-variant-numeric: tabular-nums;
+    /* A desktop application is not a document: text selection everywhere
+       makes drag interactions feel broken. Re-enabled where it is useful. */
+    user-select: none;
+    overflow: hidden;
+  }
+
+  input,
+  textarea,
+  [data-selectable] {
+    user-select: text;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  /* Focus is always visible. Keyboard users are not second-class here. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-line-strong);
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-ink-subtle);
+    background-clip: content-box;
+  }
+}
+
+@layer utilities {
+  .panel {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-panel);
+  }
+
+  .panel-raised {
+    background: var(--color-surface-raised);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-panel);
+  }
+
+  .hairline {
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .numeric {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  /* One shared transition, so nothing in the interface animates for longer
+     than it takes to read the change. */
+  .transition-quick {
+    transition-property: background-color, border-color, color, opacity, transform;
+    transition-duration: 120ms;
+    transition-timing-function: cubic-bezier(0.2, 0, 0.2, 1);
+  }
+
+  .view-enter {
+    animation: view-enter 140ms cubic-bezier(0.2, 0, 0.2, 1);
+  }
+}
+
+@keyframes view-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes indeterminate {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(400%);
+  }
+}
+
+.animate-indeterminate {
+  animation: indeterminate 1.1s ease-in-out infinite;
+}
+
+/* Everything animated respects the system setting. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/*
+  Additional themes.
+
+  Each block redefines the same token set and nothing else. Because every
+  component reads tokens rather than literal colours, a theme is purely a
+  palette and cannot break a layout.
+*/
+
+/* Midnight: deeper and warmer than the default dark, for low-light use. */
+:root[data-theme="midnight"] {
+  --color-canvas: #06080c;
+  --color-surface: #0d1119;
+  --color-surface-raised: #131926;
+  --color-surface-hover: #1a2130;
+  --color-line: #1e2634;
+  --color-line-strong: #2b3546;
+
+  --color-ink: #e4e9f2;
+  --color-ink-muted: #93a0b5;
+  --color-ink-subtle: #667488;
+
+  --color-accent: #7c8cff;
+  --color-accent-hover: #93a1ff;
+  --color-accent-ink: #060a1a;
+  --color-accent-soft: #1a2044;
+
+  --color-ok: #4ac48a;
+  --color-ok-soft: #0f2a20;
+  --color-warn: #dfa73c;
+  --color-warn-soft: #2c2413;
+  --color-danger: #e8615c;
+  --color-danger-soft: #331a1d;
+  --color-unknown: #76839a;
+  --color-unknown-soft: #1a2029;
+}
+
+/* Contrast: maximum legibility on pure black. Also kind to OLED panels. */
+:root[data-theme="contrast"] {
+  --color-canvas: #000000;
+  --color-surface: #0a0a0a;
+  --color-surface-raised: #141414;
+  --color-surface-hover: #1f1f1f;
+  --color-line: #3a3a3a;
+  --color-line-strong: #575757;
+
+  --color-ink: #ffffff;
+  --color-ink-muted: #cfcfcf;
+  --color-ink-subtle: #a0a0a0;
+
+  --color-accent: #4fd6ee;
+  --color-accent-hover: #7ce4f7;
+  --color-accent-ink: #000000;
+  --color-accent-soft: #04323c;
+
+  --color-ok: #5ee88a;
+  --color-ok-soft: #052d13;
+  --color-warn: #ffcc3d;
+  --color-warn-soft: #322700;
+  --color-danger: #ff6b63;
+  --color-danger-soft: #3a0f0d;
+  --color-unknown: #b0b0b0;
+  --color-unknown-soft: #1a1a1a;
+}
+
+/* Paper: a muted light theme, lower contrast than the default light one and
+   easier over a long session. */
+:root[data-theme="paper"] {
+  --color-canvas: #f2efe9;
+  --color-surface: #fbf9f5;
+  --color-surface-raised: #ffffff;
+  --color-surface-hover: #eae6de;
+  --color-line: #ded8cd;
+  --color-line-strong: #c4bcac;
+
+  --color-ink: #201d18;
+  --color-ink-muted: #5d574c;
+  --color-ink-subtle: #837c6e;
+
+  --color-accent: #1f7a6b;
+  --color-accent-hover: #196356;
+  --color-accent-ink: #ffffff;
+  --color-accent-soft: #d8ece7;
+
+  --color-ok: #2f7d44;
+  --color-ok-soft: #dcf0e0;
+  --color-warn: #8a6410;
+  --color-warn-soft: #f6ecd3;
+  --color-danger: #a83a30;
+  --color-danger-soft: #f7e0dd;
+  --color-unknown: #7d7568;
+  --color-unknown-soft: #eae6de;
+}

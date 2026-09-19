@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="AllInsight">
+  <title>AllInsight monochrome</title>
+  <!-- Single-colour version for embossing, print, and anywhere the brand
+       colour cannot be reproduced. Inherits `currentColor`. The aperture's
+       accent break becomes a plain gap, which is why the ring is drawn as one
+       arc here rather than two. -->
+  <defs>
+    <clipPath id="allinsight-core-mono">
+      <path d="M128 20 214 70v116l-86 50-86-50V70z" />
+    </clipPath>
+  </defs>
+  <g fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" opacity="0.5">
+    <path d="M196 42a112 112 0 0 1 26 63" />
+    <path d="M60 214a112 112 0 0 1-26-63" />
+  </g>
+  <path d="M128 20 214 70v116l-86 50-86-50V70z"
+        fill="none" stroke="currentColor" stroke-width="11" stroke-linejoin="round" />
+  <g clip-path="url(#allinsight-core-mono)">
+    <path d="M172 128A44 44 0 1 1 150 89.9"
+          fill="none" stroke="currentColor" stroke-width="15" stroke-linecap="round" />
+    <circle cx="128" cy="128" r="14" fill="currentColor" />
+  </g>
+</svg>

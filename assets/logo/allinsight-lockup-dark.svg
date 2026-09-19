@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 176" width="720" height="176" role="img" aria-label="AllInsight - your device, understood">
+  <title>AllInsight lockup for dark backgrounds</title>
+  <!-- The wordmark is set in camel case rather than spaced capitals: at ten
+       characters, the tracking the old six-letter name carried pushed the
+       lockup past its own box. -->
+  <defs>
+    <clipPath id="lockup-dark-core">
+      <path d="M88 20 174 70v116l-86 50-86-50V70z" />
+    </clipPath>
+  </defs>
+
+  <g transform="translate(8, -4)">
+    <g fill="none" stroke="#31B0C6" stroke-width="7" stroke-linecap="round" opacity="0.55">
+      <path d="M156 42a112 112 0 0 1 26 63" />
+      <path d="M20 214a112 112 0 0 1-26-63" />
+    </g>
+    <path d="M88 20 174 70v116l-86 50-86-50V70z"
+          fill="#0E171C" stroke="#31B0C6" stroke-width="11" stroke-linejoin="round" />
+    <g clip-path="url(#lockup-dark-core)" fill="none" stroke-width="15" stroke-linecap="round">
+      <path d="M132 128A44 44 0 1 1 110 89.9" stroke="#EAF6F8" />
+      <path d="M110 89.9A44 44 0 0 1 132 128" stroke="#31B0C6" />
+    </g>
+    <circle cx="88" cy="128" r="14" fill="#EAF6F8" clip-path="url(#lockup-dark-core)" />
+  </g>
+
+  <text x="222" y="98"
+        font-family="Segoe UI Variable Display, Segoe UI, Inter, system-ui, sans-serif"
+        font-size="62" font-weight="600" letter-spacing="1" fill="#EAF6F8">AllInsight</text>
+  <text x="226" y="132"
+        font-family="Segoe UI Variable Text, Segoe UI, Inter, system-ui, sans-serif"
+        font-size="21" font-weight="400" letter-spacing="1.4" fill="#8FA3AC">Your device, understood.</text>
+</svg>
