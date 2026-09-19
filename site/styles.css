@@ -496,6 +496,8 @@ code { font-family: var(--font-mono); font-size: .92em; }
 .req > div { display: flex; flex-wrap: wrap; gap: 6px 20px; padding: 14px 18px; background: var(--surface); font-size: 14px; }
 .req-k { min-width: 90px; color: var(--ink-subtle); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; padding-top: 2px; }
 .req-v { color: var(--ink-muted); }
+.req-v a { color: var(--accent); text-decoration: none; }
+.req-v a:hover { text-decoration: underline; }
 
 .warn {
   border: 1px solid rgba(216,160,42,.28); border-radius: var(--radius);

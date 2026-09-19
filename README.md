@@ -35,7 +35,9 @@ disconnected.
 ## Requirements
 
 **To run:** Windows 10 (1809 or later) or Windows 11, x64. The installer adds
-the Microsoft Edge WebView2 runtime if it is missing.
+the Microsoft Edge WebView2 runtime if it is missing. Windows 11 ships with it;
+on a Windows 10 machine without it, the installer downloads it, so that one
+step needs a connection. The application itself never does.
 
 **To build:**
 

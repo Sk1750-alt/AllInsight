@@ -46,6 +46,7 @@ import {
   SettingRow,
   Switch,
 } from "@/components/ui/controls";
+import { Dialog } from "@/components/ui/overlay";
 import { cn } from "@/lib/utils";
 import type {
   CategoryDescription,
@@ -939,11 +940,75 @@ export function SettingsView() {
                   entirely on this computer. It has no account, no server and no telemetry, and it
                   works exactly the same with the network disconnected.
                 </p>
+
+                <ThirdPartyLicences />
               </div>
             </Panel>
           ) : null}
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * The licence texts of every third-party package AllInsight ships, which their
+ * licences require to travel with the binary.
+ *
+ * The file is generated at build time by scripts/generate-licenses.mjs and
+ * imported as a separate chunk, so the 1.5 MB of text is only loaded when this
+ * dialog opens. It is imported rather than fetched: the content security policy
+ * allows no fetch of the application's own assets, and that stays true.
+ */
+function ThirdPartyLicences() {
+  const [open, setOpen] = React.useState(false);
+  const [text, setText] = React.useState<string | null>(null);
+  const [failed, setFailed] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!open || text !== null) return;
+    let cancelled = false;
+    import("@/generated/third-party-licenses.txt?raw")
+      .then((module) => {
+        if (!cancelled) setText(module.default);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, text]);
+
+  return (
+    <>
+      <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
+        Third-party licences
+      </Button>
+      <Dialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Third-party licences"
+        description="AllInsight is built on open-source packages. Their licences are reproduced here, as they require."
+        width="lg"
+      >
+        <div className="px-5 pb-5 pt-3">
+          {failed ? (
+            <p className="text-xs text-[var(--color-ink-muted)]">
+              The licence file could not be read. It is also published at allinsight.info.
+            </p>
+          ) : text === null ? (
+            <Skeleton className="h-64 w-full" />
+          ) : (
+            <pre
+              data-selectable
+              className="max-h-[60vh] overflow-auto whitespace-pre-wrap rounded-md border border-[var(--color-line)] bg-[var(--color-canvas)] p-3 font-mono text-2xs leading-relaxed text-[var(--color-ink-muted)]"
+            >
+              {text}
+            </pre>
+          )}
+        </div>
+      </Dialog>
+    </>
   );
 }
