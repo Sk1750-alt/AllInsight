@@ -53,7 +53,8 @@
         "displayLanguageSelector": false,
         "languages": ["English"],
         "installerIcon": "icons/icon.ico",
-        "startMenuFolder": "AllInsight"
+        "startMenuFolder": "AllInsight",
+        "installerHooks": "windows/hooks.nsh"
       }
     }
   }
