@@ -4,12 +4,12 @@
     "licence":  "MIT",
     "installer":  {
                       "file":  "AllInsight_1.0.0_x64-setup.exe",
-                      "bytes":  3258796,
-                      "sha256":  "eeae933eed400b7cba722734587aafd9166d1aa023908f791c75e82dc44ecf97"
+                      "bytes":  3309425,
+                      "sha256":  "ae741851e9579f9fad48b0d78703736ff5727923cfaf4f29ea4b1d3ebb692289"
                   },
     "portable":  {
                      "file":  "AllInsight.exe",
-                     "bytes":  11239424,
-                     "sha256":  "14c8b005d9483d9907d62d630f04a6201900cd850c37880cb94182b1e2b358d7"
+                     "bytes":  11313152,
+                     "sha256":  "31e439b0605bd99e788a99e614dff9bbfe6764069f1cd3820090249039667511"
                  }
 }
