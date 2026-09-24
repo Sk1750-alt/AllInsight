@@ -1,12 +1,17 @@
-# Builds and tests AllInsight on a clean Windows machine.
+# Builds and tests AllInsight on clean Windows, Linux and macOS machines.
 #
 # Every push and pull request runs the type check, the Rust test suite (which
 # includes the deletion-guard safety tests), the frontend build and the Tauri
-# bundler. A tag of the form v1.2.3 also keeps the installer and executable as
-# workflow artefacts, so a release can be rebuilt from the tagged commit rather
-# than from whatever was on a developer's disk.
+# bundler on each platform. The Linux package parsers are also exercised on
+# Arch and Fedora, so "works on every Linux" is something CI checks rather
+# than something the README claims.
 #
-# This mirrors BUILD_WINDOWS.bat; if one changes, change the other.
+# A tag of the form v1.2.3 also keeps the installers as workflow artefacts, so
+# a release can be rebuilt from the tagged commit rather than from whatever
+# was on a developer's disk.
+#
+# This mirrors BUILD_WINDOWS.bat and scripts/build-linux.sh; if one changes,
+# change the others.
 
 name: build
 
@@ -63,3 +68,133 @@ jobs:
             src-tauri/target/release/allinsight.exe
             src-tauri/target/release/bundle/nsis/*.exe
           if-no-files-found: error
+
+  # Built on the oldest supported Ubuntu LTS on purpose: an AppImage links
+  # against the glibc it was built with, and one built on a new distribution
+  # refuses to start on an older one.
+  linux:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the Tauri build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev \
+            librsvg2-dev libxdo-dev libssl-dev patchelf rpm file xdg-utils
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check the interface
+        run: npm run typecheck
+
+      - name: Rust tests, including the safety suite
+        working-directory: src-tauri
+        run: cargo test
+
+      - name: Build the application and packages
+        run: npx tauri build
+
+      - name: Checksums
+        run: |
+          cd src-tauri/target/release/bundle
+          sha256sum deb/*.deb rpm/*.rpm appimage/*.AppImage
+
+      - name: Keep release artefacts
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: allinsight-${{ github.ref_name }}-linux-x64
+          path: |
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/rpm/*.rpm
+            src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+
+  # The same test suite on distributions with a different package manager,
+  # C library layout and filesystem conventions than Ubuntu. Containers run as
+  # root, and AllInsight deliberately protects /root like any other system
+  # directory, so the tests run as an ordinary user created for the job.
+  linux-distros:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distro: archlinux
+            image: archlinux:latest
+            packages: >-
+              pacman -Syu --noconfirm --needed base-devel webkit2gtk-4.1 libayatana-appindicator
+              librsvg xdotool openssl rustup nodejs npm sudo
+          - distro: fedora
+            image: fedora:latest
+            packages: >-
+              dnf install -y gcc gcc-c++ make webkit2gtk4.1-devel libappindicator-gtk3-devel
+              librsvg2-devel libxdo-devel openssl-devel rustup nodejs npm sudo
+    container: ${{ matrix.image }}
+
+    steps:
+      - name: Install the build dependencies
+        run: ${{ matrix.packages }}
+
+      - uses: actions/checkout@v4
+
+      - name: Create an unprivileged user
+        run: |
+          useradd -m tester
+          chown -R tester "$GITHUB_WORKSPACE"
+
+      - name: Rust tests, including the safety suite, as that user
+        run: |
+          sudo -u tester -H bash -lc '
+            set -e
+            command -v rustup-init >/dev/null && rustup-init -y --profile minimal --default-toolchain stable || rustup default stable
+            export PATH="$HOME/.cargo/bin:$PATH"
+            cd "'"$GITHUB_WORKSPACE"'"
+            mkdir -p dist
+            cd src-tauri
+            cargo test
+          '
+
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Rust tests
+        working-directory: src-tauri
+        run: cargo test
+
+      - name: Build the application
+        run: npx tauri build

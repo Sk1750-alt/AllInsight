@@ -70,6 +70,64 @@ fn every_protected_user_folder_is_refused() {
     }
 }
 
+/// On Linux the whole operating system lives outside the home folder, and all
+/// of it must be refused, however the path is spelled.
+#[cfg(target_os = "linux")]
+#[test]
+fn the_linux_system_is_refused() {
+    let engine = ProtectedPaths::new(&[]);
+    for path in [
+        "/",
+        "/etc/passwd",
+        "/usr/bin/bash",
+        "/usr/lib/x86_64-linux-gnu/libc.so.6",
+        "/boot/grub/grub.cfg",
+        "/var/lib/dpkg/status",
+        "/var/log/syslog",
+        "/opt/google/chrome/chrome",
+        "/root/.bashrc",
+        "/proc/self/mem",
+        "/sys/firmware",
+        "/tmp/../etc/shadow",
+        "/home/../usr/share",
+    ] {
+        assert!(engine.is_protected(Path::new(path)), "{path} must be protected");
+    }
+    let home = dirs::home_dir().expect("home");
+    for leaf in [".ssh/id_ed25519", ".gnupg/pubring.kbx", ".mozilla/firefox/x/key4.db", ".local/share/keyrings/login.keyring"] {
+        assert!(engine.is_protected(&home.join(leaf)), "~/{leaf} must be protected");
+    }
+}
+
+/// A symlink planted inside an allowed folder that points at user data must
+/// not be followed, and neither the link nor its target may be removed.
+#[cfg(unix)]
+#[test]
+fn a_symlink_cannot_be_used_to_reach_protected_data() {
+    let root = sandbox("symlink");
+    let outside = sandbox("symlink-target");
+    let secret = outside.join("important.txt");
+    fs::write(&secret, b"user data").unwrap();
+    std::os::unix::fs::symlink(&outside, root.join("link")).unwrap();
+    std::os::unix::fs::symlink(&secret, root.join("file-link")).unwrap();
+
+    let engine = ProtectedPaths::new(&[]);
+    let guard = DeletionGuard::new(&engine, &[root.clone()]);
+    assert!(guard.validate(&root.join("link"), EntryKind::Directory).is_err());
+    assert!(guard.validate(&root.join("link").join("important.txt"), EntryKind::File).is_err());
+    assert!(guard.validate(&root.join("file-link"), EntryKind::File).is_err());
+
+    // The storage walkers do not follow it either: the scan sees only the
+    // links themselves, never the 9 bytes behind them.
+    let progress = std::sync::Arc::new(scanner::ScanProgress::default());
+    let result = scanner::scan(scanner::ScanOptions::for_root(&root), progress);
+    assert_eq!(result.total_bytes, 0);
+    assert!(secret.exists());
+
+    cleanup(&root);
+    cleanup(&outside);
+}
+
 #[test]
 fn windows_and_program_files_are_refused() {
     let engine = ProtectedPaths::new(&[]);
@@ -135,11 +193,16 @@ fn traversal_out_of_an_allowed_root_is_refused() {
     let engine = ProtectedPaths::new(&[]);
     let guard = DeletionGuard::new(&engine, &[root.clone()]);
 
-    for payload in [
-        "..\\..\\Windows\\System32\\drivers\\etc\\hosts",
-        "..\\escape.txt",
-        "sub\\..\\..\\escape.txt",
-    ] {
+    let payloads: &[&str] = if cfg!(windows) {
+        &[
+            "..\\..\\Windows\\System32\\drivers\\etc\\hosts",
+            "..\\escape.txt",
+            "sub\\..\\..\\escape.txt",
+        ]
+    } else {
+        &["../../etc/passwd", "../escape.txt", "sub/../../escape.txt"]
+    };
+    for payload in payloads {
         let hostile = root.join(payload);
         assert!(
             guard.validate(&hostile, EntryKind::File).is_err(),

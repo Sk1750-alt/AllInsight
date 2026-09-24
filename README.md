@@ -3,9 +3,9 @@
 **Your device, understood.**
 Private by design. Intelligent by default.
 
-AllInsight is a Windows desktop application that analyses storage, monitors device
-health, finds what is genuinely safe to clean, and explains what it finds. All
-of it happens on the machine it is installed on. There is no account, no
+AllInsight is a desktop application for Windows and Linux that analyses storage,
+monitors device health, finds what is genuinely safe to clean, and explains what
+it finds. All of it happens on the machine it is installed on. There is no account, no
 server, and no telemetry, and every feature works with the network
 disconnected.
 
@@ -32,14 +32,61 @@ disconnected.
 
 ---
 
+## Platforms
+
+| Platform | Status |
+| --- | --- |
+| Windows 10 (1809+) and 11, x64 | Fully supported. NSIS installer. |
+| Linux, x64: Ubuntu 22.04+, Debian 12+, Fedora 39+, Arch, openSUSE, Mint, Pop!\_OS and other glibc distributions with WebKitGTK 4.1 | Fully supported. `.deb`, `.rpm` and AppImage. |
+| macOS 11+ | Experimental: compiled and tested in CI only, not yet run by hand. Applications, Startup and Trash show "not available yet". |
+
+What each screen reads on Linux:
+
+| Screen | Source on Linux |
+| --- | --- |
+| Cleanup | Your own files only: the temporary folder, `~/.cache` thumbnails, fonts, Mesa/NVIDIA shader caches, browser caches (Chrome, Chromium, Edge, Brave, Vivaldi, Opera, Firefox including Snap), and the freedesktop Trash. Nothing outside your home or temporary folder, and never another user's file. |
+| Applications | The desktop entries your launcher shows, traced to dpkg, rpm, pacman, Flatpak or Snap. Flatpak and Snap apps are removed directly; for apt, dnf, zypper and pacman packages AllInsight shows the exact command, because it never runs a package manager as root. |
+| Startup | XDG autostart (`~/.config/autostart`, `/etc/xdg/autostart`). Disabling writes a per-user `Hidden=true` override, exactly as GNOME and KDE do. |
+| Drive Health | UDisks2 over D-Bus (SMART failure prediction, temperature, power-on hours, bad sectors, NVMe critical warnings), falling back to sysfs. No root needed. |
+| Battery | `/sys/class/power_supply`. |
+| GPU | `/sys/class/drm`, `amdgpu` busy counters, and `nvidia-smi` when present. |
+| Processes | Refuses to end init, the compositor, the display server, the login manager and the session bus; asks first for PipeWire, NetworkManager and the file manager. Ends processes with SIGTERM, not SIGKILL. |
+
+Whole-disk scans skip `/proc`, `/sys`, `/dev`, `/run`, tmpfs, Snap squashfs
+images, container overlays and network or WSL shares, so they measure disk and
+nothing else. Everything outside `/home`, `/tmp`, `/mnt` and `/media` is on the
+protected list.
+
 ## Requirements
 
-**To run:** Windows 10 (1809 or later) or Windows 11, x64. The installer adds
+**To run on Windows:** Windows 10 (1809 or later) or Windows 11, x64. The installer adds
 the Microsoft Edge WebView2 runtime if it is missing. Windows 11 ships with it;
 on a Windows 10 machine without it, the installer downloads it, so that one
 step needs a connection. The application itself never does.
 
-**To build:**
+**To run on Linux:** WebKitGTK 4.1 (preinstalled on GNOME and KDE desktops;
+the `.deb` and `.rpm` pull it in). Optional: `udisks2` for drive health,
+`libayatana-appindicator3` for the tray icon, and on GNOME the AppIndicator
+extension to see it.
+
+**To build on Linux:** Rust stable, Node.js 20+, and the Tauri prerequisites:
+
+```sh
+# Debian / Ubuntu
+sudo apt install libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev build-essential file rpm xdg-utils
+# Fedora
+sudo dnf install webkit2gtk4.1-devel libappindicator-gtk3-devel librsvg2-devel libxdo-devel openssl-devel rpm-build
+# Arch
+sudo pacman -S --needed webkit2gtk-4.1 libayatana-appindicator librsvg xdotool base-devel
+```
+
+Then `bash scripts/build-linux.sh`, which mirrors `BUILD_WINDOWS.bat` and puts
+the `.deb`, `.rpm` and `.AppImage` in `dist-release/`. Build release packages
+on the oldest distribution you support (CI uses Ubuntu 22.04): an AppImage only
+runs where glibc is at least as new as the one it was built against. An AUR
+`PKGBUILD` that repackages the `.deb` is in `packaging/arch/`.
+
+**To build on Windows:**
 
 - [Rust](https://rustup.rs) stable, `x86_64-pc-windows-msvc`
 - Visual Studio Build Tools 2022 with **Desktop development with C++**
@@ -125,13 +172,17 @@ AllInsight works fully without one. Every insight, recommendation and score come
 from a deterministic generator that needs no model at all. A model only adds
 conversation.
 
-1. **Get the engine.** Download a llama.cpp release for Windows from
+1. **Get the engine.** Download a llama.cpp release from
    <https://github.com/ggml-org/llama.cpp/releases> and put `llama-server.exe`
-   in:
+   (Windows) or `llama-server` (Linux, marked executable) in:
 
    ```
-   %LOCALAPPDATA%\AllInsight\engine\
+   %LOCALAPPDATA%\AllInsight\engine\        Windows
+   ~/.local/share/AllInsight/engine/         Linux
    ```
+
+   On Linux a `llama-server` on `PATH` (from the AUR, Nix or a source build)
+   is found automatically.
 
 2. **Get a model.** Any instruction-tuned GGUF works. Sizing:
 
@@ -154,12 +205,14 @@ AllInsight never downloads a model. There is no download code in the binary.
 
 ## Permissions
 
-AllInsight runs as a standard user and never asks for elevation at launch. Three
-things need administrator permission, and each says so where it matters:
+AllInsight runs as a standard user and never asks for elevation at launch. On
+Linux it never runs as root at all: everything it cleans belongs to you, and
+drive health comes from UDisks2 without privilege. On Windows three things need
+administrator permission, and each says so where it matters:
 
 | Feature | Why |
 | --- | --- |
-| Drive wear, temperature, power-on hours and error counts | `MSFT_StorageReliabilityCounter` is readable only by an elevated process on most machines. |
+| Drive wear and error counts on SATA drives | `MSFT_StorageReliabilityCounter` is readable only by an elevated process on most machines. NVMe drives report wear, temperature and power-on hours from their own health log without it. |
 | Windows Update, Delivery Optimization and servicing log cleanup | Those folders are owned by SYSTEM. |
 | Toggling machine-wide startup entries | They live under `HKEY_LOCAL_MACHINE`. |
 
@@ -187,10 +240,12 @@ guess.
     /system /process    live metrics and the process list
     /health /battery    drive and battery reporting
     /apps /startup      installed applications, startup entries
+                        (windows.rs / linux.rs per platform)
     /ai                 facts, deterministic insights, local model
     /db                 SQLite and settings
 /assets/logo            SVG source of truth for the mark and icons
-/scripts                icon generation
+/scripts                icon generation, licence collection, build-linux.sh
+/packaging/arch         AUR PKGBUILD
 /docs                   architecture, security model, AI notes
 ```
 

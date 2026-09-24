@@ -1,11 +1,13 @@
-//! Windows path primitives used by every safety decision in AllInsight.
+//! Path primitives used by every safety decision in AllInsight.
 //!
 //! Three rules drive this module:
 //!
 //! 1. Ancestry is decided component-by-component, never with string
 //!    `starts_with`. `C:\Users\Bob` is not an ancestor of `C:\Users\Bobby`.
-//! 2. Comparison is case-insensitive because NTFS is, but the original casing
-//!    is always preserved for display.
+//! 2. Comparison follows the platform's filesystem: case-insensitive on
+//!    Windows and macOS, where NTFS and APFS are, and exact on Linux, where
+//!    `/tmp/A` and `/tmp/a` are two different files. The original casing is
+//!    always preserved for display.
 //! 3. Reparse points (symlinks, junctions, volume mount points) are detected
 //!    and refused rather than followed. A junction planted inside a temp
 //!    directory that points at Documents is the attack this defends against.
@@ -21,18 +23,27 @@ use std::os::windows::fs::MetadataExt;
 #[cfg(windows)]
 const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x0000_0400;
 
-/// Lower-cased string form of a single path component, used for comparison.
+/// Whether the platform's usual filesystem ignores case in names.
+///
+/// On Linux this must be false. Folding case there would let the frontend
+/// name `/home/me/Film.mkv` when the scan listed `/home/me/film.mkv`, and the
+/// two are different files.
+pub const CASE_INSENSITIVE: bool = cfg!(any(windows, target_os = "macos"));
+
+/// String form of a single path component, case-folded where the platform
+/// is case-insensitive, used for comparison.
 fn component_key(c: &Component<'_>) -> String {
     match c {
         Component::Prefix(p) => p.as_os_str().to_string_lossy().to_lowercase(),
         Component::RootDir => "\\".to_string(),
         Component::CurDir => ".".to_string(),
         Component::ParentDir => "..".to_string(),
-        Component::Normal(s) => s.to_string_lossy().to_lowercase(),
+        Component::Normal(s) if CASE_INSENSITIVE => s.to_string_lossy().to_lowercase(),
+        Component::Normal(s) => s.to_string_lossy().into_owned(),
     }
 }
 
-/// Comparison key for a whole path: the sequence of lower-cased components.
+/// Comparison key for a whole path: the sequence of comparable components.
 pub fn comparison_key(path: &Path) -> Vec<String> {
     strip_verbatim(path)
         .components()
@@ -55,6 +66,17 @@ pub fn strip_verbatim(path: &Path) -> PathBuf {
 
 /// Add the verbatim prefix so Win32 calls are not capped at MAX_PATH (260).
 /// Only meaningful for already-absolute, already-normalised paths.
+///
+/// Elsewhere there is no such limit and no such prefix: on Linux `\\?\` would
+/// turn `/home` into a relative name, so the path is returned untouched.
+#[cfg(not(windows))]
+pub fn long_path(path: &Path) -> PathBuf {
+    path.to_path_buf()
+}
+
+/// Add the verbatim prefix so Win32 calls are not capped at MAX_PATH (260).
+/// Only meaningful for already-absolute, already-normalised paths.
+#[cfg(windows)]
 pub fn long_path(path: &Path) -> PathBuf {
     let s = path.as_os_str().to_string_lossy();
     if s.starts_with("\\\\?\\") {
@@ -250,10 +272,14 @@ pub fn file_name_lower(path: &Path) -> String {
 }
 
 /// True when any component of the path matches one of `names` (lower-case).
+///
+/// Case-insensitive on every platform: this backs deny rules such as `.git`,
+/// and for a deny rule, matching too much is the safe direction.
 pub fn contains_component(path: &Path, names: &HashSet<String>) -> bool {
-    normalize_lexical(path)
-        .components()
-        .any(|c| matches!(c, Component::Normal(_)) && names.contains(&component_key(&c)))
+    normalize_lexical(path).components().any(|c| match c {
+        Component::Normal(s) => names.contains(&s.to_string_lossy().to_lowercase()),
+        _ => false,
+    })
 }
 
 /// True for the invisible bidirectional and formatting characters used to
@@ -284,7 +310,17 @@ pub fn has_hostile_name(name: &OsStr) -> bool {
     })
 }
 
+/// The drive root (`C:\`) that owns this path, when it has one. On Unix every
+/// absolute path is owned by `/`.
+#[cfg(not(windows))]
+pub fn drive_root(path: &Path) -> Option<PathBuf> {
+    normalize_lexical(path)
+        .has_root()
+        .then(|| PathBuf::from("/"))
+}
+
 /// The drive root (`C:\`) that owns this path, when it has one.
+#[cfg(windows)]
 pub fn drive_root(path: &Path) -> Option<PathBuf> {
     let normalized = normalize_lexical(path);
     let mut comps = normalized.components();
@@ -298,7 +334,57 @@ pub fn drive_root(path: &Path) -> Option<PathBuf> {
     )))
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(windows)))]
+mod unix_tests {
+    use super::*;
+
+    #[test]
+    fn prefix_similarity_is_not_ancestry() {
+        assert!(!is_within(Path::new("/home/bobby"), Path::new("/home/bob")));
+        assert!(is_within(Path::new("/home/bob/file.txt"), Path::new("/home/bob")));
+    }
+
+    #[test]
+    fn traversal_is_collapsed_before_comparison() {
+        let hostile = Path::new("/tmp/../home/me/Documents");
+        assert_eq!(normalize_lexical(hostile), PathBuf::from("/home/me/Documents"));
+        assert!(!is_within(hostile, Path::new("/tmp")));
+        assert_eq!(normalize_lexical(Path::new("/../../etc")), PathBuf::from("/etc"));
+    }
+
+    #[test]
+    fn every_absolute_path_belongs_to_the_root() {
+        assert_eq!(drive_root(Path::new("/home/me")), Some(PathBuf::from("/")));
+        assert_eq!(drive_root(Path::new("relative/path")), None);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn comparison_is_exact_on_linux() {
+        assert!(!same_path(Path::new("/tmp/Film.mkv"), Path::new("/tmp/film.mkv")));
+        assert!(same_path(Path::new("/tmp/./film.mkv"), Path::new("/tmp/film.mkv")));
+    }
+
+    #[test]
+    fn deny_names_match_in_any_case() {
+        let names: HashSet<String> = [".git".to_string()].into_iter().collect();
+        assert!(contains_component(Path::new("/src/.GIT/objects/ab"), &names));
+    }
+
+    #[test]
+    fn a_symlink_is_a_reparse_point() {
+        let base = std::env::temp_dir().join(format!("allinsight-paths-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(base.join("real")).unwrap();
+        std::os::unix::fs::symlink(base.join("real"), base.join("link")).unwrap();
+        assert_eq!(reparse_state(&base.join("real")), ReparseState::Plain);
+        assert_eq!(reparse_state(&base.join("link")), ReparseState::Reparse);
+        assert_eq!(reparse_state(&base.join("missing")), ReparseState::Unknown);
+        let _ = std::fs::remove_dir_all(&base);
+    }
+}
+
+#[cfg(all(test, windows))]
 mod tests {
     use super::*;
 

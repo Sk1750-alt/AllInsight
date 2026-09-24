@@ -205,12 +205,16 @@ mod imp {
     }
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "linux")]
+#[path = "linux.rs"]
+mod imp;
+
+#[cfg(not(any(windows, target_os = "linux")))]
 mod imp {
     use super::*;
     pub fn status() -> Result<BatteryStatus> {
         let mut out = BatteryStatus::default();
-        out.notes = vec!["Battery data is only available on Windows.".into()];
+        out.notes = vec!["No battery information is available on this system yet.".into()];
         Ok(out)
     }
 }

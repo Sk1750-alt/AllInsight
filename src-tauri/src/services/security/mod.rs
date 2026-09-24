@@ -40,7 +40,14 @@ pub fn is_elevated() -> bool {
     }
 }
 
-#[cfg(not(windows))]
+/// True when the process runs as root.
+#[cfg(unix)]
+pub fn is_elevated() -> bool {
+    // SAFETY: `geteuid` has no preconditions and cannot fail.
+    unsafe { libc::geteuid() == 0 }
+}
+
+#[cfg(not(any(windows, unix)))]
 pub fn is_elevated() -> bool {
     false
 }

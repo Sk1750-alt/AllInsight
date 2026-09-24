@@ -3,6 +3,7 @@
 
 pub mod categories;
 pub mod duplicates;
+pub mod fence;
 pub mod large_files;
 pub mod scanner;
 pub mod volumes;

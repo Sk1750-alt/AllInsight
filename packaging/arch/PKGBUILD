@@ -1,0 +1,27 @@
+# Maintainer: AllInsight <https://github.com/Sk1750-alt>
+#
+# Repackages the official .deb, so an Arch user installs exactly the binary
+# the release was tested with. Publish as `allinsight-bin` on the AUR.
+# Update pkgver and the checksum from dist-release/ for each release.
+
+pkgname=allinsight-bin
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Local device intelligence and storage manager. Private by design: no account, no telemetry, works offline."
+arch=('x86_64')
+url="https://github.com/Sk1750-alt/AllInsight"
+license=('custom')
+depends=('webkit2gtk-4.1' 'gtk3' 'libayatana-appindicator' 'hicolor-icon-theme')
+optdepends=('udisks2: drive health (SMART) without root'
+            'llama.cpp: the optional local assistant'
+            'flatpak: listing and removing Flatpak applications')
+provides=('allinsight')
+conflicts=('allinsight')
+source=("AllInsight_${pkgver}_amd64.deb::${url}/releases/download/v${pkgver}/AllInsight_${pkgver}_amd64.deb")
+sha256sums=('SKIP')
+
+package() {
+  bsdtar -xf data.tar.* -C "${pkgdir}"
+  install -Dm644 "${pkgdir}/usr/share/doc/allinsight/copyright" \
+    "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE" 2>/dev/null || true
+}

@@ -212,9 +212,10 @@ pub fn generate(facts: &DeviceFacts) -> Vec<Insight> {
                 severity: Severity::Critical,
                 title: format!("{name} has almost no free space"),
                 body: format!(
-                    "Only {} of {} remains on {name}. Windows needs free space to update and to page memory, and applications can fail to save when it runs out.",
+                    "Only {} of {} remains on {name}. {os} needs free space to update and to page memory, and applications can fail to save when it runs out.",
                     format_bytes(volume.free_bytes),
-                    format_bytes(volume.total_bytes)
+                    format_bytes(volume.total_bytes),
+                    os = crate::platform::os_name()
                 ),
                 action: InsightAction::OpenCleanup,
                 action_label: Some("Free up space".into()),
@@ -226,7 +227,7 @@ pub fn generate(facts: &DeviceFacts) -> Vec<Insight> {
                 severity: Severity::Warning,
                 title: format!("{name} is running low on space"),
                 body: format!(
-                    "{} of {} is in use. Below ten percent free, Windows updates and large downloads start to fail.",
+                    "{} of {} is in use. Below ten percent free, system updates and large downloads start to fail.",
                     format_bytes(volume.used_bytes_estimate()),
                     format_bytes(volume.total_bytes)
                 ),
@@ -264,7 +265,7 @@ pub fn generate(facts: &DeviceFacts) -> Vec<Insight> {
             severity: Severity::Advice,
             title: format!("{} can be safely reclaimed", format_bytes(facts.reclaimable_bytes)),
             body: format!(
-                "This is temporary and cached data that Windows and your applications rebuild automatically.{biggest} No documents, downloads or media are included."
+                "This is temporary and cached data that the system and your applications rebuild automatically.{biggest} No documents, downloads or media are included."
             ),
             action: InsightAction::OpenCleanup,
             action_label: Some("Review and clean".into()),
@@ -393,7 +394,7 @@ pub fn generate(facts: &DeviceFacts) -> Vec<Insight> {
                 id: format!("drive-warning-{}", drive.model),
                 severity: Severity::Warning,
                 title: format!("{} reported a health warning", drive.model),
-                body: "Windows or the drive itself flagged a condition worth watching. Check the details and make sure your backups are current.".into(),
+                body: "The system or the drive itself flagged a condition worth watching. Check the details and make sure your backups are current.".into(),
                 action: InsightAction::OpenDriveHealth,
                 action_label: Some("See drive health".into()),
                 value: Some(drive.state.label().to_string()),
@@ -428,7 +429,7 @@ pub fn generate(facts: &DeviceFacts) -> Vec<Insight> {
             body: if names.is_empty() {
                 "Disabling programs you do not need at sign-in shortens the time before the desktop is usable.".into()
             } else {
-                format!("{names} start with Windows. Disabling the ones you do not need shortens sign-in. Nothing is uninstalled by disabling a startup entry.")
+                format!("{names} start when you sign in. Disabling the ones you do not need shortens sign-in. Nothing is uninstalled by disabling a startup entry.")
             },
             action: InsightAction::OpenStartup,
             action_label: Some("Manage startup".into()),
@@ -444,7 +445,7 @@ pub fn generate(facts: &DeviceFacts) -> Vec<Insight> {
                 severity: Severity::Warning,
                 title: "Memory is nearly full".into(),
                 body: format!(
-                    "{:.0}% of {} is committed. Windows will start paging to disk, which makes everything feel slower.",
+                    "{:.0}% of {} is committed. The system will start paging to disk, which makes everything feel slower.",
                     memory.used_percent,
                     format_bytes(memory.total_bytes)
                 ),
@@ -560,7 +561,12 @@ pub fn summary(facts: &DeviceFacts) -> String {
     let unknown_drives = facts.drives.iter().filter(|d| !d.data_available).count();
     if unknown_drives > 0 && unknown_drives == facts.drives.len() {
         parts.push(
-            "Detailed drive health is not available without administrator permission.".into(),
+            if cfg!(windows) {
+                "Detailed drive health is not available without administrator permission."
+            } else {
+                "Detailed drive health was not reported by the system for these drives."
+            }
+            .into(),
         );
     }
 

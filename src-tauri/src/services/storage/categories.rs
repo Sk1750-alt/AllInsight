@@ -59,7 +59,7 @@ impl StorageCategory {
     pub fn label(&self) -> &'static str {
         match self {
             StorageCategory::Applications => "Applications",
-            StorageCategory::Windows => "Windows",
+            StorageCategory::Windows => crate::platform::os_name(),
             StorageCategory::Downloads => "Downloads",
             StorageCategory::Desktop => "Desktop",
             StorageCategory::Documents => "Documents",
@@ -81,7 +81,9 @@ impl StorageCategory {
 /// Known-folder anchors resolved once, then reused for every file in a scan.
 #[derive(Debug, Clone)]
 pub struct CategoryRules {
-    windows: Option<std::path::PathBuf>,
+    /// Where the operating system itself lives. The variant is still called
+    /// `Windows` because that is its stable identifier in saved data.
+    system: Vec<std::path::PathBuf>,
     program_files: Vec<std::path::PathBuf>,
     downloads: Option<std::path::PathBuf>,
     desktop: Option<std::path::PathBuf>,
@@ -100,19 +102,9 @@ impl Default for CategoryRules {
 
 impl CategoryRules {
     pub fn new() -> Self {
-        let mut program_files: Vec<std::path::PathBuf> = Vec::new();
-        for var in ["%ProgramFiles%", "%ProgramFiles(x86)%", "%ProgramW6432%"] {
-            if let Some(p) = paths::expand_env(var) {
-                if !program_files.iter().any(|e| paths::same_path(e, &p)) {
-                    program_files.push(p);
-                }
-            }
-        }
-        if let Some(p) = paths::expand_env("%ProgramData%") {
-            program_files.push(p);
-        }
+        let (system, program_files) = platform_roots();
         Self {
-            windows: paths::expand_env("%SystemRoot%"),
+            system,
             program_files,
             downloads: dirs::download_dir(),
             desktop: dirs::desktop_dir(),
@@ -144,14 +136,16 @@ impl CategoryRules {
     }
 
     fn classify_by_location(&self, path: &Path) -> Option<StorageCategory> {
-        if let Some(w) = &self.windows {
-            if paths::is_within(path, w) {
-                return Some(StorageCategory::Windows);
-            }
-        }
+        // Applications first: on Linux `/var/lib/flatpak` sits inside the
+        // system's `/var`, and it holds applications, not the system.
         for pf in &self.program_files {
             if paths::is_within(path, pf) {
                 return Some(StorageCategory::Applications);
+            }
+        }
+        for s in &self.system {
+            if paths::is_within(path, s) {
+                return Some(StorageCategory::Windows);
             }
         }
         for (root, cat) in [
@@ -172,9 +166,47 @@ impl CategoryRules {
     }
 }
 
+/// The operating system's own directories, and where applications live.
+#[cfg(windows)]
+fn platform_roots() -> (Vec<std::path::PathBuf>, Vec<std::path::PathBuf>) {
+    let mut program_files: Vec<std::path::PathBuf> = Vec::new();
+    for var in ["%ProgramFiles%", "%ProgramFiles(x86)%", "%ProgramW6432%"] {
+        if let Some(p) = paths::expand_env(var) {
+            if !program_files.iter().any(|e| paths::same_path(e, &p)) {
+                program_files.push(p);
+            }
+        }
+    }
+    if let Some(p) = paths::expand_env("%ProgramData%") {
+        program_files.push(p);
+    }
+    (paths::expand_env("%SystemRoot%").into_iter().collect(), program_files)
+}
+
+#[cfg(not(windows))]
+fn platform_roots() -> (Vec<std::path::PathBuf>, Vec<std::path::PathBuf>) {
+    use std::path::PathBuf;
+    let system = [
+        "/usr", "/etc", "/boot", "/bin", "/sbin", "/lib", "/lib32", "/lib64", "/var", "/System",
+        "/Library",
+    ]
+    .iter()
+    .map(PathBuf::from)
+    .collect();
+    let mut program_files: Vec<PathBuf> = ["/opt", "/snap", "/var/lib/snapd", "/var/lib/flatpak", "/Applications"]
+        .iter()
+        .map(PathBuf::from)
+        .collect();
+    if let Some(data) = dirs::data_dir() {
+        program_files.push(data.join("flatpak"));
+    }
+    (system, program_files)
+}
+
 /// Directory names that decide the category regardless of extension.
 fn classify_by_component(path: &Path) -> Option<StorageCategory> {
-    let lowered = path.to_string_lossy().to_lowercase();
+    // Separators are unified so one set of rules serves both platforms.
+    let lowered = path.to_string_lossy().to_lowercase().replace('/', "\\");
     let has = |needle: &str| lowered.contains(needle);
 
     if has("\\steamapps") || has("\\epic games") || has("\\gog galaxy") || has("\\riot games") {
@@ -187,13 +219,15 @@ fn classify_by_component(path: &Path) -> Option<StorageCategory> {
         || has("\\.m2")
         || has("\\site-packages")
         || has("\\.venv")
+        || has("\\.rustup")
+        || has("\\.npm\\")
     {
         return Some(StorageCategory::Development);
     }
     if has("\\temp\\") || has("\\tmp\\") || lowered.ends_with(".tmp") {
         return Some(StorageCategory::TemporaryFiles);
     }
-    if has("\\cache") || has("cache\\") || has("\\code cache") || has("\\gpucache") {
+    if has("\\cache") || has("cache\\") || has("\\.cache\\") || has("\\code cache") || has("\\gpucache") {
         return Some(StorageCategory::Cache);
     }
     None

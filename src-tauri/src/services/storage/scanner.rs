@@ -28,6 +28,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use super::categories::{CategoryRules, CategoryTotals, StorageCategory};
+use super::fence::Fence;
 use crate::services::security::paths;
 
 /// Hard recursion limit. Real trees are far shallower; this exists so a
@@ -205,6 +206,7 @@ struct ScanContext {
     large: Mutex<Vec<LargeFile>>,
     skipped_dirs: AtomicU64,
     skipped_links: AtomicU64,
+    fence: Fence,
 }
 
 impl ScanContext {
@@ -284,7 +286,15 @@ fn walk(ctx: &ScanContext, dir: &Path, depth: u32) -> Subtotal {
                 }
 
                 if file_type.is_dir() {
-                    subdirs.push(path);
+                    if ctx.fence.blocks(&path) {
+                        ctx.skipped_dirs.fetch_add(1, Ordering::Relaxed);
+                    } else {
+                        subdirs.push(path);
+                    }
+                    continue;
+                }
+                // Sockets, pipes and device nodes occupy no disk space.
+                if !file_type.is_file() {
                     continue;
                 }
 
@@ -383,6 +393,7 @@ pub fn scan(options: ScanOptions, progress: Arc<ScanProgress>) -> ScanResult {
         large: Mutex::new(Vec::new()),
         skipped_dirs: AtomicU64::new(0),
         skipped_links: AtomicU64::new(0),
+        fence: Fence::for_root(&root),
         options,
         progress: progress.clone(),
     };
@@ -434,6 +445,7 @@ pub fn measure(dir: &Path, cancelled: &AtomicBool) -> (u64, u64) {
     let mut files = 0u64;
     let mut stack = vec![dir.to_path_buf()];
     let mut depth_guard = 0u32;
+    let fence = Fence::for_root(dir);
 
     while let Some(current) = stack.pop() {
         if cancelled.load(Ordering::Relaxed) {
@@ -453,8 +465,10 @@ pub fn measure(dir: &Path, cancelled: &AtomicBool) -> (u64, u64) {
                 continue;
             }
             if ft.is_dir() {
-                stack.push(path);
-            } else {
+                if !fence.blocks(&path) {
+                    stack.push(path);
+                }
+            } else if ft.is_file() {
                 bytes = bytes.saturating_add(entry.metadata().map(|m| m.len()).unwrap_or(0));
                 files += 1;
             }

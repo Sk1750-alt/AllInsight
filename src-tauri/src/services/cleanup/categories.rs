@@ -6,7 +6,8 @@
 //! is told about. There is no code path that turns a string into a deletion.
 //!
 //! Categories are classified as SAFE only when the data they cover is
-//! regenerated automatically by Windows or by the owning application. Anything
+//! regenerated automatically by the operating system or by the owning
+//! application. Anything
 //! that represents a decision the user made - a download, a document, an
 //! installer they kept on purpose - belongs on the Review screens instead,
 //! where nothing is ever removed without an explicit selection.
@@ -66,7 +67,8 @@ pub enum DeletionMode {
     /// application rebuilds on demand, where a Recycle Bin copy would consume
     /// exactly the space the cleanup was meant to reclaim.
     Permanent,
-    /// Handled by a dedicated Windows API rather than by file deletion.
+    /// Handled by a dedicated system API (the Windows Recycle Bin, the
+    /// freedesktop Trash) rather than by file deletion.
     ShellApi,
 }
 
@@ -115,6 +117,7 @@ impl CategoryDefinition {
     }
 }
 
+#[cfg(windows)]
 fn local_app_data() -> Option<PathBuf> {
     dirs::data_local_dir()
 }
@@ -125,8 +128,24 @@ fn existing(candidates: Vec<Option<PathBuf>>) -> Vec<PathBuf> {
 
 /// Directory names that hold the disposable half of a Chromium profile. The
 /// profile also holds passwords, cookies and history in sibling files, which
-/// is why only these exact subfolders are ever listed as roots.
-const CHROMIUM_CACHE_DIRS: &[&str] = &["Cache\\Cache_Data", "Code Cache", "GPUCache"];
+/// is why only these exact subfolders are ever listed as roots. Written as
+/// components so the same list works with either path separator.
+const CHROMIUM_CACHE_DIRS: &[&[&str]] = &[&["Cache", "Cache_Data"], &["Code Cache"], &["GPUCache"]];
+
+/// Every Chromium cache directory that exists beneath `user_data`.
+fn chromium_cache_dirs(user_data: &PathBuf) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    for profile in chromium_profile_dirs(user_data) {
+        for cache in CHROMIUM_CACHE_DIRS {
+            let mut dir = profile.clone();
+            dir.extend(cache.iter());
+            if dir.exists() {
+                out.push(dir);
+            }
+        }
+    }
+    out
+}
 
 /// Chromium keeps one directory per profile: `Default`, then `Profile 1` and
 /// upwards. They are enumerated rather than assumed so a second profile is not
@@ -148,8 +167,7 @@ fn chromium_profile_dirs(user_data: &PathBuf) -> Vec<PathBuf> {
 
 /// Firefox stores its cache outside the profile that holds bookmarks and
 /// logins, so the cache directory can be listed directly.
-fn firefox_cache_dirs(local: &PathBuf) -> Vec<PathBuf> {
-    let profiles = local.join("Mozilla\\Firefox\\Profiles");
+fn firefox_cache_dirs(profiles: &PathBuf) -> Vec<PathBuf> {
     let Ok(entries) = std::fs::read_dir(&profiles) else {
         return Vec::new();
     };
@@ -161,6 +179,7 @@ fn firefox_cache_dirs(local: &PathBuf) -> Vec<PathBuf> {
         .collect()
 }
 
+#[cfg(windows)]
 fn browser_cache_roots() -> Vec<PathBuf> {
     let Some(local) = local_app_data() else {
         return Vec::new();
@@ -174,23 +193,20 @@ fn browser_cache_roots() -> Vec<PathBuf> {
         "Vivaldi\\User Data",
         "Chromium\\User Data",
     ] {
-        let user_data = local.join(browser);
-        for profile in chromium_profile_dirs(&user_data) {
-            for cache in CHROMIUM_CACHE_DIRS {
-                let dir = profile.join(cache);
-                if dir.exists() {
-                    roots.push(dir);
-                }
-            }
-        }
+        roots.extend(chromium_cache_dirs(&local.join(browser)));
     }
 
-    roots.extend(firefox_cache_dirs(&local));
+    roots.extend(firefox_cache_dirs(&local.join("Mozilla\\Firefox\\Profiles")));
     roots
 }
 
 /// Build every category definition for this machine.
 pub fn definitions() -> Vec<CategoryDefinition> {
+    platform_definitions()
+}
+
+#[cfg(windows)]
+fn platform_definitions() -> Vec<CategoryDefinition> {
     let local = local_app_data();
     let mut out = Vec::new();
 
@@ -426,6 +442,151 @@ pub fn definitions() -> Vec<CategoryDefinition> {
     out
 }
 
+/// Browser caches on Linux all live under `~/.cache`, which holds nothing
+/// but regenerable data. Snap Firefox is the exception, with its own cache
+/// inside `~/snap`, reached through the one carve-out the protected list has
+/// on Linux.
+#[cfg(not(windows))]
+fn browser_cache_roots() -> Vec<PathBuf> {
+    let Some(cache) = dirs::cache_dir() else {
+        return Vec::new();
+    };
+    let mut roots = Vec::new();
+    for browser in [
+        "google-chrome",
+        "google-chrome-beta",
+        "chromium",
+        "microsoft-edge",
+        "BraveSoftware/Brave-Browser",
+        "vivaldi",
+        "opera",
+    ] {
+        let mut user_data = cache.clone();
+        user_data.extend(browser.split('/'));
+        roots.extend(chromium_cache_dirs(&user_data));
+    }
+    roots.extend(firefox_cache_dirs(&cache.join("mozilla").join("firefox")));
+    if let Some(home) = dirs::home_dir() {
+        roots.extend(firefox_cache_dirs(
+            &home.join("snap/firefox/common/.cache/mozilla/firefox"),
+        ));
+    }
+    roots
+}
+
+/// Linux categories. Every root is inside the user's own home or temporary
+/// folder: AllInsight runs unprivileged and never offers to clean anything
+/// that belongs to the distribution. Package caches such as `/var/cache/apt`
+/// are left to the package manager, which knows what it still needs.
+#[cfg(not(windows))]
+fn platform_definitions() -> Vec<CategoryDefinition> {
+    let cache = dirs::cache_dir();
+    let in_cache = |leaf: &str| cache.as_ref().map(|c| {
+        let mut p = c.clone();
+        p.extend(leaf.split('/'));
+        p
+    });
+    let mut out = Vec::new();
+
+    out.push(CategoryDefinition {
+        id: CleanupCategory::UserTemp,
+        name: "Temporary files",
+        description: "Scratch files that programs you ran left in the temporary folder.",
+        what_happens: "Your own temporary files that have not changed for three days are deleted permanently. Programs recreate them when they next need scratch space.",
+        what_is_untouched: "Files belonging to other users or to the system, sockets and other special files, and anything changed in the last three days.",
+        roots: existing(vec![Some(std::env::temp_dir())]),
+        rule: MatchRule::AllContents,
+        deletion: DeletionMode::Permanent,
+        requires_elevation: false,
+        auto_clean_eligible: true,
+        min_age_hours: 72,
+        name_exemptions: &[],
+    });
+
+    out.push(CategoryDefinition {
+        id: CleanupCategory::ThumbnailCache,
+        name: "Thumbnail cache",
+        description: "Preview images your file manager keeps so folders open quickly.",
+        what_happens: "Thumbnail files are deleted permanently. They are rebuilt the next time you browse a folder, which can make the first visit slightly slower.",
+        what_is_untouched: "Your actual pictures and videos. Only the generated previews are removed.",
+        roots: existing(vec![in_cache("thumbnails")]),
+        rule: MatchRule::AllContents,
+        deletion: DeletionMode::Permanent,
+        requires_elevation: false,
+        auto_clean_eligible: true,
+        min_age_hours: 0,
+        name_exemptions: &[],
+    });
+
+    out.push(CategoryDefinition {
+        id: CleanupCategory::ShaderCache,
+        name: "Graphics shader cache",
+        description: "Compiled shaders kept by Mesa and by the NVIDIA driver.",
+        what_happens: "Shader caches are deleted permanently. Games and applications recompile them on first launch, which can add a short delay once.",
+        what_is_untouched: "Game installations, saves and settings.",
+        roots: existing(vec![
+            in_cache("mesa_shader_cache"),
+            in_cache("mesa_shader_cache_db"),
+            in_cache("nvidia/GLCache"),
+        ]),
+        rule: MatchRule::AllContents,
+        deletion: DeletionMode::Permanent,
+        requires_elevation: false,
+        auto_clean_eligible: true,
+        min_age_hours: 0,
+        // Mesa's single-file cache is `mesa_cache.db`.
+        name_exemptions: &["mesa_cache"],
+    });
+
+    out.push(CategoryDefinition {
+        id: CleanupCategory::BrowserCache,
+        name: "Browser cache",
+        description: "Cached web pages and images. Sign-ins, history and bookmarks are stored separately and are not touched.",
+        what_happens: "Cached page data is deleted permanently. Sites will be fetched fresh on your next visit.",
+        what_is_untouched: "Passwords, cookies, history, bookmarks, extensions and open tabs. Only the cache folders are cleaned.",
+        roots: browser_cache_roots(),
+        rule: MatchRule::AllContents,
+        deletion: DeletionMode::Permanent,
+        requires_elevation: false,
+        auto_clean_eligible: false,
+        min_age_hours: 0,
+        name_exemptions: &[],
+    });
+
+    out.push(CategoryDefinition {
+        id: CleanupCategory::FontCache,
+        name: "Font cache",
+        description: "Font lists cached by fontconfig.",
+        what_happens: "Font cache files are deleted permanently and rebuilt automatically the next time a program starts.",
+        what_is_untouched: "Installed fonts themselves.",
+        roots: existing(vec![in_cache("fontconfig")]),
+        rule: MatchRule::AllContents,
+        deletion: DeletionMode::Permanent,
+        requires_elevation: false,
+        auto_clean_eligible: true,
+        min_age_hours: 0,
+        name_exemptions: &[],
+    });
+
+    #[cfg(not(target_os = "macos"))]
+    out.push(CategoryDefinition {
+        id: CleanupCategory::RecycleBin,
+        name: "Trash",
+        description: "Items you already deleted, still recoverable until the Trash is emptied.",
+        what_happens: "The Trash is emptied. After this, the items cannot be restored.",
+        what_is_untouched: "Everything that is not already in the Trash.",
+        roots: Vec::new(),
+        rule: MatchRule::ShellManaged,
+        deletion: DeletionMode::ShellApi,
+        requires_elevation: false,
+        auto_clean_eligible: false,
+        min_age_hours: 0,
+        name_exemptions: &[],
+    });
+
+    out
+}
+
 /// Look up one definition.
 pub fn definition_for(category: CleanupCategory) -> Option<CategoryDefinition> {
     definitions().into_iter().find(|d| d.id == category)
@@ -436,6 +597,7 @@ mod tests {
     use super::*;
     use crate::services::security::ProtectedPaths;
 
+    #[cfg(windows)]
     #[test]
     fn every_variant_has_exactly_one_definition() {
         let defs = definitions();
@@ -444,6 +606,31 @@ mod tests {
             assert_eq!(matches, 1, "{variant:?} must have one definition");
         }
         assert_eq!(defs.len(), ALL_CLEANUP_CATEGORIES.len());
+    }
+
+    /// Elsewhere only the categories that exist as a concept are defined, and
+    /// none of the Windows-only ones may leak through.
+    #[cfg(not(windows))]
+    #[test]
+    fn only_portable_categories_are_defined_once_each() {
+        let defs = definitions();
+        for d in &defs {
+            assert_eq!(defs.iter().filter(|o| o.id == d.id).count(), 1);
+            assert!(!matches!(
+                d.id,
+                CleanupCategory::WindowsTemp
+                    | CleanupCategory::WindowsErrorReporting
+                    | CleanupCategory::WindowsUpdateCache
+                    | CleanupCategory::DeliveryOptimizationCache
+                    | CleanupCategory::ComponentStoreLogs
+                    | CleanupCategory::IconCache
+                    | CleanupCategory::CrashDumps
+            ));
+            for root in &d.roots {
+                assert!(root.is_absolute());
+                assert!(!root.to_string_lossy().contains('\\'), "{}", root.display());
+            }
+        }
     }
 
     #[test]
@@ -512,7 +699,11 @@ mod tests {
 
     #[test]
     fn the_recycle_bin_is_never_automatic() {
-        let d = definition_for(CleanupCategory::RecycleBin).unwrap();
+        // macOS has no Trash category at all, which trivially satisfies this.
+        let Some(d) = definition_for(CleanupCategory::RecycleBin) else {
+            assert!(cfg!(target_os = "macos"));
+            return;
+        };
         assert!(!d.auto_clean_eligible);
         assert_eq!(d.deletion, DeletionMode::ShellApi);
     }
@@ -527,6 +718,10 @@ mod tests {
                         "{:?} exempts {exemption} without matching it",
                         d.id
                     ),
+                    // Mesa's shader cache is a folder of regenerable files,
+                    // one of which is named `mesa_cache.db`. It is the only
+                    // category allowed an exemption under a blanket rule.
+                    MatchRule::AllContents if d.id == CleanupCategory::ShaderCache => {}
                     other => panic!("{:?} exempts {exemption} under rule {other:?}", d.id),
                 }
             }
@@ -536,7 +731,10 @@ mod tests {
     #[test]
     fn temporary_categories_wait_before_deleting() {
         for id in [CleanupCategory::WindowsTemp, CleanupCategory::UserTemp] {
-            let d = definition_for(id).unwrap();
+            let Some(d) = definition_for(id) else {
+                assert!(!cfg!(windows), "{id:?} must exist on Windows");
+                continue;
+            };
             assert!(d.min_age_hours >= 24, "{id:?} must leave fresh files alone");
         }
     }

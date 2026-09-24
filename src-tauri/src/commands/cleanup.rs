@@ -249,14 +249,18 @@ pub async fn recycle_reviewed_file(state: State<'_, AppState>, path: String) -> 
     }
 
     trash::delete(&target).map_err(|e| {
-        AllInsightError::Other(format!("Could not move that file to the Recycle Bin: {e}"))
+        AllInsightError::Other(format!(
+            "Could not move that file to the {}: {e}",
+            crate::platform::trash_name()
+        ))
     })?;
 
     let _ = state.db.log_activity(
         "review",
         &format!(
-            "Moved a reviewed file of {} to the Recycle Bin",
-            format_bytes(meta.len())
+            "Moved a reviewed file of {} to the {}",
+            format_bytes(meta.len()),
+            crate::platform::trash_name()
         ),
         None,
     );

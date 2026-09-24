@@ -194,6 +194,14 @@ impl RootFindings {
     }
 }
 
+/// Whether the current user owns an entry, and so may meaningfully clean it.
+#[cfg(unix)]
+fn owned_by_current_user(meta: &std::fs::Metadata) -> bool {
+    use std::os::unix::fs::MetadataExt;
+    // SAFETY: `geteuid` has no preconditions and cannot fail.
+    meta.uid() == unsafe { libc::geteuid() }
+}
+
 /// Walk one directory and everything beneath it.
 ///
 /// Parallel across sibling directories, in the same shape as the storage
@@ -257,6 +265,22 @@ fn walk_root(
         if is_link {
             findings.skipped += 1;
             continue;
+        }
+
+        // On Unix a shared folder such as `/tmp` holds other users' files,
+        // the system's private directories, and sockets a running session
+        // depends on. Only the user's own regular files and folders are ours
+        // to consider; the rest is not reported at all, because it was never
+        // a candidate.
+        #[cfg(unix)]
+        {
+            let Ok(meta) = entry.metadata() else {
+                findings.skipped += 1;
+                continue;
+            };
+            if !(file_type.is_dir() || file_type.is_file()) || !owned_by_current_user(&meta) {
+                continue;
+            }
         }
 
         if file_type.is_dir() {
@@ -376,7 +400,7 @@ pub fn discover(
 
             if note.is_none() && findings.needs_elevation {
                 note = Some(
-                    "Part of this category belongs to Windows and needs administrator permission to measure."
+                    "Part of this category belongs to the system and needs administrator permission to measure."
                         .into(),
                 );
             }
@@ -694,6 +718,11 @@ mod tests {
     /// trusting the recorded verdict.
     #[test]
     fn a_candidate_pointing_outside_its_category_is_refused() {
+        let system_file = if cfg!(windows) {
+            PathBuf::from("C:\\Windows\\System32\\kernel32.dll")
+        } else {
+            PathBuf::from("/etc/hostname")
+        };
         let protected = ProtectedPaths::new(&[]);
         let mut scan = CleanupScan {
             scan_id: 1,
@@ -706,7 +735,7 @@ mod tests {
             CleanupCandidate {
                 id: id.clone(),
                 category: CleanupCategory::UserTemp,
-                path: PathBuf::from("C:\\Windows\\System32\\kernel32.dll"),
+                path: system_file.clone(),
                 name: "kernel32.dll".into(),
                 size_bytes: 1,
                 modified: None,
@@ -724,7 +753,7 @@ mod tests {
         assert_eq!(outcome.removed_items, 0);
         assert_eq!(outcome.reclaimed_bytes, 0);
         assert!(outcome.protected_items + outcome.skipped_items >= 1);
-        assert!(PathBuf::from("C:\\Windows\\System32\\kernel32.dll").exists());
+        assert!(system_file.exists() || !cfg!(windows));
     }
 
     #[test]
@@ -798,23 +827,23 @@ mod tests {
 
     #[test]
     fn match_rules_behave_as_declared() {
-        assert!(matches_rule(&MatchRule::AllContents, Path::new("C:\\a\\b.bin")));
+        assert!(matches_rule(&MatchRule::AllContents, &Path::new("a").join("b.bin")));
         assert!(matches_rule(
             &MatchRule::Extensions(&["dmp"]),
-            Path::new("C:\\a\\crash.DMP")
+            &Path::new("a").join("crash.DMP")
         ));
         assert!(!matches_rule(
             &MatchRule::Extensions(&["dmp"]),
-            Path::new("C:\\a\\notes.txt")
+            &Path::new("a").join("notes.txt")
         ));
         assert!(matches_rule(
             &MatchRule::NamePrefixes(&["thumbcache_"]),
-            Path::new("C:\\a\\thumbcache_1024.db")
+            &Path::new("a").join("thumbcache_1024.db")
         ));
         assert!(!matches_rule(
             &MatchRule::NamePrefixes(&["thumbcache_"]),
-            Path::new("C:\\a\\contacts.db")
+            &Path::new("a").join("contacts.db")
         ));
-        assert!(!matches_rule(&MatchRule::ShellManaged, Path::new("C:\\a\\b")));
+        assert!(!matches_rule(&MatchRule::ShellManaged, &Path::new("a").join("b")));
     }
 }

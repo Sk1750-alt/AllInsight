@@ -366,5 +366,20 @@ pub async fn show_in_explorer(path: String) -> Result<()> {
             .map_err(|e| AllInsightError::Platform(format!("Could not open File Explorer: {e}")))?;
     }
 
+    // Elsewhere the opener plugin asks the file manager over its standard
+    // interface (FileManager1 on Linux desktops, Finder on macOS) to show
+    // the item, and falls back to opening its folder.
+    #[cfg(not(windows))]
+    {
+        let result = if target.is_dir() {
+            tauri_plugin_opener::open_path(&target, None::<&str>)
+        } else {
+            tauri_plugin_opener::reveal_item_in_dir(&target)
+        };
+        result.map_err(|e| {
+            AllInsightError::Platform(format!("Could not open the file manager: {e}"))
+        })?;
+    }
+
     Ok(())
 }

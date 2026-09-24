@@ -328,6 +328,35 @@ client is built without TLS, so it cannot reach a remote host even by mistake.
 
 ---
 
+## 10a. Linux
+
+The same guard, tokens and category enum run on Linux. What differs is what
+they are given:
+
+- **Protected roots** come from a per-platform list: every top-level system
+  directory (`/usr`, `/etc`, `/var`, `/boot`, `/opt`, `/root`, `/proc`, `/sys`,
+  `/dev`, `/run`, `/snap`, `/nix`, ...) is refused with `SystemDirectory`, plus
+  the Linux homes of secrets and profiles (`~/.mozilla`, `~/.thunderbird`,
+  `~/snap`, `~/.var/app`, `~/.local/share/keyrings`, `~/.password-store`,
+  `~/.pki`, `~/.kube`, `~/.docker`, `~/.local/share/Trash`). The first Linux
+  build had none of this: every Windows root is a `%VAR%` template that expands
+  to nothing on Linux, which is why the list is now split per platform rather
+  than shared.
+- **Comparison is case-sensitive** on Linux (`paths::CASE_INSENSITIVE`), so a
+  frontend cannot name `Film.mkv` to reach a scanned `film.mkv`. Deny rules on
+  names and extensions stay case-insensitive, which only ever over-protects.
+- **`/tmp` is shared.** Cleanup only considers regular files and folders owned
+  by the current user; sockets, pipes, other users' files and the system's
+  private directories are not candidates at all.
+- **The one carve-out** is Snap Firefox's cache, the only disposable folder
+  inside the otherwise protected `~/snap`.
+- **Walkers do not cross into** kernel, memory, image, container or network
+  filesystems (`services::storage::fence`), and skip every non-regular file,
+  so a scan never opens a FIFO or reports `/proc/kcore` as a large file.
+- **AllInsight never runs as root** and never starts a package manager with
+  privilege. Flatpak and Snap removals go through those tools as the user;
+  apt, dnf, zypper and pacman removals are shown as a command to run.
+
 ## 11. What is not claimed
 
 - The installer is unsigned. Windows will warn on first run.

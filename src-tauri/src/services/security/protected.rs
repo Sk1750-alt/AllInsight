@@ -4,10 +4,12 @@
 //! destructive code path consults it, and it is deliberately conservative:
 //! when it cannot prove a path is safe it reports the path as protected.
 //!
-//! The list is built at startup from Windows known folders rather than from
-//! hard-coded strings, because Documents and Desktop are frequently redirected
-//! to OneDrive or to a second drive, and a hard-coded `C:\Users\x\Documents`
-//! would silently miss the real location.
+//! The list is built at startup from the platform's known folders (Windows
+//! known folders, XDG user directories) rather than from hard-coded strings,
+//! because Documents and Desktop are frequently redirected to OneDrive or to a
+//! second drive, and a hard-coded `C:\Users\x\Documents` would silently miss
+//! the real location. The operating system's own directories come from a
+//! per-platform list in [`platform`].
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -22,6 +24,8 @@ use super::paths;
 #[serde(rename_all = "snake_case")]
 pub enum ProtectionReason {
     WindowsDirectory,
+    /// Part of the operating system on Linux or macOS (`/usr`, `/etc`, ...).
+    SystemDirectory,
     ProgramFiles,
     ProgramData,
     BootOrRecovery,
@@ -52,10 +56,11 @@ impl ProtectionReason {
     pub fn explain(&self) -> &'static str {
         match self {
             ProtectionReason::WindowsDirectory => "This is part of the Windows installation.",
+            ProtectionReason::SystemDirectory => "This is part of the operating system.",
             ProtectionReason::ProgramFiles => "This belongs to an installed application.",
             ProtectionReason::ProgramData => "This holds shared application data.",
             ProtectionReason::BootOrRecovery => "This is boot or recovery data.",
-            ProtectionReason::SystemVolumeMetadata => "This is volume metadata managed by Windows.",
+            ProtectionReason::SystemVolumeMetadata => "This is managed by the system and is never cleaned file by file.",
             ProtectionReason::UserDocuments => "This is inside your Documents folder.",
             ProtectionReason::UserDesktop => "This is on your Desktop.",
             ProtectionReason::UserPictures => "This is inside your Pictures folder.",
@@ -176,6 +181,8 @@ fn is_system_root_reason(reason: ProtectionReason) -> bool {
 ///
 /// A `*` matches exactly one path component, which is how Chromium profile
 /// directories (`Default`, `Profile 1`, ...) are covered without listing them.
+/// The per-platform lists live in [`platform::carve_outs`].
+#[cfg(windows)]
 const CARVE_OUT_TEMPLATES: &[&str] = &[
     "%SystemRoot%\\Temp",
     "%SystemRoot%\\SoftwareDistribution\\Download",
@@ -196,6 +203,237 @@ const CARVE_OUT_TEMPLATES: &[&str] = &[
     "%LOCALAPPDATA%\\Vivaldi\\User Data\\*\\Code Cache",
     "%LOCALAPPDATA%\\Vivaldi\\User Data\\*\\GPUCache",
 ];
+
+/// The platform-specific halves of the protected list. Each function returns
+/// only what exists as a concept on that platform: a `%SystemRoot%` template
+/// on Linux expands to nothing, which is exactly how the first Linux build
+/// ended up protecting almost no system location at all.
+#[cfg(windows)]
+mod platform {
+    use std::path::PathBuf;
+
+    use super::{paths, ProtectionReason, CARVE_OUT_TEMPLATES};
+
+    pub fn system_roots() -> Vec<(PathBuf, ProtectionReason)> {
+        let mut out = Vec::new();
+        let mut add = |p: Option<PathBuf>, r| {
+            if let Some(p) = p {
+                out.push((p, r));
+            }
+        };
+        add(
+            paths::expand_env("%SystemRoot%").or_else(|| Some(PathBuf::from("C:\\Windows"))),
+            ProtectionReason::WindowsDirectory,
+        );
+        add(paths::expand_env("%ProgramFiles%"), ProtectionReason::ProgramFiles);
+        add(paths::expand_env("%ProgramFiles(x86)%"), ProtectionReason::ProgramFiles);
+        add(paths::expand_env("%ProgramW6432%"), ProtectionReason::ProgramFiles);
+        add(paths::expand_env("%ProgramData%"), ProtectionReason::ProgramData);
+
+        // Per-drive boot, recovery and volume metadata. `GetLogicalDrives`
+        // is read through the standard library to keep this module free of
+        // unsafe code.
+        for letter in b'A'..=b'Z' {
+            let drive = PathBuf::from(format!("{}:\\", letter as char));
+            if !drive.exists() {
+                continue;
+            }
+            for (leaf, reason) in [
+                ("System Volume Information", ProtectionReason::SystemVolumeMetadata),
+                ("$Recycle.Bin", ProtectionReason::SystemVolumeMetadata),
+                ("$RECYCLE.BIN", ProtectionReason::SystemVolumeMetadata),
+                ("Recovery", ProtectionReason::BootOrRecovery),
+                ("$WinREAgent", ProtectionReason::BootOrRecovery),
+                ("Boot", ProtectionReason::BootOrRecovery),
+                ("EFI", ProtectionReason::BootOrRecovery),
+                ("bootmgr", ProtectionReason::BootOrRecovery),
+                ("hiberfil.sys", ProtectionReason::BootOrRecovery),
+                ("pagefile.sys", ProtectionReason::BootOrRecovery),
+                ("swapfile.sys", ProtectionReason::BootOrRecovery),
+            ] {
+                out.push((drive.join(leaf), reason));
+            }
+        }
+        out
+    }
+
+    pub fn home_roots() -> Vec<(&'static str, ProtectionReason)> {
+        vec![
+            ("Favorites", ProtectionReason::UserProfileRoot),
+            ("Links", ProtectionReason::UserProfileRoot),
+            ("Contacts", ProtectionReason::UserProfileRoot),
+            ("Searches", ProtectionReason::UserProfileRoot),
+            ("Saved Games", ProtectionReason::UserProfileRoot),
+            ("OneDrive", ProtectionReason::OneDrive),
+        ]
+    }
+
+    pub fn profile_roots() -> Vec<(PathBuf, ProtectionReason)> {
+        let mut out = Vec::new();
+        for var in ["%OneDrive%", "%OneDriveCommercial%"] {
+            if let Some(p) = paths::expand_env(var) {
+                out.push((p, ProtectionReason::OneDrive));
+            }
+        }
+
+        // Public profile mirrors of the known folders.
+        if let Some(public) = paths::expand_env("%PUBLIC%") {
+            for (leaf, reason) in [
+                ("Documents", ProtectionReason::UserDocuments),
+                ("Desktop", ProtectionReason::UserDesktop),
+                ("Pictures", ProtectionReason::UserPictures),
+                ("Videos", ProtectionReason::UserVideos),
+                ("Music", ProtectionReason::UserMusic),
+                ("Downloads", ProtectionReason::UserDownloads),
+            ] {
+                out.push((public.join(leaf), reason));
+            }
+        }
+
+        // Browser profiles: the parent of the cache directories. Cache
+        // subfolders inside these are cleanable, the profile itself is not.
+        if let Some(local) = dirs::data_local_dir() {
+            for leaf in [
+                "Google\\Chrome\\User Data\\Default",
+                "Microsoft\\Edge\\User Data\\Default",
+                "BraveSoftware\\Brave-Browser\\User Data\\Default",
+                "Vivaldi\\User Data\\Default",
+                "Opera Software",
+            ] {
+                out.push((local.join(leaf), ProtectionReason::BrowserProfile));
+            }
+        }
+        if let Some(roaming) = dirs::data_dir() {
+            out.push((roaming.join("Mozilla\\Firefox\\Profiles"), ProtectionReason::BrowserProfile));
+            out.push((roaming.join("Thunderbird\\Profiles"), ProtectionReason::BrowserProfile));
+        }
+        out
+    }
+
+    pub fn carve_outs() -> Vec<PathBuf> {
+        CARVE_OUT_TEMPLATES
+            .iter()
+            .filter_map(|t| paths::expand_env(t))
+            .collect()
+    }
+}
+
+/// Linux and the BSDs. Everything outside `/home`, `/tmp`, `/mnt` and `/media`
+/// belongs to the distribution or the administrator, and AllInsight runs as an
+/// ordinary user, so all of it is refused outright.
+#[cfg(all(unix, not(target_os = "macos")))]
+mod platform {
+    use std::path::PathBuf;
+
+    use super::ProtectionReason;
+
+    const SYSTEM_DIRECTORIES: &[&str] = &[
+        "/bin", "/boot", "/dev", "/efi", "/etc", "/gnu", "/lib", "/lib32", "/lib64", "/libx32",
+        "/lost+found", "/nix", "/opt", "/proc", "/root", "/run", "/sbin", "/snap", "/srv", "/sys",
+        "/usr", "/var",
+    ];
+
+    pub fn system_roots() -> Vec<(PathBuf, ProtectionReason)> {
+        SYSTEM_DIRECTORIES
+            .iter()
+            .map(|d| {
+                let reason = match *d {
+                    "/boot" | "/efi" => ProtectionReason::BootOrRecovery,
+                    _ => ProtectionReason::SystemDirectory,
+                };
+                (PathBuf::from(d), reason)
+            })
+            .collect()
+    }
+
+    pub fn home_roots() -> Vec<(&'static str, ProtectionReason)> {
+        vec![
+            // Browsers and mail keep their profiles outside ~/.config.
+            (".mozilla", ProtectionReason::BrowserProfile),
+            (".thunderbird", ProtectionReason::BrowserProfile),
+            // Snap and Flatpak applications keep their whole world here,
+            // including Ubuntu's default Firefox.
+            ("snap", ProtectionReason::ProgramData),
+            (".var/app", ProtectionReason::ProgramData),
+            (".local/share/flatpak", ProtectionReason::ProgramFiles),
+            (".local/share/applications", ProtectionReason::ProgramFiles),
+            (".local/share/containers", ProtectionReason::ProgramData),
+            (".local/bin", ProtectionReason::ProgramFiles),
+            // Secrets.
+            (".local/share/keyrings", ProtectionReason::CredentialStore),
+            (".password-store", ProtectionReason::CredentialStore),
+            (".pki", ProtectionReason::CredentialStore),
+            (".kube", ProtectionReason::CredentialStore),
+            (".docker", ProtectionReason::CredentialStore),
+            // The freedesktop Trash is emptied through its own category,
+            // never picked apart one file at a time.
+            (".local/share/Trash", ProtectionReason::SystemVolumeMetadata),
+        ]
+    }
+
+    pub fn profile_roots() -> Vec<(PathBuf, ProtectionReason)> {
+        Vec::new()
+    }
+
+    /// Snap Firefox keeps its disposable cache inside `~/snap`, which is
+    /// protected as a whole. This is the one directory in there a cleanup
+    /// category may be pointed at.
+    pub fn carve_outs() -> Vec<PathBuf> {
+        let Some(home) = dirs::home_dir() else {
+            return Vec::new();
+        };
+        vec![home.join("snap/firefox/common/.cache/mozilla/firefox/*/cache2")]
+    }
+}
+
+#[cfg(target_os = "macos")]
+mod platform {
+    use std::path::PathBuf;
+
+    use super::ProtectionReason;
+
+    const SYSTEM_DIRECTORIES: &[&str] = &[
+        "/System", "/Library", "/Applications", "/usr", "/bin", "/sbin", "/opt", "/cores",
+        "/private/etc", "/private/var/db", "/private/var/vm", "/private/var/root",
+    ];
+
+    pub fn system_roots() -> Vec<(PathBuf, ProtectionReason)> {
+        SYSTEM_DIRECTORIES
+            .iter()
+            .map(|d| {
+                let reason = match *d {
+                    "/Applications" => ProtectionReason::ProgramFiles,
+                    _ => ProtectionReason::SystemDirectory,
+                };
+                (PathBuf::from(d), reason)
+            })
+            .collect()
+    }
+
+    pub fn home_roots() -> Vec<(&'static str, ProtectionReason)> {
+        vec![
+            ("Applications", ProtectionReason::ProgramFiles),
+            ("Library/Keychains", ProtectionReason::CredentialStore),
+            ("Library/Mail", ProtectionReason::ProgramData),
+            ("Library/Messages", ProtectionReason::ProgramData),
+            ("Library/Application Support", ProtectionReason::ProgramData),
+            ("Library/Preferences", ProtectionReason::ProgramData),
+            ("Library/Containers", ProtectionReason::ProgramData),
+            ("Library/Group Containers", ProtectionReason::ProgramData),
+            ("Library/Safari", ProtectionReason::BrowserProfile),
+            ("Library/Mobile Documents", ProtectionReason::OneDrive),
+            (".Trash", ProtectionReason::SystemVolumeMetadata),
+        ]
+    }
+
+    pub fn profile_roots() -> Vec<(PathBuf, ProtectionReason)> {
+        Vec::new()
+    }
+
+    pub fn carve_outs() -> Vec<PathBuf> {
+        Vec::new()
+    }
+}
 
 /// Component-wise match of two prepared comparison keys, where `*` in the
 /// template stands for exactly one component.
@@ -241,118 +479,53 @@ impl ProtectedPaths {
             }
         };
 
-        // --- Windows and shared application roots -------------------------
-        push(
-            paths::expand_env("%SystemRoot%").or_else(|| Some(PathBuf::from("C:\\Windows"))),
-            ProtectionReason::WindowsDirectory,
-        );
-        push(
-            paths::expand_env("%ProgramFiles%"),
-            ProtectionReason::ProgramFiles,
-        );
-        push(
-            paths::expand_env("%ProgramFiles(x86)%"),
-            ProtectionReason::ProgramFiles,
-        );
-        push(
-            paths::expand_env("%ProgramW6432%"),
-            ProtectionReason::ProgramFiles,
-        );
-        push(
-            paths::expand_env("%ProgramData%"),
-            ProtectionReason::ProgramData,
-        );
+        // --- Operating system and installed software ---------------------
+        for (path, reason) in platform::system_roots() {
+            push(Some(path), reason);
+        }
 
-        // --- Per-drive boot, recovery and volume metadata -----------------
-        for drive in enumerate_drive_roots() {
-            for (leaf, reason) in [
-                ("System Volume Information", ProtectionReason::SystemVolumeMetadata),
-                ("$Recycle.Bin", ProtectionReason::SystemVolumeMetadata),
-                ("$RECYCLE.BIN", ProtectionReason::SystemVolumeMetadata),
-                ("Recovery", ProtectionReason::BootOrRecovery),
-                ("$WinREAgent", ProtectionReason::BootOrRecovery),
-                ("Boot", ProtectionReason::BootOrRecovery),
-                ("EFI", ProtectionReason::BootOrRecovery),
-                ("bootmgr", ProtectionReason::BootOrRecovery),
-                ("hiberfil.sys", ProtectionReason::BootOrRecovery),
-                ("pagefile.sys", ProtectionReason::BootOrRecovery),
-                ("swapfile.sys", ProtectionReason::BootOrRecovery),
-            ] {
-                push(Some(drive.join(leaf)), reason);
+        // --- Known folders (may be redirected) ----------------------------
+        // On Linux these come from XDG user-dirs, and a minimal setup can
+        // point all of them at the home folder itself. Protecting that would
+        // protect every cache beneath it, so a known folder that *is* the
+        // home folder is skipped; the named folders below still apply.
+        let home = dirs::home_dir();
+        for (dir, reason) in [
+            (dirs::document_dir(), ProtectionReason::UserDocuments),
+            (dirs::desktop_dir(), ProtectionReason::UserDesktop),
+            (dirs::picture_dir(), ProtectionReason::UserPictures),
+            (dirs::video_dir(), ProtectionReason::UserVideos),
+            (dirs::audio_dir(), ProtectionReason::UserMusic),
+            (dirs::download_dir(), ProtectionReason::UserDownloads),
+        ] {
+            let is_home = match (&dir, &home) {
+                (Some(d), Some(h)) => paths::same_path(d, h),
+                _ => false,
+            };
+            if !is_home {
+                push(dir, reason);
             }
         }
 
-        // --- Windows known folders (may be redirected) --------------------
-        push(dirs::document_dir(), ProtectionReason::UserDocuments);
-        push(dirs::desktop_dir(), ProtectionReason::UserDesktop);
-        push(dirs::picture_dir(), ProtectionReason::UserPictures);
-        push(dirs::video_dir(), ProtectionReason::UserVideos);
-        push(dirs::audio_dir(), ProtectionReason::UserMusic);
-        push(dirs::download_dir(), ProtectionReason::UserDownloads);
-
-        if let Some(home) = dirs::home_dir() {
+        if let Some(home) = &home {
             for (leaf, reason) in [
-                ("Favorites", ProtectionReason::UserProfileRoot),
-                ("Links", ProtectionReason::UserProfileRoot),
-                ("Contacts", ProtectionReason::UserProfileRoot),
-                ("Searches", ProtectionReason::UserProfileRoot),
-                ("Saved Games", ProtectionReason::UserProfileRoot),
                 (".ssh", ProtectionReason::CredentialStore),
                 (".gnupg", ProtectionReason::CredentialStore),
                 (".aws", ProtectionReason::CredentialStore),
                 (".config", ProtectionReason::UserProfileRoot),
-                ("OneDrive", ProtectionReason::OneDrive),
             ] {
                 push(Some(home.join(leaf)), reason);
             }
-        }
-        push(
-            paths::expand_env("%OneDrive%"),
-            ProtectionReason::OneDrive,
-        );
-        push(
-            paths::expand_env("%OneDriveCommercial%"),
-            ProtectionReason::OneDrive,
-        );
-
-        // --- Public profile mirrors of the same folders -------------------
-        if let Some(public) = paths::expand_env("%PUBLIC%") {
-            for (leaf, reason) in [
-                ("Documents", ProtectionReason::UserDocuments),
-                ("Desktop", ProtectionReason::UserDesktop),
-                ("Pictures", ProtectionReason::UserPictures),
-                ("Videos", ProtectionReason::UserVideos),
-                ("Music", ProtectionReason::UserMusic),
-                ("Downloads", ProtectionReason::UserDownloads),
-            ] {
-                push(Some(public.join(leaf)), reason);
+            for (relative, reason) in platform::home_roots() {
+                let mut path = home.clone();
+                path.extend(relative.split('/'));
+                push(Some(path), reason);
             }
         }
 
-        // --- Browser profiles: the parent of the cache directories --------
-        // Cache subfolders inside these are cleanable, the profile itself is
-        // not. Ordering does not matter because the cleanup engine checks the
-        // narrower allow-list first and this list second.
-        if let Some(local) = dirs::data_local_dir() {
-            for leaf in [
-                "Google\\Chrome\\User Data\\Default",
-                "Microsoft\\Edge\\User Data\\Default",
-                "BraveSoftware\\Brave-Browser\\User Data\\Default",
-                "Vivaldi\\User Data\\Default",
-                "Opera Software",
-            ] {
-                push(Some(local.join(leaf)), ProtectionReason::BrowserProfile);
-            }
-        }
-        if let Some(roaming) = dirs::data_dir() {
-            push(
-                Some(roaming.join("Mozilla\\Firefox\\Profiles")),
-                ProtectionReason::BrowserProfile,
-            );
-            push(
-                Some(roaming.join("Thunderbird\\Profiles")),
-                ProtectionReason::BrowserProfile,
-            );
+        // --- Browser profiles and other per-user application data ---------
+        for (path, reason) in platform::profile_roots() {
+            push(Some(path), reason);
         }
 
         for e in extra {
@@ -364,10 +537,7 @@ impl ProtectedPaths {
             .map(|p| paths::normalize_lexical(p))
             .collect::<Vec<_>>();
 
-        let carve_outs: Vec<PathBuf> = CARVE_OUT_TEMPLATES
-            .iter()
-            .filter_map(|t| paths::expand_env(t))
-            .collect();
+        let carve_outs = platform::carve_outs();
         let carve_out_keys = carve_outs.iter().map(|c| paths::comparison_key(c)).collect();
 
         Self {
@@ -491,29 +661,6 @@ impl ProtectedPaths {
     }
 }
 
-/// Every fixed and removable drive root currently present, e.g. `C:\`, `D:\`.
-fn enumerate_drive_roots() -> Vec<PathBuf> {
-    #[cfg(windows)]
-    {
-        let mut out = Vec::new();
-        // `GetLogicalDrives` returns a bitmask, bit 0 is A:. Reading it through
-        // the standard library keeps this module free of unsafe code; the
-        // volume services use the Win32 API directly where richer data is
-        // needed.
-        for letter in b'A'..=b'Z' {
-            let root = PathBuf::from(format!("{}:\\", letter as char));
-            if root.exists() {
-                out.push(root);
-            }
-        }
-        out
-    }
-    #[cfg(not(windows))]
-    {
-        vec![PathBuf::from("/")]
-    }
-}
-
 fn default_protected_file_names() -> HashSet<String> {
     [
         "login data",
@@ -568,7 +715,82 @@ fn default_protected_dir_names() -> HashSet<String> {
         .collect()
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
+mod linux_tests {
+    use super::*;
+
+    fn engine() -> ProtectedPaths {
+        ProtectedPaths::new(&[])
+    }
+
+    #[test]
+    fn the_operating_system_is_protected() {
+        let e = engine();
+        for p in ["/usr/bin/ls", "/etc/passwd", "/var/lib/dpkg/status", "/boot/vmlinuz", "/proc/kcore", "/opt/app/bin"] {
+            assert!(e.is_protected(Path::new(p)), "{p} must be protected");
+        }
+        assert_eq!(
+            e.classify(Path::new("/usr/lib/libc.so.6")).reason,
+            Some(ProtectionReason::SystemDirectory)
+        );
+    }
+
+    #[test]
+    fn the_filesystem_root_is_never_a_target() {
+        let v = engine().classify(Path::new("/"));
+        assert!(v.protected);
+        assert_eq!(v.reason, Some(ProtectionReason::DriveRoot));
+    }
+
+    #[test]
+    fn traversal_out_of_tmp_is_caught() {
+        assert!(engine().is_protected(Path::new("/tmp/../etc/shadow")));
+    }
+
+    #[test]
+    fn a_similarly_named_folder_is_not_a_system_folder() {
+        let e = engine();
+        assert!(!e.is_protected(Path::new("/tmp/usr/scratch.tmp")));
+        assert!(!e.is_protected(Path::new("/usrlocal/scratch.tmp")));
+    }
+
+    #[test]
+    fn linux_secrets_and_profiles_are_protected() {
+        let e = engine();
+        let home = dirs::home_dir().expect("home");
+        for leaf in [
+            ".mozilla/firefox/abc.default/places.txt",
+            ".local/share/keyrings/login.keyring",
+            ".ssh/known_hosts",
+            ".config/google-chrome/Default/Preferences",
+            "snap/firefox/common/.mozilla/firefox/x/prefs.js",
+            ".var/app/org.gimp.GIMP/config/gimprc",
+            ".local/share/Trash/files/old.txt",
+        ] {
+            assert!(e.is_protected(&home.join(leaf)), "{leaf} must be protected");
+        }
+        assert!(!e.is_protected(&home.join(".cache/thumbnails/normal/x.png")));
+    }
+
+    #[test]
+    fn the_snap_firefox_cache_is_the_only_carve_out() {
+        let e = engine();
+        let home = dirs::home_dir().expect("home");
+        assert!(e.is_carve_out(&home.join("snap/firefox/common/.cache/mozilla/firefox/abc.default/cache2")));
+        assert!(!e.is_carve_out(&home.join("snap/firefox/common/.mozilla/firefox/abc.default")));
+        // Exact case on Linux: a differently cased twin is a different folder.
+        assert!(!e.is_carve_out(&home.join("snap/Firefox/common/.cache/mozilla/firefox/abc.default/cache2")));
+    }
+
+    #[test]
+    fn database_extensions_are_protected_anywhere() {
+        let e = engine();
+        assert!(e.is_protected(Path::new("/tmp/cache/app.SQLITE")));
+        assert!(!e.is_protected(Path::new("/tmp/cache/chunk.tmp")));
+    }
+}
+
+#[cfg(all(test, windows))]
 mod tests {
     use super::*;
 

@@ -18,9 +18,11 @@ use crate::services::system::SystemMonitor;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ProcessRisk {
-    /// Ending this would stop Windows working. AllInsight refuses.
+    /// Ending this would stop the operating system or end the session.
+    /// AllInsight refuses.
     Critical,
-    /// Part of Windows, but recoverable. Confirmation required.
+    /// Part of the operating system or desktop, but recoverable.
+    /// Confirmation required.
     SystemComponent,
     /// An ordinary application.
     Normal,
@@ -28,6 +30,7 @@ pub enum ProcessRisk {
 
 /// Processes that keep the session alive. Ending any of these either
 /// bugchecks the machine or forces a sign-out, so the answer is always no.
+#[cfg(windows)]
 const NEVER_TERMINATE: &[&str] = &[
     "system",
     "system idle process",
@@ -50,6 +53,7 @@ const NEVER_TERMINATE: &[&str] = &[
 
 /// Windows components that can be ended, at a cost the user should be warned
 /// about first.
+#[cfg(windows)]
 const CONFIRM_BEFORE_TERMINATING: &[&str] = &[
     "explorer.exe",
     "shellexperiencehost.exe",
@@ -60,6 +64,30 @@ const CONFIRM_BEFORE_TERMINATING: &[&str] = &[
     "taskhostw.exe",
     "ctfmon.exe",
     "audiodg.exe",
+];
+
+/// Linux: init, the display server and compositor, the login manager, and
+/// the system services a desktop session cannot outlive. Most of these run
+/// as root and could not be ended anyway, but the user-owned ones (the
+/// compositor, the session bus) can, and ending them logs the user out.
+#[cfg(not(windows))]
+const NEVER_TERMINATE: &[&str] = &[
+    "systemd", "init", "kthreadd", "systemd-journald", "systemd-logind", "systemd-udevd",
+    "dbus-daemon", "dbus-broker", "dbus-broker-launch", "xorg", "xwayland", "gnome-shell",
+    "gnome-session-binary", "plasmashell", "kwin_wayland", "kwin_x11", "ksmserver", "mutter",
+    "xfce4-session", "xfwm4", "cinnamon", "cinnamon-session", "mate-session", "sway", "hyprland",
+    "gdm", "gdm3", "sddm", "lightdm", "login", "agetty", "polkitd", "launchd", "windowserver",
+    "loginwindow", "kernel_task",
+];
+
+/// Linux components whose loss is recoverable but noticeable: sound, the
+/// network, panels and file managers restart, often after a sign-out.
+#[cfg(not(windows))]
+const CONFIRM_BEFORE_TERMINATING: &[&str] = &[
+    "pipewire", "pipewire-pulse", "wireplumber", "pulseaudio", "networkmanager", "nm-applet",
+    "gnome-settings-daemon", "gsd-power", "xdg-desktop-portal", "xdg-desktop-portal-gtk",
+    "xdg-desktop-portal-gnome", "xdg-desktop-portal-kde", "nautilus", "dolphin", "nemo", "thunar",
+    "xfce4-panel", "waybar", "ibus-daemon", "fcitx5", "finder", "dock", "systemuiserver",
 ];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -290,22 +318,36 @@ pub fn terminate(monitor: &SystemMonitor, pid: u32, confirmed: bool) -> Result<(
         ));
     }
 
-    if risk == ProcessRisk::Critical {
+    let os = crate::platform::os_name();
+    // PID 1 is init on every Unix, and ending AllInsight from its own
+    // process list would only lose whatever it was doing.
+    if risk == ProcessRisk::Critical || pid == 1 || pid == std::process::id() {
         return Err(AllInsightError::InvalidInput(format!(
-            "{name} is required by Windows and cannot be ended from AllInsight."
+            "{name} is required by {os} and cannot be ended from AllInsight."
         )));
     }
 
     if risk == ProcessRisk::SystemComponent && !confirmed {
         return Err(AllInsightError::InvalidInput(format!(
-            "{name} is part of Windows. Confirm before ending it."
+            "{name} is part of {os}. Confirm before ending it."
         )));
     }
 
     let killed = monitor.with_system(|system| {
         system
             .process(sysinfo::Pid::from_u32(pid))
-            .map(|p| p.kill())
+            .map(|p| {
+                // On Unix, ask first: SIGTERM lets the program save and exit
+                // cleanly, where SIGKILL (what `kill` sends) does not.
+                #[cfg(unix)]
+                {
+                    p.kill_with(sysinfo::Signal::Term).unwrap_or_else(|| p.kill())
+                }
+                #[cfg(not(unix))]
+                {
+                    p.kill()
+                }
+            })
             .unwrap_or(false)
     });
 
@@ -313,7 +355,7 @@ pub fn terminate(monitor: &SystemMonitor, pid: u32, confirmed: bool) -> Result<(
         Ok(())
     } else {
         Err(AllInsightError::Platform(format!(
-            "Windows refused to end {name}. It may need administrator permission."
+            "{os} refused to end {name}. It may belong to another user or need administrator permission."
         )))
     }
 }
@@ -332,6 +374,17 @@ pub fn location_of(monitor: &SystemMonitor, pid: u32) -> Option<PathBuf> {
 mod tests {
     use super::*;
 
+    #[cfg(not(windows))]
+    #[test]
+    fn session_essentials_are_never_terminable() {
+        for name in ["systemd", "Xwayland", "gnome-shell", "kwin_wayland", "dbus-daemon"] {
+            assert_eq!(risk_for(name), ProcessRisk::Critical, "{name}");
+        }
+        assert_eq!(risk_for("pipewire"), ProcessRisk::SystemComponent);
+        assert_eq!(risk_for("firefox"), ProcessRisk::Normal);
+    }
+
+    #[cfg(windows)]
     #[test]
     fn windows_essentials_are_never_terminable() {
         for name in ["csrss.exe", "LSASS.EXE", "Registry", "System"] {
@@ -339,6 +392,7 @@ mod tests {
         }
     }
 
+    #[cfg(windows)]
     #[test]
     fn shell_components_require_confirmation() {
         assert_eq!(risk_for("explorer.exe"), ProcessRisk::SystemComponent);

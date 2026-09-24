@@ -387,8 +387,13 @@ mod tests {
         let protected = ProtectedPaths::new(&[]);
         let guard = DeletionGuard::new(&protected, &[root.clone()]);
 
+        let elsewhere = if cfg!(windows) {
+            "D:\\somewhere\\else\\file.tmp"
+        } else {
+            "/somewhere/else/file.tmp"
+        };
         let err = guard
-            .validate(Path::new("D:\\somewhere\\else\\file.tmp"), EntryKind::File)
+            .validate(Path::new(elsewhere), EntryKind::File)
             .expect_err("must refuse");
         assert!(matches!(err, GuardRejection::OutsideAllowedRoots { .. }));
 
@@ -401,7 +406,11 @@ mod tests {
         let protected = ProtectedPaths::new(&[]);
         let guard = DeletionGuard::new(&protected, &[root.clone()]);
 
-        let hostile = root.join("..\\..\\Windows\\System32\\config");
+        let hostile = if cfg!(windows) {
+            root.join("..\\..\\Windows\\System32\\config")
+        } else {
+            root.join("../../etc/shadow")
+        };
         let err = guard.validate(&hostile, EntryKind::File).expect_err("must refuse");
         assert!(matches!(
             err,
@@ -506,6 +515,7 @@ mod tests {
         let _ = fs::remove_dir_all(&root);
     }
 
+    #[cfg(windows)]
     #[test]
     fn a_name_exemption_cannot_reach_a_protected_root() {
         let protected = ProtectedPaths::new(&[]);
@@ -525,6 +535,73 @@ mod tests {
         ));
     }
 
+    #[cfg(not(windows))]
+    #[test]
+    fn a_name_exemption_cannot_reach_a_protected_root() {
+        let protected = ProtectedPaths::new(&[]);
+        let guard = DeletionGuard::new(&protected, &[PathBuf::from("/usr/lib")])
+            .with_name_exemptions(&["thumbcache_"]);
+        let err = guard
+            .validate(Path::new("/usr/lib/thumbcache_evil.db"), EntryKind::File)
+            .expect_err("/usr/lib must stay protected");
+        assert!(matches!(
+            err,
+            GuardRejection::Protected { .. } | GuardRejection::Missing { .. }
+        ));
+    }
+
+    /// Pointing a category at a system directory must not lift its
+    /// protection: only the compiled-in carve-outs can, and on Linux the only
+    /// one is Snap Firefox's cache.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn a_carve_out_only_applies_to_the_exact_declared_directory() {
+        let protected = ProtectedPaths::new(&[]);
+        let etc_guard = DeletionGuard::new(&protected, &[PathBuf::from("/etc")]);
+        assert!(etc_guard.check_protected(Path::new("/etc/passwd")).is_err());
+        let var_guard = DeletionGuard::new(&protected, &[PathBuf::from("/var/tmp")]);
+        assert!(var_guard.check_protected(Path::new("/var/tmp/x.tmp")).is_err());
+
+        let home = dirs::home_dir().unwrap();
+        let cache = home.join("snap/firefox/common/.cache/mozilla/firefox/p.default/cache2");
+        let snap_guard = DeletionGuard::new(&protected, &[cache.clone()]);
+        assert!(snap_guard.check_protected(&cache.join("entries/ABC")).is_ok());
+        // The profile beside it is not.
+        let profile = home.join("snap/firefox/common/.mozilla/firefox/p.default");
+        let profile_guard = DeletionGuard::new(&protected, &[profile.clone()]);
+        assert!(profile_guard.check_protected(&profile.join("key4.db")).is_err());
+        assert!(profile_guard.check_protected(&profile.join("prefs.js")).is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_symlink_pointing_outside_the_allowed_root_is_refused() {
+        let root = temp_root("symlink");
+        let outside = temp_root("symlink-target");
+        fs::write(outside.join("important.txt"), b"user data").unwrap();
+        let link = root.join("link");
+        std::os::unix::fs::symlink(&outside, &link).unwrap();
+
+        let protected = ProtectedPaths::new(&[]);
+        let guard = DeletionGuard::new(&protected, &[root.clone()]);
+        let err = guard
+            .validate(&link, EntryKind::Directory)
+            .expect_err("symlink must be refused");
+        assert!(matches!(err, GuardRejection::ReparsePoint { .. }));
+        let err = guard
+            .validate(&link.join("important.txt"), EntryKind::File)
+            .expect_err("path through a symlink must be refused");
+        assert!(matches!(
+            err,
+            GuardRejection::ReparsePoint { .. } | GuardRejection::OutsideAllowedRoots { .. }
+        ));
+        assert!(outside.join("important.txt").exists());
+
+        let _ = fs::remove_dir_all(&root);
+        let _ = fs::remove_dir_all(&outside);
+    }
+
+    #[cfg(windows)]
     #[test]
     fn a_carve_out_only_applies_to_the_exact_declared_directory() {
         let protected = ProtectedPaths::new(&[]);

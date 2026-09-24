@@ -155,6 +155,11 @@ pub async fn get_dashboard(state: State<'_, AppState>) -> Result<DashboardSnapsh
 
 #[derive(Debug, Clone, Serialize)]
 pub struct EnvironmentInfo {
+    /// The operating system family, which the interface uses to pick its
+    /// wording (Recycle Bin or Trash, File Explorer or the file manager).
+    pub platform: crate::platform::Platform,
+    /// The Linux desktop environment, when there is one.
+    pub desktop: Option<String>,
     pub elevated: bool,
     pub os_name: String,
     pub host_name: String,
@@ -167,8 +172,11 @@ pub struct EnvironmentInfo {
 
 #[tauri::command]
 pub async fn get_environment() -> EnvironmentInfo {
-    let snapshot_os = sysinfo::System::long_os_version().unwrap_or_else(|| "Windows".into());
+    let snapshot_os = sysinfo::System::long_os_version()
+        .unwrap_or_else(|| crate::platform::os_name().into());
     EnvironmentInfo {
+        platform: crate::platform::current(),
+        desktop: crate::platform::desktop(),
         elevated: crate::services::security::is_elevated(),
         os_name: snapshot_os,
         host_name: sysinfo::System::host_name().unwrap_or_default(),

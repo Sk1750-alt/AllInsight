@@ -38,6 +38,46 @@ impl Default for GpuStatus {
     }
 }
 
+/// Task Manager's GPU figure. Each counter instance is one process on one
+/// engine of one adapter, named like
+/// `pid_1234_luid_0x0_0x1A2B_phys_0_eng_0_engtype_3D`. Task Manager adds the
+/// processes up per adapter and engine type, and reports the busiest engine
+/// type. Adding every instance together, as this used to, counts the same
+/// work several times over.
+#[cfg_attr(not(windows), allow(dead_code))]
+fn task_manager_utilization<'a>(rows: impl Iterator<Item = (&'a str, u64)>) -> f32 {
+    let mut per_engine: std::collections::HashMap<(String, String), u64> =
+        std::collections::HashMap::new();
+    for (name, percent) in rows {
+        let luid = name
+            .split("luid_")
+            .nth(1)
+            .and_then(|rest| rest.split("_phys").next())
+            .unwrap_or("")
+            .to_string();
+        let engine = name.split("engtype_").nth(1).unwrap_or("").to_string();
+        *per_engine.entry((luid, engine)).or_default() += percent;
+    }
+    per_engine
+        .values()
+        .map(|v| (*v).min(100) as f32)
+        .fold(0.0, f32::max)
+}
+
+/// Virtual and remote-desktop display drivers (Parsec, RDP, Citrix, the basic
+/// display driver) report no real work; the physical GPU is named first.
+#[cfg_attr(not(windows), allow(dead_code))]
+fn real_adapters_first(mut adapters: Vec<GpuAdapter>) -> Vec<GpuAdapter> {
+    let is_virtual = |a: &GpuAdapter| {
+        let n = a.name.to_lowercase();
+        ["virtual", "parsec", "remote", "basic display", "citrix", "mirror", "idd"]
+            .iter()
+            .any(|w| n.contains(w))
+    };
+    adapters.sort_by_key(|a| is_virtual(a));
+    adapters
+}
+
 #[cfg(windows)]
 mod imp {
     use super::*;
@@ -48,6 +88,7 @@ mod imp {
     #[serde(rename = "Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine")]
     #[serde(rename_all = "PascalCase")]
     struct GpuEngine {
+        name: Option<String>,
         utilization_percentage: Option<u64>,
     }
 
@@ -90,13 +131,14 @@ mod imp {
                 })
             })
             .collect();
+        let adapters = super::real_adapters_first(adapters);
 
         let engines = wmi.query::<GpuEngine>();
         let utilization = match engines {
-            Ok(rows) if !rows.is_empty() => {
-                let total: u64 = rows.iter().filter_map(|r| r.utilization_percentage).sum();
-                Some((total as f32).min(100.0))
-            }
+            Ok(rows) if !rows.is_empty() => Some(super::task_manager_utilization(
+                rows.iter()
+                    .filter_map(|r| Some((r.name.as_deref()?, r.utilization_percentage?))),
+            )),
             _ => None,
         };
 
@@ -121,7 +163,11 @@ mod imp {
     }
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "linux")]
+#[path = "gpu_linux.rs"]
+mod imp;
+
+#[cfg(not(any(windows, target_os = "linux")))]
 mod imp {
     use super::GpuStatus;
     pub fn status() -> GpuStatus {
@@ -132,4 +178,27 @@ mod imp {
 /// Gather GPU counters. WMI again, so again on its own thread.
 pub fn status() -> GpuStatus {
     crate::services::wmi_thread::run("gpu", imp::status).unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tm_tests {
+    use super::*;
+
+    #[test]
+    fn utilisation_is_the_busiest_engine_not_the_sum() {
+        let rows = [
+            ("pid_1_luid_0x0_0xA_phys_0_eng_0_engtype_3D", 20),
+            ("pid_2_luid_0x0_0xA_phys_0_eng_0_engtype_3D", 15),
+            ("pid_1_luid_0x0_0xA_phys_0_eng_1_engtype_Copy", 30),
+            ("pid_3_luid_0x0_0xA_phys_0_eng_2_engtype_VideoDecode", 10),
+        ];
+        assert_eq!(task_manager_utilization(rows.into_iter()), 35.0);
+    }
+
+    #[test]
+    fn virtual_adapters_go_last() {
+        let a = |n: &str| GpuAdapter { name: n.into(), driver_version: None, video_memory_bytes: None };
+        let sorted = real_adapters_first(vec![a("Parsec Virtual Display Adapter"), a("Intel(R) Iris(R) Xe Graphics")]);
+        assert_eq!(sorted[0].name, "Intel(R) Iris(R) Xe Graphics");
+    }
 }

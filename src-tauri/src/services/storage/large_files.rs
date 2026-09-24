@@ -14,6 +14,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use super::categories::{CategoryRules, StorageCategory};
+use super::fence::Fence;
 use super::scanner::ScanProgress;
 use crate::services::security::paths;
 use crate::services::security::ProtectedPaths;
@@ -108,7 +109,7 @@ fn risk_for(protected: &ProtectedPaths, path: &Path, category: StorageCategory) 
     }
 }
 
-fn walk(ctx: &Ctx<'_>, dir: &Path, depth: u32) {
+fn walk(ctx: &Ctx<'_>, dir: &Path, depth: u32, fence: &Fence) {
     if ctx.progress.is_cancelled() || depth > 64 {
         return;
     }
@@ -130,7 +131,13 @@ fn walk(ctx: &Ctx<'_>, dir: &Path, depth: u32) {
             continue;
         }
         if ft.is_dir() {
-            subdirs.push(path);
+            if !fence.blocks(&path) {
+                subdirs.push(path);
+            }
+            continue;
+        }
+        // A device node such as `/dev/sda` reports the size of a whole disk.
+        if !ft.is_file() {
             continue;
         }
 
@@ -163,7 +170,7 @@ fn walk(ctx: &Ctx<'_>, dir: &Path, depth: u32) {
 
     subdirs
         .into_par_iter()
-        .for_each(|child| walk(ctx, &child, depth + 1));
+        .for_each(|child| walk(ctx, &child, depth + 1, fence));
 }
 
 /// Run the query. Roots that do not exist are skipped rather than failing the
@@ -183,7 +190,8 @@ pub fn find(
 
     for root in ctx.query.roots.clone() {
         if root.exists() {
-            walk(&ctx, &paths::normalize_lexical(&root), 0);
+            let root = paths::normalize_lexical(&root);
+            walk(&ctx, &root, 0, &Fence::for_root(&root));
         }
     }
 

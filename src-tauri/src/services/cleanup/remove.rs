@@ -16,17 +16,18 @@ pub fn remove(entry: &ValidatedPath, mode: DeletionMode) -> Result<()> {
         DeletionMode::Recycle => recycle(entry),
         DeletionMode::Permanent => permanent(entry),
         DeletionMode::ShellApi => Err(AllInsightError::InvalidInput(
-            "This category is handled by Windows, not by file removal.".into(),
+            format!("This category is handled by {}, not by file removal.", crate::platform::os_name()),
         )),
     }
 }
 
-/// Send to the Recycle Bin, so the user can undo it.
+/// Send to the Recycle Bin or Trash, so the user can undo it.
 fn recycle(entry: &ValidatedPath) -> Result<()> {
     trash::delete(entry.as_path()).map_err(|e| {
         AllInsightError::Other(format!(
-            "Could not move {} to the Recycle Bin: {e}",
-            display_name(entry)
+            "Could not move {} to the {}: {e}",
+            display_name(entry),
+            crate::platform::trash_name()
         ))
     })
 }
@@ -49,8 +50,9 @@ fn permanent(entry: &ValidatedPath) -> Result<()> {
             // is what was wanted, so this is not a failure.
             std::io::ErrorKind::NotFound => Ok(()),
             std::io::ErrorKind::PermissionDenied => Err(AllInsightError::Other(format!(
-                "{} is in use or protected by Windows and was left alone.",
-                display_name(entry)
+                "{} is in use or protected by {} and was left alone.",
+                display_name(entry),
+                crate::platform::os_name()
             ))),
             _ => Err(AllInsightError::Other(format!(
                 "{} could not be removed: {e}",

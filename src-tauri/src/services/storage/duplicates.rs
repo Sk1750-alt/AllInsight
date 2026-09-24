@@ -19,6 +19,7 @@ use parking_lot::Mutex;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use super::fence::Fence;
 use super::scanner::ScanProgress;
 use crate::services::security::paths;
 use crate::services::security::ProtectedPaths;
@@ -86,7 +87,7 @@ fn collect_candidates(
 ) -> HashMap<u64, Vec<PathBuf>> {
     let by_size: Mutex<HashMap<u64, Vec<PathBuf>>> = Mutex::new(HashMap::new());
 
-    fn walk(dir: &Path, depth: u32, min_bytes: u64, progress: &ScanProgress, out: &Mutex<HashMap<u64, Vec<PathBuf>>>) {
+    fn walk(dir: &Path, depth: u32, min_bytes: u64, progress: &ScanProgress, out: &Mutex<HashMap<u64, Vec<PathBuf>>>, fence: &Fence) {
         if progress.is_cancelled() || depth > 64 {
             return;
         }
@@ -105,7 +106,13 @@ fn collect_candidates(
                 continue;
             }
             if ft.is_dir() {
-                subdirs.push(path);
+                if !fence.blocks(&path) {
+                    subdirs.push(path);
+                }
+                continue;
+            }
+            // Opening a named pipe to hash it would block forever.
+            if !ft.is_file() {
                 continue;
             }
             let Ok(meta) = entry.metadata() else { continue };
@@ -122,12 +129,14 @@ fn collect_candidates(
         }
         subdirs
             .into_par_iter()
-            .for_each(|child| walk(&child, depth + 1, min_bytes, progress, out));
+            .for_each(|child| walk(&child, depth + 1, min_bytes, progress, out, fence));
     }
 
     for root in roots {
         if root.exists() {
-            walk(&paths::normalize_lexical(root), 0, min_bytes, progress, &by_size);
+            let root = paths::normalize_lexical(root);
+            let fence = Fence::for_root(&root);
+            walk(&root, 0, min_bytes, progress, &by_size, &fence);
         }
     }
 

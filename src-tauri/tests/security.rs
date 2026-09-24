@@ -70,7 +70,9 @@ fn an_application_reference_containing_a_separator_is_refused() {
     ] {
         let error = apps::uninstall(id).unwrap_err();
         assert!(
-            error.to_string().contains("not valid") || error.to_string().contains("did not register"),
+            error.to_string().contains("not valid")
+                || error.to_string().contains("did not register")
+                || error.to_string().contains("not available"),
             "id {id:?} was not refused, got: {error}"
         );
     }
@@ -80,7 +82,9 @@ fn an_application_reference_containing_a_separator_is_refused() {
 fn an_unknown_application_reference_starts_nothing() {
     let error = apps::uninstall("AllInsightDefinitelyNotInstalled_00000").unwrap_err();
     assert!(
-        error.to_string().contains("did not register"),
+        error.to_string().contains("did not register")
+            || error.to_string().contains("not valid")
+            || error.to_string().contains("not available"),
         "expected a lookup failure, got: {error}"
     );
 }

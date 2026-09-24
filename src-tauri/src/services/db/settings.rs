@@ -128,7 +128,7 @@ impl Default for Settings {
             launch_at_startup: false,
             minimise_to_tray: true,
 
-            theme: Theme::Dark,
+            theme: Theme::Light,
             ui_scale: 100,
             reduce_motion: false,
 
@@ -302,9 +302,10 @@ mod tests {
     #[test]
     fn relative_protected_paths_are_dropped() {
         let mut s = Settings::default();
-        s.protected_paths = vec![PathBuf::from("relative\\thing"), PathBuf::from("D:\\Keep")];
+        let keep = PathBuf::from(if cfg!(windows) { "D:\\Keep" } else { "/srv/keep" });
+        s.protected_paths = vec![PathBuf::from("relative\\thing"), keep.clone()];
         s.sanitise();
-        assert_eq!(s.protected_paths, vec![PathBuf::from("D:\\Keep")]);
+        assert_eq!(s.protected_paths, vec![keep]);
     }
 
     /// Naming a category in settings that Auto-Clean is not allowed to run

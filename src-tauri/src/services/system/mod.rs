@@ -5,6 +5,8 @@
 //! wrong: CPU percentages are computed from the delta between two refreshes.
 
 pub mod gpu;
+#[cfg(windows)]
+mod cpu_windows;
 
 use std::collections::VecDeque;
 use std::time::Duration;
@@ -112,6 +114,10 @@ struct Inner {
     last_process_refresh: Option<std::time::Instant>,
     last_disk: DiskActivity,
     last_process_count: usize,
+    /// Task Manager's own processor counters. `None` where PDH is
+    /// unavailable, in which case sysinfo's figure is used.
+    #[cfg(windows)]
+    processor: Option<cpu_windows::ProcessorCounters>,
 }
 
 /// How often the process table may be walked from inside `sample`.
@@ -147,6 +153,8 @@ impl SystemMonitor {
                 last_process_refresh: None,
                 last_disk: DiskActivity::default(),
                 last_process_count: 0,
+                #[cfg(windows)]
+                processor: cpu_windows::ProcessorCounters::open(),
             }),
         }
     }
@@ -180,8 +188,19 @@ impl SystemMonitor {
             inner.last_process_count = inner.system.processes().len();
         }
 
+        // On Windows, match Task Manager: processor utility and the live
+        // clock, rather than raw busy time and the base clock.
+        #[cfg(windows)]
+        let reading = inner.processor.as_mut().and_then(|p| p.read());
+        #[cfg(not(windows))]
+        let reading: Option<(f32, Option<u64>)> = None;
+        #[cfg(windows)]
+        let reading = reading.map(|r| (r.utility_percent, r.current_mhz));
+
         let cpu = CpuStatus {
-            usage_percent: inner.system.global_cpu_usage(),
+            usage_percent: reading
+                .map(|(u, _)| u)
+                .unwrap_or_else(|| inner.system.global_cpu_usage()),
             core_usage: inner.system.cpus().iter().map(|c| c.cpu_usage()).collect(),
             physical_cores: inner.system.physical_core_count(),
             logical_cores: inner.system.cpus().len(),
@@ -191,7 +210,9 @@ impl SystemMonitor {
                 .first()
                 .map(|c| c.brand().trim().to_string())
                 .unwrap_or_else(|| "Unknown processor".into()),
-            frequency_mhz: inner.system.cpus().first().map(|c| c.frequency()).unwrap_or(0),
+            frequency_mhz: reading
+                .and_then(|(_, mhz)| mhz)
+                .unwrap_or_else(|| inner.system.cpus().first().map(|c| c.frequency()).unwrap_or(0)),
         };
 
         let total = inner.system.total_memory();
@@ -271,7 +292,7 @@ impl SystemMonitor {
         let snapshot = SystemSnapshot {
             uptime_seconds: System::uptime(),
             process_count: inner.last_process_count,
-            os_name: System::long_os_version().unwrap_or_else(|| "Windows".into()),
+            os_name: System::long_os_version().unwrap_or_else(|| crate::platform::os_name().into()),
             host_name: System::host_name().unwrap_or_default(),
             timestamp: chrono::Utc::now().timestamp(),
             gpu: gpu_status.clone(),

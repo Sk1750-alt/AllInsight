@@ -24,7 +24,12 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const tauriDir = join(root, "src-tauri");
-const TARGET = "x86_64-pc-windows-msvc";
+// The binary being built is for the machine building it (release builds are
+// made natively on each platform), so its dependencies are the host's.
+// ALLINSIGHT_LICENCE_TARGET overrides that for a cross-compile.
+const TARGET =
+  process.env.ALLINSIGHT_LICENCE_TARGET ||
+  (execSync("rustc -vV", { encoding: "utf8" }).match(/^host: (.+)$/m)?.[1] ?? "x86_64-pc-windows-msvc").trim();
 
 const LICENCE_FILE = /^(licen[cs]e|copying|notice|unlicense)([-._].*)?$/i;
 
@@ -59,7 +64,7 @@ function licenceTexts(dir) {
 // --- Rust ------------------------------------------------------------------
 
 function rustPackages() {
-  // Only normal dependencies for the Windows target: build scripts, dev
+  // Only normal dependencies for the target platform: build scripts, dev
   // dependencies and other platforms' crates never reach the binary.
   const shipped = new Set(
     run(

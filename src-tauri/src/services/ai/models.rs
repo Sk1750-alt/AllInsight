@@ -247,6 +247,12 @@ fn free_space_for_models() -> u64 {
         .unwrap_or(0)
 }
 
+/// The file names llama.cpp gives its server, preferred name first.
+#[cfg(windows)]
+pub const ENGINE_FILE_NAMES: &[&str] = &["llama-server.exe", "server.exe"];
+#[cfg(not(windows))]
+pub const ENGINE_FILE_NAMES: &[&str] = &["llama-server", "server"];
+
 /// Look up an engine executable in the standard locations.
 pub fn find_engine(configured: Option<&Path>) -> Option<PathBuf> {
     if let Some(path) = configured {
@@ -254,16 +260,24 @@ pub fn find_engine(configured: Option<&Path>) -> Option<PathBuf> {
             return Some(path.to_path_buf());
         }
     }
-    let mut candidates = vec![
-        engine_directory().join("llama-server.exe"),
-        engine_directory().join("server.exe"),
-    ];
+    let preferred = ENGINE_FILE_NAMES[0];
+    let mut candidates: Vec<PathBuf> = ENGINE_FILE_NAMES
+        .iter()
+        .map(|name| engine_directory().join(name))
+        .collect();
     // Also next to the installed application, so a portable copy works.
     if let Ok(exe) = std::env::current_exe() {
         if let Some(dir) = exe.parent() {
-            candidates.push(dir.join("engine").join("llama-server.exe"));
-            candidates.push(dir.join("llama-server.exe"));
+            candidates.push(dir.join("engine").join(preferred));
+            candidates.push(dir.join(preferred));
         }
+    }
+    // On Linux and macOS llama.cpp is commonly installed by a package
+    // manager (the AUR, Homebrew, Nix), which puts it on PATH. Only the
+    // distinctive name is looked up there; a bare `server` could be anything.
+    #[cfg(not(windows))]
+    if let Some(path) = std::env::var_os("PATH") {
+        candidates.extend(std::env::split_paths(&path).map(|dir| dir.join(preferred)));
     }
     candidates.into_iter().find(|c| c.is_file())
 }

@@ -36,6 +36,7 @@ dependencies = [
  "blake3",
  "chrono",
  "dirs 5.0.1",
+ "libc",
  "num_cpus",
  "once_cell",
  "parking_lot",
@@ -59,6 +60,7 @@ dependencies = [
  "windows-sys 0.59.0",
  "winreg 0.52.0",
  "wmi",
+ "zbus",
 ]
 
 [[package]]

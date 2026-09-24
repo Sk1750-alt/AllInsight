@@ -338,7 +338,14 @@ impl AppState {
     /// uncached path behind it.
     fn gather(&self) -> DashboardInputs {
         let overview = crate::services::storage::overview();
-        let volumes: Vec<VolumeFact> = overview.volumes.iter().map(VolumeFact::from).collect();
+        // Network shares and optical media are someone else's space: they are
+        // listed on the Storage screen but never drive a "running out" insight.
+        let volumes: Vec<VolumeFact> = overview
+            .volumes
+            .iter()
+            .filter(|v| v.kind.is_scannable())
+            .map(VolumeFact::from)
+            .collect();
 
         let scans = self.scans.read();
         let system_root = overview

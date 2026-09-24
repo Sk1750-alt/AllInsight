@@ -184,7 +184,7 @@ impl DeviceFacts {
                 format_bytes(v.total_bytes),
                 format_bytes(v.free_bytes),
                 v.used_percent,
-                if v.is_system { ", holds Windows" } else { "" }
+                if v.is_system { ", holds the operating system" } else { "" }
             ));
         }
 

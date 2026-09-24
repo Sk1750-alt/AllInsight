@@ -232,7 +232,6 @@ fn notify(app: &AppHandle, state: &AppState, id: &str, severity: &str, title: &s
         },
     );
 
-    #[cfg(windows)]
     {
         use tauri_plugin_notification::NotificationExt;
         let _ = app

@@ -1,4 +1,4 @@
-//! Recycle Bin support.
+//! Recycle Bin (Windows) and Trash (Linux) support.
 //!
 //! Windows owns the Recycle Bin, so AllInsight asks Windows about it and asks
 //! Windows to empty it. It never walks `$Recycle.Bin` directly: that folder is
@@ -81,21 +81,61 @@ pub fn empty() -> Result<()> {
     }
 }
 
-#[cfg(not(windows))]
+/// The freedesktop Trash, which every Linux desktop and file manager shares.
+/// The `trash` crate reads its `info` records and removes entries the way the
+/// specification requires, so AllInsight never picks the folder apart itself.
+#[cfg(all(unix, not(target_os = "macos")))]
+pub fn query() -> Result<RecycleBinState> {
+    let Ok(items) = trash::os_limited::list() else {
+        return Ok(RecycleBinState::default());
+    };
+    // Item metadata only counts a trashed folder's direct children, so the
+    // byte total is measured from the trash folders themselves.
+    let cancelled = std::sync::atomic::AtomicBool::new(false);
+    let bytes = trash::os_limited::trash_folders()
+        .map(|folders| {
+            folders
+                .iter()
+                .map(|f| crate::services::storage::scanner::measure(&f.join("files"), &cancelled).0)
+                .sum()
+        })
+        .unwrap_or(0);
+    Ok(RecycleBinState {
+        bytes,
+        items: items.len() as u64,
+        available: true,
+    })
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+pub fn empty() -> Result<()> {
+    let items = trash::os_limited::list()
+        .map_err(|e| AllInsightError::Platform(format!("Could not read the Trash: {e}")))?;
+    if items.is_empty() {
+        return Ok(());
+    }
+    trash::os_limited::purge_all(items)
+        .map_err(|e| AllInsightError::Platform(format!("Could not empty the Trash: {e}")))
+}
+
+#[cfg(target_os = "macos")]
 pub fn query() -> Result<RecycleBinState> {
     Ok(RecycleBinState::default())
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "macos")]
 pub fn empty() -> Result<()> {
-    Err(AllInsightError::Platform("Not supported on this platform.".into()))
+    Err(AllInsightError::Platform(
+        "Empty the Trash from the Finder on macOS.".into(),
+    ))
 }
 
 #[cfg(test)]
 mod tests {
+    #[allow(unused_imports)]
     use super::*;
 
-    #[cfg(windows)]
+    #[cfg(not(target_os = "macos"))]
     #[test]
     fn querying_the_bin_reports_consistent_numbers() {
         let state = query().expect("query must not fail");

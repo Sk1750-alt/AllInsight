@@ -174,7 +174,46 @@ fn apply_launch_at_startup(enabled: bool) -> Result<()> {
     Ok(())
 }
 
-#[cfg(not(windows))]
+/// Write or remove `~/.config/autostart/allinsight.desktop`, the per-user
+/// autostart entry every freedesktop desktop honours. Only AllInsight's own
+/// entry is ever created or deleted here.
+#[cfg(all(unix, not(target_os = "macos")))]
+fn apply_launch_at_startup(enabled: bool) -> Result<()> {
+    let dir = dirs::config_dir()
+        .ok_or_else(|| AllInsightError::Platform("Your autostart folder could not be located.".into()))?
+        .join("autostart");
+    let entry = dir.join("allinsight.desktop");
+
+    if !enabled {
+        // Absent is the desired end state, so a missing file is success.
+        let _ = std::fs::remove_file(&entry);
+        return Ok(());
+    }
+
+    // An AppImage runs from a temporary mount that changes every launch; the
+    // image itself is the stable path.
+    let exe = std::env::var_os("APPIMAGE")
+        .map(std::path::PathBuf::from)
+        .or_else(|| std::env::current_exe().ok())
+        .ok_or_else(|| AllInsightError::Platform("Could not locate AllInsight.".into()))?;
+    // Exec= quoting needs these escaped twice over (once for the quoted
+    // argument, once for the desktop-file string). A path that contains them
+    // is refused rather than risk an entry that runs something else.
+    let quoted = exe.to_string_lossy().into_owned();
+    if quoted.contains(['"', '`', '$', '\\', '\n']) {
+        return Err(AllInsightError::Platform(
+            "AllInsight is installed at a path autostart cannot express. Move it and try again.".into(),
+        ));
+    }
+    let text = format!(
+        "[Desktop Entry]\nType=Application\nName=AllInsight\nComment=Watch storage and drive health in the background\nExec=\"{quoted}\" --background\nIcon=allinsight\nTerminal=false\nX-GNOME-Autostart-enabled=true\n"
+    );
+    std::fs::create_dir_all(&dir)
+        .and_then(|_| std::fs::write(&entry, text))
+        .map_err(|e| AllInsightError::Platform(format!("Could not enable startup: {e}")))
+}
+
+#[cfg(target_os = "macos")]
 fn apply_launch_at_startup(_enabled: bool) -> Result<()> {
     Ok(())
 }
@@ -330,11 +369,14 @@ pub async fn restart_elevated(app: tauri::AppHandle) -> Result<()> {
     }
 }
 
+/// On Linux and macOS AllInsight deliberately never runs as root: everything
+/// it cleans belongs to the signed-in user, and a root process drawing a
+/// window is exactly the kind of privilege this design avoids.
 #[cfg(not(windows))]
 #[tauri::command]
 pub fn restart_elevated(_app: tauri::AppHandle) -> Result<()> {
     Err(AllInsightError::Platform(
-        "Elevation is only available on Windows.".into(),
+        "AllInsight runs as your own user on this system and does not restart as root.".into(),
     ))
 }
 

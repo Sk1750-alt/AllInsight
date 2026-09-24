@@ -17,6 +17,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::Result;
 
+#[cfg(any(windows, test))]
+mod nvme;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum HealthState {
@@ -96,6 +99,7 @@ pub struct DriveHealthReport {
     pub error: Option<String>,
 }
 
+#[cfg(windows)]
 fn media_from_code(code: Option<u16>) -> MediaKind {
     match code {
         Some(3) => MediaKind::Hdd,
@@ -105,6 +109,7 @@ fn media_from_code(code: Option<u16>) -> MediaKind {
     }
 }
 
+#[cfg(windows)]
 fn bus_from_code(code: Option<u16>) -> String {
     match code {
         Some(1) => "SCSI",
@@ -129,6 +134,7 @@ fn bus_from_code(code: Option<u16>) -> String {
     .to_string()
 }
 
+#[cfg(windows)]
 fn windows_health_label(code: Option<u16>) -> Option<String> {
     match code {
         Some(0) => Some("Healthy".into()),
@@ -138,6 +144,7 @@ fn windows_health_label(code: Option<u16>) -> Option<String> {
     }
 }
 
+#[cfg(windows)]
 fn operational_labels(codes: &[u16]) -> Vec<String> {
     codes
         .iter()
@@ -197,7 +204,7 @@ fn decide(drive: &mut DriveHealth) {
         .any(|s| s == "Degraded" || s == "Stressed" || s == "Error")
     {
         state = HealthState::Warning;
-        notes.push("Windows reports this drive as degraded.".to_string());
+        notes.push("The drive is reported as degraded.".to_string());
     }
 
     if let Some(uncorrected) = drive.read_errors_uncorrected {
@@ -249,10 +256,10 @@ fn decide(drive: &mut DriveHealth) {
         notes.push(if drive.elevation_would_help {
             "Detailed health data needs administrator permission. Restart AllInsight as administrator to read wear, temperature and error counts.".to_string()
         } else {
-            "This drive does not report detailed health data to Windows.".to_string()
+            format!("This drive does not report detailed health data to {}.", crate::platform::os_name())
         });
         if let Some(w) = windows_says {
-            notes.push(format!("Windows reports the drive status as {w}."));
+            notes.push(format!("{} reports the drive status as {w}.", crate::platform::os_name()));
         }
     }
 
@@ -441,6 +448,27 @@ mod imp {
                 notes: Vec::new(),
                 device_id,
             };
+
+            // Without elevation the reliability counters are out of reach,
+            // but the drive's own health log usually is not.
+            if drive.reliability_unavailable {
+                if let Ok(number) = drive.device_id.parse::<u32>() {
+                    if let Some(h) = super::nvme::nvme_health(number) {
+                        drive.temperature_celsius = h.temperature_celsius;
+                        drive.wear_percent = Some(h.percentage_used.min(100));
+                        drive.power_on_hours = Some(h.power_on_hours);
+                        drive.read_errors_uncorrected = Some(h.media_errors);
+                        drive
+                            .operational_status
+                            .extend(super::nvme::warning_labels(h.critical_warning));
+                        drive.reliability_unavailable = false;
+                        drive.elevation_would_help = false;
+                    } else if drive.temperature_celsius.is_none() {
+                        drive.temperature_celsius = super::nvme::temperature(number);
+                    }
+                }
+            }
+
             decide(&mut drive);
             drives.push(drive);
         }
@@ -460,16 +488,8 @@ mod imp {
 }
 
 #[cfg(not(windows))]
-mod imp {
-    use super::*;
-    pub fn report() -> Result<DriveHealthReport> {
-        Ok(DriveHealthReport {
-            drives: Vec::new(),
-            elevated: false,
-            error: Some("Drive health is only available on Windows.".into()),
-        })
-    }
-}
+#[path = "linux.rs"]
+mod imp;
 
 /// Gather drive health.
 ///
@@ -579,6 +599,7 @@ mod tests {
         assert_eq!(light.state, HealthState::Healthy);
     }
 
+    #[cfg(windows)]
     #[test]
     fn bus_and_media_codes_map_to_readable_names() {
         assert_eq!(bus_from_code(Some(17)), "NVMe");

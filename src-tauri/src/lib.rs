@@ -14,6 +14,7 @@ pub mod commands;
 pub mod error;
 pub mod logging;
 pub mod monitor;
+pub mod platform;
 pub mod services;
 pub mod state;
 
@@ -192,7 +193,18 @@ pub fn run() {
                 });
             }
 
-            if let Err(e) = install_tray(app.handle()) {
+            // On Linux the tray needs libayatana-appindicator at run time, and
+            // the binding panics rather than erroring when it is missing, so the
+            // panic is caught and treated like any other tray failure.
+            let tray = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                install_tray(app.handle())
+            }))
+            .unwrap_or_else(|_| {
+                Err(tauri::Error::AssetNotFound(
+                    "the system tray library (libayatana-appindicator3)".into(),
+                ))
+            });
+            if let Err(e) = tray {
                 // A missing tray is a degraded experience, not a reason to
                 // refuse to start. The close handler checks for it before
                 // hiding the window, so the application stays coherent.

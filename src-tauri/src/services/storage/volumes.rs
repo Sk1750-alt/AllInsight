@@ -207,11 +207,103 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
     out
 }
 
-/// Non-Windows builds exist only so the safety tests can run in CI; they
-/// report a single synthetic root rather than pretending to know more.
+/// Filesystems that are listed as network drives: present, but never walked.
+#[cfg(not(windows))]
+const NETWORK_FILESYSTEMS: &[&str] = &[
+    "nfs", "nfs4", "cifs", "smb3", "smbfs", "fuse.sshfs", "fuse.rclone", "9p", "drvfs", "afs",
+    "ceph", "glusterfs",
+];
+
+/// Filesystems that are not storage the user owns: kernel interfaces, memory,
+/// read-only application images and container layers.
+#[cfg(not(windows))]
+const HIDDEN_FILESYSTEMS: &[&str] = &[
+    "tmpfs", "devtmpfs", "ramfs", "squashfs", "overlay", "proc", "sysfs", "efivarfs", "autofs",
+    "fuse.portal", "fuse.snapfuse", "fuse.gvfsd-fuse", "nsfs", "devfs",
+];
+
+/// Mount points that hold the system's plumbing rather than anything a person
+/// would call a drive. `/run/media` is where Arch and Fedora mount USB sticks,
+/// so it is the one exception under `/run`.
+#[cfg(not(windows))]
+fn is_plumbing(mount: &str) -> bool {
+    if mount.starts_with("/run/media/") {
+        return false;
+    }
+    ["/boot", "/efi", "/snap", "/usr", "/var/lib/", "/run", "/sys", "/proc", "/dev", "/System/Volumes/"]
+        .iter()
+        .any(|p| mount == p.trim_end_matches('/') || mount.starts_with(&format!("{}/", p.trim_end_matches('/'))))
+}
+
+/// Linux and macOS: every mounted filesystem the user would recognise as a
+/// drive. A btrfs system typically mounts `/` and `/home` from one device;
+/// those are reported once, at the shorter mount point, so totals are not
+/// counted twice.
 #[cfg(not(windows))]
 pub fn list_volumes() -> Vec<VolumeInfo> {
-    Vec::new()
+    let disks = sysinfo::Disks::new_with_refreshed_list();
+    let mut out: Vec<VolumeInfo> = Vec::new();
+    let mut seen_devices: Vec<(OsString, usize)> = Vec::new();
+
+    for disk in disks.list() {
+        let mount_point = disk.mount_point().to_string_lossy().into_owned();
+        let filesystem = disk.file_system().to_string_lossy().into_owned();
+        if HIDDEN_FILESYSTEMS.contains(&filesystem.as_str()) || is_plumbing(&mount_point) {
+            continue;
+        }
+
+        let kind = if NETWORK_FILESYSTEMS.contains(&filesystem.as_str()) {
+            DriveKind::Network
+        } else if filesystem == "iso9660" || filesystem == "udf" {
+            DriveKind::Optical
+        } else if disk.is_removable() {
+            DriveKind::Removable
+        } else {
+            DriveKind::Fixed
+        };
+
+        let total = disk.total_space();
+        let free = disk.available_space().min(total);
+        let used = total.saturating_sub(free);
+        let is_system = mount_point == "/";
+        let label = if is_system {
+            Some("System".to_string())
+        } else {
+            std::path::Path::new(&mount_point)
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+        };
+        let info = VolumeInfo {
+            letter: mount_point.clone(),
+            mount_point,
+            label,
+            filesystem: Some(filesystem),
+            kind,
+            used_percent: percent(used, total),
+            total_bytes: total,
+            free_bytes: free,
+            used_bytes: used,
+            is_system,
+            is_ready: total > 0,
+        };
+
+        let device = disk.name().to_os_string();
+        if let Some((_, at)) = seen_devices.iter().find(|(d, _)| *d == device && !d.is_empty()) {
+            if info.mount_point.len() < out[*at].mount_point.len() {
+                out[*at] = info;
+            }
+            continue;
+        }
+        seen_devices.push((device, out.len()));
+        out.push(info);
+    }
+
+    out.sort_by(|a, b| {
+        b.is_system
+            .cmp(&a.is_system)
+            .then_with(|| a.mount_point.cmp(&b.mount_point))
+    });
+    out
 }
 
 /// The volume that holds Windows, when it can be identified.

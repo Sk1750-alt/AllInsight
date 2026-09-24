@@ -118,10 +118,11 @@ impl LlamaEngine {
 
     /// Validate the configuration before anything is spawned.
     fn validate(config: &EngineConfig) -> Result<()> {
+        let engine_file = crate::services::ai::models::ENGINE_FILE_NAMES[0];
         if !config.engine_path.is_file() {
-            return Err(AllInsightError::Ai(
-                "The local inference engine was not found. Point AllInsight at llama-server.exe in Settings.".into(),
-            ));
+            return Err(AllInsightError::Ai(format!(
+                "The local inference engine was not found. Point AllInsight at {engine_file} in Settings."
+            )));
         }
         // llama.cpp ships the server under one of two names. Accepting only
         // those keeps a settings value from turning this into a way to start
@@ -131,15 +132,29 @@ impl LlamaEngine {
             .file_name()
             .map(|n| n.to_string_lossy().to_lowercase())
             .unwrap_or_default();
-        if !matches!(engine_name.as_str(), "llama-server.exe" | "server.exe") {
-            return Err(AllInsightError::Ai(
-                "The inference engine must be llama-server.exe from a llama.cpp build.".into(),
-            ));
+        if !crate::services::ai::models::ENGINE_FILE_NAMES.contains(&engine_name.as_str()) {
+            return Err(AllInsightError::Ai(format!(
+                "The inference engine must be {engine_file} from a llama.cpp build."
+            )));
         }
+        #[cfg(windows)]
         if crate::services::security::paths::extension_lower(&config.engine_path) != "exe" {
             return Err(AllInsightError::Ai(
                 "The inference engine must be an executable.".into(),
             ));
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let executable = std::fs::metadata(&config.engine_path)
+                .map(|m| m.permissions().mode() & 0o111 != 0)
+                .unwrap_or(false);
+            if !executable {
+                return Err(AllInsightError::Ai(format!(
+                    "{} is not marked as executable. Run chmod +x on it first.",
+                    config.engine_path.display()
+                )));
+            }
         }
         if !config.model_path.is_file() {
             return Err(AllInsightError::Ai(
