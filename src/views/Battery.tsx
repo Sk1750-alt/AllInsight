@@ -8,6 +8,7 @@
  */
 import { BatteryCharging, BatteryMedium, Info, Plug, RefreshCw } from "lucide-react";
 
+import { usePlatformWords } from "@/lib/platform";
 import { api } from "@/lib/api";
 import { useAsync, usePolled } from "@/app/store";
 import {
@@ -37,6 +38,7 @@ export function BatteryView() {
   const initial = useAsync<BatteryStatus>(() => api.getBatteryStatus(), []);
   const live = usePolled<BatteryStatus>(() => api.getBatteryStatus(), 20000, !initial.loading);
   const battery = live ?? initial.data;
+  const w = usePlatformWords();
 
   if (initial.loading && !battery) {
     return (
@@ -101,7 +103,7 @@ export function BatteryView() {
                   )}
                   Current charge
                 </p>
-                <p className="numeric mt-2 font-display text-4xl font-semibold text-[var(--color-ink)]">
+                <p className="readout mt-2 text-[48px] text-[var(--color-ink)]">
                   {battery.charge_percent !== null ? `${battery.charge_percent}%` : "Unknown"}
                 </p>
                 <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
@@ -151,7 +153,7 @@ export function BatteryView() {
               <>
                 <p
                   className={cn(
-                    "numeric mt-2 font-display text-4xl font-semibold",
+                    "readout mt-2 text-[48px]",
                     tone === "ok"
                       ? "text-[var(--color-ok)]"
                       : tone === "warn"
@@ -168,11 +170,11 @@ export function BatteryView() {
               </>
             ) : (
               <>
-                <p className="numeric mt-2 font-display text-2xl font-semibold text-[var(--color-unknown)]">
+                <p className="readout mt-2 text-[30px] text-[var(--color-unknown)]">
                   Not available
                 </p>
                 <p className="mt-1.5 text-xs leading-relaxed text-[var(--color-ink-muted)]">
-                  This device does not report its design capacity to Windows, so health cannot be
+                  This device does not report its design capacity to {w.os}, so health cannot be
                   calculated. AllInsight will not estimate it.
                 </p>
               </>
@@ -184,7 +186,7 @@ export function BatteryView() {
       <Panel>
         <PanelHeader
           title="Details"
-          description="Everything the battery firmware reports through Windows."
+          description={`Everything the battery firmware reports through ${w.os}.`}
         />
         <div className="grid gap-x-8 px-4 py-2 sm:grid-cols-2">
           <dl>

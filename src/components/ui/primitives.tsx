@@ -23,20 +23,20 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    "bg-[var(--color-accent)] text-[var(--color-accent-ink)] hover:bg-[var(--color-accent-hover)] border border-transparent font-medium",
+    "bg-[var(--color-primary)] text-[var(--color-primary-ink)] hover:bg-[var(--color-primary-hover)] font-medium border border-transparent",
   secondary:
-    "bg-[var(--color-surface-raised)] text-[var(--color-ink)] border border-[var(--color-line-strong)] hover:bg-[var(--color-surface-hover)]",
+    "bg-[var(--color-surface)] text-[var(--color-ink)] font-medium border border-[var(--color-line-strong)] hover:bg-[var(--color-surface-hover)]",
   ghost:
     "bg-transparent text-[var(--color-ink-muted)] border border-transparent hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-ink)]",
   danger:
-    "bg-[var(--color-danger)] text-white border border-transparent hover:opacity-90 font-medium",
+    "bg-[var(--color-danger)] text-white hover:opacity-90 font-medium border border-transparent",
   subtle:
-    "bg-[var(--color-surface-hover)] text-[var(--color-ink)] border border-[var(--color-line)] hover:border-[var(--color-line-strong)]",
+    "bg-[var(--color-accent-soft)] text-[var(--color-accent)] font-medium border border-transparent hover:border-[color-mix(in_srgb,var(--color-accent)_30%,transparent)]",
 };
 
 const SIZES: Record<ButtonSize, string> = {
-  sm: "h-7 px-2.5 text-xs gap-1.5 rounded-md",
-  md: "h-8 px-3 text-sm gap-2 rounded-md",
+  sm: "h-7 px-2.5 text-xs gap-1.5 rounded-[7px]",
+  md: "h-8 px-3.5 text-[13px] gap-2 rounded-lg",
 };
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
@@ -48,7 +48,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
       ref={ref}
       disabled={disabled || loading}
       className={cn(
-        "inline-flex items-center justify-center whitespace-nowrap transition-quick",
+        "press inline-flex items-center justify-center whitespace-nowrap transition-quick",
         "disabled:opacity-45 disabled:pointer-events-none",
         VARIANTS[variant],
         SIZES[size],
@@ -107,12 +107,12 @@ export function PanelHeader({
   return (
     <header
       className={cn(
-        "flex items-start justify-between gap-4 px-4 py-3 hairline",
+        "flex items-start justify-between gap-4 px-5 pb-3 pt-4 hairline",
         className,
       )}
     >
       <div className="min-w-0">
-        <h2 className="text-sm font-semibold text-[var(--color-ink)] truncate">{title}</h2>
+        <h2 className="truncate font-sans text-[13px] font-semibold tracking-normal text-[var(--color-ink)]">{title}</h2>
         {description ? (
           <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">{description}</p>
         ) : null}
@@ -129,7 +129,7 @@ export function PanelBody({
   className?: string;
   children: React.ReactNode;
 }) {
-  return <div className={cn("p-4", className)}>{children}</div>;
+  return <div className={cn("p-5", className)}>{children}</div>;
 }
 
 // ------------------------------------------------------------------- Badge
@@ -149,10 +149,9 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-2xs font-medium",
+        "inline-flex items-center gap-1.5 rounded-[5px] px-1.5 py-0.5 text-2xs font-medium",
         t.bg,
         t.text,
-        t.border,
         className,
       )}
     >
@@ -174,14 +173,21 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-end justify-between gap-6 pb-4">
-      <div className="min-w-0">
-        <h1 className="text-xl font-semibold tracking-tight text-[var(--color-ink)]">{title}</h1>
-        {subtitle ? (
-          <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{subtitle}</p>
-        ) : null}
+    <div className="pb-7 pt-1">
+      <div className="flex items-end justify-between gap-6">
+        <div className="min-w-0">
+          <h1 className="text-[30px] font-semibold leading-[1.1] tracking-[-0.03em] text-[var(--color-ink)]">
+            {title}
+          </h1>
+          {subtitle ? (
+            <p className="mt-2 max-w-[62ch] text-[13.5px] leading-relaxed text-[var(--color-ink-muted)]">
+              {subtitle}
+            </p>
+          ) : null}
+        </div>
+        {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
       </div>
-      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+      <div className="scale-rule mt-5" aria-hidden />
     </div>
   );
 }
@@ -209,7 +215,7 @@ export function EmptyState({
       )}
     >
       {icon ? (
-        <div className="flex size-10 items-center justify-center rounded-full bg-[var(--color-surface-hover)] text-[var(--color-ink-subtle)]">
+        <div className="flex size-11 items-center justify-center rounded-full border border-[var(--color-line)] text-[var(--color-ink-subtle)]">
           {icon}
         </div>
       ) : null}
@@ -244,7 +250,7 @@ export function Skeleton({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded bg-[var(--color-surface-hover)]",
+        "relative overflow-hidden rounded-lg bg-[var(--color-selection)]",
         className,
       )}
       aria-hidden

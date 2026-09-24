@@ -9,6 +9,7 @@
 import * as React from "react";
 import { HardDrive, Info, RefreshCw, ShieldAlert, ShieldCheck, ShieldQuestion } from "lucide-react";
 
+import { usePlatformWords } from "@/lib/platform";
 import { api } from "@/lib/api";
 import { useAsync, useStore } from "@/app/store";
 import {
@@ -49,6 +50,7 @@ const MEDIA_LABEL: Record<string, string> = {
 };
 
 function DriveCard({ drive, onElevate }: { drive: DriveHealth; onElevate: () => void }) {
+  const w = usePlatformWords();
   const tone = healthTone(drive.state);
   const t = toneClasses(tone);
   const Icon = STATE_ICON[drive.state];
@@ -161,7 +163,7 @@ function DriveCard({ drive, onElevate }: { drive: DriveHealth; onElevate: () => 
               ? `${formatCount(drive.write_errors_total)} total, ${formatCount(drive.write_errors_uncorrected ?? 0)} uncorrected`
               : null,
           ],
-          ["Windows status", drive.windows_health ?? null],
+          [w.isWindows ? "Windows status" : "SMART status", drive.windows_health ?? null],
           ["Operational", drive.operational_status.join(", ") || null],
           ["Firmware", drive.firmware ?? null],
           ["Serial", drive.serial_number ?? null],
@@ -198,6 +200,7 @@ function DriveCard({ drive, onElevate }: { drive: DriveHealth; onElevate: () => 
 }
 
 export function DriveHealthView() {
+  const w = usePlatformWords();
   const { reportError } = useStore();
   const { data, loading, error, reload } = useAsync<DriveHealthReport>(
     () => api.getDriveHealth(),
@@ -213,7 +216,7 @@ export function DriveHealthView() {
         subtitle="What the hardware itself reports, and nothing more."
         actions={
           <>
-            {data && !data.elevated ? (
+            {data && !data.elevated && w.canElevate && data.drives.some((d) => d.elevation_would_help) ? (
               <Button variant="secondary" onClick={elevate}>
                 Restart as administrator
               </Button>
@@ -241,7 +244,7 @@ export function DriveHealthView() {
             title="No drives reported"
             description={
               data?.error ??
-              "Windows did not return any physical drives. This can happen in a virtual machine or with an unusual storage driver."
+              `${w.os} did not return any physical drives. This can happen in a virtual machine or with an unusual storage driver.`
             }
           />
         </Panel>
@@ -257,13 +260,13 @@ export function DriveHealthView() {
         <PanelHeader title="How AllInsight decides" />
         <div className="space-y-2 p-4 text-xs leading-relaxed text-[var(--color-ink-muted)]">
           <p>
-            Model, bus and capacity come from the Windows storage service and are always
-            available. Wear, temperature, power-on hours and error counts come from the drive's
-            reliability counters, which most drives only expose to an elevated process.
+            {w.isWindows
+              ? "Model, bus and capacity come from the Windows storage service and are always available. Wear, temperature, power-on hours and media errors come from the drive's own health log, which NVMe drives answer without administrator permission. Other drives expose them only through reliability counters that need an elevated process."
+              : "Model, bus and capacity come from the kernel and are always available. Temperature, power-on hours, bad sectors and failure warnings come from the drive's SMART data, which the UDisks2 service reads and publishes without AllInsight needing root."}
           </p>
           <p>
             When those counters cannot be read, the status is{" "}
-            <span className="text-[var(--color-ink)]">Unknown</span> rather than Healthy. Windows
+            <span className="text-[var(--color-ink)]">Unknown</span> rather than Healthy. {w.os}{" "}
             reporting no complaint is not the same as the drive reporting it is well, and AllInsight
             will not present one as the other.
           </p>

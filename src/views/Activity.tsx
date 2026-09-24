@@ -79,7 +79,7 @@ export function ActivityView() {
           <p className="text-2xs uppercase tracking-wider text-[var(--color-ink-subtle)]">
             Space reclaimed
           </p>
-          <p className="numeric mt-1 font-display text-2xl font-semibold text-[var(--color-accent)]">
+          <p className="readout mt-1 text-[30px] text-[var(--color-accent)]">
             {formatBytes(totals.data?.reclaimed_bytes ?? 0)}
           </p>
           <p className="text-xs text-[var(--color-ink-muted)]">since AllInsight was installed</p>
@@ -89,7 +89,7 @@ export function ActivityView() {
           <p className="text-2xs uppercase tracking-wider text-[var(--color-ink-subtle)]">
             Cleanup runs
           </p>
-          <p className="numeric mt-1 font-display text-2xl font-semibold text-[var(--color-ink)]">
+          <p className="readout mt-1 text-[30px] text-[var(--color-ink)]">
             {formatCount(totals.data?.runs ?? 0)}
           </p>
           <p className="text-xs text-[var(--color-ink-muted)]">manual and automatic</p>
@@ -99,7 +99,7 @@ export function ActivityView() {
           <p className="text-2xs uppercase tracking-wider text-[var(--color-ink-subtle)]">
             Items removed
           </p>
-          <p className="numeric mt-1 font-display text-2xl font-semibold text-[var(--color-ink)]">
+          <p className="readout mt-1 text-[30px] text-[var(--color-ink)]">
             {formatCount(totals.data?.removed_items ?? 0)}
           </p>
           <p className="text-xs text-[var(--color-ink-muted)]">temporary and cached files</p>

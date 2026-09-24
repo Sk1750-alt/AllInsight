@@ -8,6 +8,7 @@
 import * as React from "react";
 import { Cpu, Gauge, HardDrive, MemoryStick, Network } from "lucide-react";
 
+import { usePlatformWords } from "@/lib/platform";
 import { api } from "@/lib/api";
 import { usePolled, useStore } from "@/app/store";
 import {
@@ -56,7 +57,7 @@ function MetricPanel({
             {icon}
             {title}
           </p>
-          <p className="numeric mt-1.5 font-display text-2xl font-semibold text-[var(--color-ink)]">
+          <p className="readout mt-1.5 text-[30px] text-[var(--color-ink)]">
             {now}
           </p>
           {detail ? (
@@ -82,6 +83,7 @@ function MetricPanel({
 
 export function PerformanceView() {
   const { navigate } = useStore();
+  const w = usePlatformWords();
   const snapshot = usePolled(() => api.getSystemSummary(), 1500);
   const history = usePolled(() => api.getMetricsHistory(), 3000);
   const processes = usePolled<ProcessList>(() => api.getProcesses(6, false), 4000);
@@ -202,7 +204,7 @@ export function PerformanceView() {
           unavailable={
             snapshot.gpu.utilization_percent === null
               ? (snapshot.gpu.note ??
-                "This device does not publish GPU utilisation counters to Windows.")
+                `This device does not publish GPU utilisation counters to ${w.os}.`)
               : undefined
           }
           footer={

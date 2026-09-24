@@ -8,6 +8,7 @@
 import * as React from "react";
 import { ArrowRight, Check, CircleSlash, Cpu, HardDrive, ShieldCheck, WifiOff } from "lucide-react";
 
+import { usePlatformWords } from "@/lib/platform";
 import { api } from "@/lib/api";
 import { useStore } from "@/app/store";
 import { Logo } from "@/components/Logo";
@@ -20,6 +21,7 @@ const STEPS = ["Welcome", "Privacy", "Monitoring", "Ready"] as const;
 
 export function FirstRunView({ onDone }: { onDone: () => void }) {
   const { settings, saveSettings, reportError } = useStore();
+  const w = usePlatformWords();
   const [step, setStep] = React.useState(0);
   const [draft, setDraft] = React.useState<Settings | null>(settings);
   const [finishing, setFinishing] = React.useState(false);
@@ -162,7 +164,7 @@ export function FirstRunView({ onDone }: { onDone: () => void }) {
                 />
                 <SettingRow
                   title="Tell me when storage runs low"
-                  description="A Windows notification at 80, 90 and 95 percent. Once each, not repeatedly."
+                  description={`A ${w.os} notification at 80, 90 and 95 percent. Once each, not repeatedly.`}
                   control={
                     <Switch
                       checked={draft.notifications_enabled}

@@ -9,6 +9,7 @@
 import * as React from "react";
 import { ChevronRight, FolderOpen, HardDrive, Play, RefreshCw, Square } from "lucide-react";
 
+import { usePlatformWords } from "@/lib/platform";
 import { api } from "@/lib/api";
 import { useAsync, useStore } from "@/app/store";
 import {
@@ -255,6 +256,7 @@ function Treemap({
 
 export function StorageMapView() {
   const { scanGeneration, scanning, toast, reportError } = useStore();
+  const w = usePlatformWords();
 
   const overview = useAsync<StorageOverview>(() => api.getStorageOverview(), []);
   const [root, setRoot] = React.useState<string>("");
@@ -369,7 +371,7 @@ export function StorageMapView() {
               <p className="text-2xs uppercase tracking-wider text-[var(--color-ink-subtle)]">
                 {currentVolume.letter} capacity
               </p>
-              <p className="numeric mt-1 font-display text-xl font-semibold text-[var(--color-ink)]">
+              <p className="readout mt-1 text-[26px] text-[var(--color-ink)]">
                 {formatBytes(currentVolume.used_bytes)}
                 <span className="text-sm font-normal text-[var(--color-ink-subtle)]">
                   {" "}
@@ -430,7 +432,7 @@ export function StorageMapView() {
                 description={`${formatBytes(summary.data.total_bytes)} across ${formatCount(summary.data.total_files)} files`}
                 actions={
                   summary.data.skipped_dirs > 0 ? (
-                    <Tooltip content="These folders could not be opened without administrator permission. Their contents are not included in the totals.">
+                    <Tooltip content={w.isWindows ? "These folders could not be opened without administrator permission. Their contents are not included in the totals." : "These folders could not be opened, or are system, memory or network filesystems AllInsight does not walk. Their contents are not included in the totals."}>
                       <span>
                         <Badge tone="neutral">
                           {formatCount(summary.data.skipped_dirs)} folders skipped
@@ -559,7 +561,7 @@ export function StorageMapView() {
                       api.showInExplorer(selected.path).catch((e) => reportError(e))
                     }
                   >
-                    Show in Explorer
+                    {w.showInFolder}
                   </Button>
                   {selected.has_children ? (
                     <Button size="sm" variant="subtle" onClick={() => setPath(selected.path)}>

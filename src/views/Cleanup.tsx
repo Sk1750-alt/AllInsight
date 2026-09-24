@@ -18,6 +18,7 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { usePlatformWords } from "@/lib/platform";
 import { api } from "@/lib/api";
 import { useStore } from "@/app/store";
 import {
@@ -160,6 +161,7 @@ function OutcomeSummary({ outcome, onDismiss }: { outcome: CleanupOutcome; onDis
 
 export function CleanupView() {
   const { toast, reportError, navigate } = useStore();
+  const w = usePlatformWords();
 
   const [preview, setPreview] = React.useState<CleanupPreview | null>(null);
   const [measuring, setMeasuring] = React.useState(false);
@@ -249,7 +251,7 @@ export function CleanupView() {
     <div className="view-enter space-y-5">
       <PageHeader
         title="Cleanup"
-        subtitle="Temporary and cached data that Windows and your applications rebuild automatically."
+        subtitle={`Temporary and cached data that ${w.os} and your applications rebuild automatically.`}
         actions={
           <Button
             variant="secondary"
@@ -336,7 +338,7 @@ export function CleanupView() {
                 <p className="text-2xs uppercase tracking-wider text-[var(--color-ink-subtle)]">
                   Selected
                 </p>
-                <p className="numeric mt-1 font-display text-3xl font-semibold text-[var(--color-accent)]">
+                <p className="readout mt-1 text-[40px] text-[var(--color-accent)]">
                   {formatBytes(selectedBytes)}
                 </p>
                 <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
@@ -380,7 +382,11 @@ export function CleanupView() {
             <div className="space-y-2 p-4 text-xs text-[var(--color-ink-muted)]">
               <p>Documents, Desktop, Pictures, Videos, Music and Downloads.</p>
               <p>Source code, databases, browser profiles and saved passwords.</p>
-              <p>Windows itself, Program Files, and anything you added to the protected list.</p>
+              <p>
+                {w.isWindows
+                  ? "Windows itself, Program Files, and anything you added to the protected list."
+                  : `${w.os} itself, installed applications, other users' files, and anything you added to the protected list.`}
+              </p>
               <Button
                 size="sm"
                 variant="ghost"
@@ -392,7 +398,7 @@ export function CleanupView() {
             </div>
           </Panel>
 
-          {preview && !preview.elevated ? (
+          {preview && !preview.elevated && w.canElevate ? (
             <Panel className="border-[color-mix(in_srgb,var(--color-warn)_30%,transparent)]">
               <div className="flex gap-3 p-4">
                 <Info className="mt-0.5 size-4 shrink-0 text-[var(--color-warn)]" />
@@ -465,15 +471,15 @@ export function CleanupView() {
             ? selectedReports[0].what_happens
             : `${selectedReports.length} categories will be cleaned: ${selectedReports
                 .map((c) => c.name.toLowerCase())
-                .join(", ")}. Each removes only its own temporary or cached data, which Windows and your applications rebuild automatically.`
+                .join(", ")}. Each removes only its own temporary or cached data, which ${w.os} and your applications rebuild automatically.`
         }
-        whatIsUntouched="Documents, Desktop, Pictures, Videos, Music and Downloads. Browser profiles, saved passwords, source code and databases. Windows itself, installed programs, and anything on your protected list."
+        whatIsUntouched={`Documents, Desktop, Pictures, Videos, Music and Downloads. Browser profiles, saved passwords, source code and databases. ${w.os} itself, installed programs, and anything on your protected list.`}
         extra={
           includesIrreversible ? (
             <div className="flex gap-2 rounded-md border border-[color-mix(in_srgb,var(--color-warn)_35%,transparent)] bg-[var(--color-warn-soft)] p-2.5">
               <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-[var(--color-warn)]" />
               <p className="text-2xs leading-relaxed text-[var(--color-ink)]">
-                Your selection includes emptying the Recycle Bin. Items in it cannot be restored
+                Your selection includes emptying the {w.trash}. Items in it cannot be restored
                 afterwards.
               </p>
             </div>

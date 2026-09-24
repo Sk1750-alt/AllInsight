@@ -2,7 +2,7 @@
  * Large files.
  *
  * A review screen, not a cleanup screen. Everything here belongs to the user,
- * so nothing is pre-selected, removal always goes to the Recycle Bin, and
+ * so nothing is pre-selected, removal always goes to the Recycle Bin (Trash), and
  * anything on the protected list is shown with the reason rather than hidden.
  */
 import * as React from "react";
@@ -16,6 +16,7 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { usePlatformWords } from "@/lib/platform";
 import { api } from "@/lib/api";
 import { useAsync, useStore } from "@/app/store";
 import {
@@ -47,6 +48,7 @@ export function LargeFilesView() {
   const { scanning, scanGeneration, toast, reportError, settings } = useStore();
   const overview = useAsync<StorageOverview>(() => api.getStorageOverview(), []);
   const report = useAsync<LargeFileReport | null>(() => api.getLargeFiles(), [scanGeneration]);
+  const w = usePlatformWords();
 
   // Seeded from Settings, so the preference there is the one that applies.
   const [threshold, setThreshold] = React.useState(() =>
@@ -110,13 +112,13 @@ export function LargeFilesView() {
       await api.recycleReviewedFile(pending.path);
       toast({
         tone: "success",
-        title: "Moved to the Recycle Bin",
+        title: `Moved to the ${w.trash}`,
         body: `${pending.name} can be restored from there.`,
       });
       setPending(null);
       report.reload();
     } catch (e) {
-      reportError(e, "That file could not be moved to the Recycle Bin.");
+      reportError(e, `That file could not be moved to the ${w.trash}.`);
     } finally {
       setRemoving(false);
     }
@@ -263,7 +265,7 @@ export function LargeFilesView() {
                     </Td>
                     <Td align="right">
                       <div className="flex justify-end gap-1">
-                        <Tooltip content="Show in File Explorer">
+                        <Tooltip content={w.showInFolder}>
                           <span>
                             <Button
                               size="sm"
@@ -279,7 +281,7 @@ export function LargeFilesView() {
                           content={
                             entry.risk === "protected"
                               ? "AllInsight will not remove a protected file."
-                              : "Move to the Recycle Bin"
+                              : `Move to the ${w.trash}`
                           }
                         >
                           <span>
@@ -303,16 +305,16 @@ export function LargeFilesView() {
       )}
 
       <Hint>
-        AllInsight never removes anything from this screen on its own. Files you remove here go to the
-        Recycle Bin, so they can be restored.
+        AllInsight never removes anything from this screen on its own. Files you remove here go to the{" "}
+        {w.trash}, so they can be restored.
       </Hint>
 
       <ConfirmDialog
         open={!!pending}
         onOpenChange={(open) => !open && setPending(null)}
-        title={`Move ${pending?.name ?? ""} to the Recycle Bin?`}
+        title={`Move ${pending?.name ?? ""} to the ${w.trash}?`}
         loading={removing}
-        confirmLabel="Move to Recycle Bin"
+        confirmLabel={`Move to ${w.trash}`}
         onConfirm={remove}
         estimate={
           pending ? (
@@ -326,7 +328,7 @@ export function LargeFilesView() {
             </div>
           ) : null
         }
-        whatHappens="The file is moved to the Windows Recycle Bin. It stays there, and stays recoverable, until you empty the bin."
+        whatHappens={`The file is moved to the ${w.trash}. It stays there, and stays recoverable, until you empty it.`}
         whatIsUntouched="Nothing else. Only this one file is moved."
         extra={
           pending ? (

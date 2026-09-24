@@ -8,6 +8,7 @@
 import * as React from "react";
 import { Copy, FolderOpen, Play, ShieldCheck, Square, Trash2 } from "lucide-react";
 
+import { usePlatformWords } from "@/lib/platform";
 import { api } from "@/lib/api";
 import { useAsync, useStore } from "@/app/store";
 import {
@@ -48,6 +49,7 @@ function GroupCard({
   const selectedInGroup = group.files.filter((f) => selected.has(f.path)).length;
   // One copy always stays. The last unselected copy cannot be selected.
   const atLimit = selectedInGroup >= selectableCount || selectedInGroup >= group.files.length - 1;
+  const w = usePlatformWords();
 
   return (
     <div className="panel">
@@ -121,7 +123,7 @@ function GroupCard({
                 variant="ghost"
                 onClick={() => onShow(file.path)}
                 icon={<FolderOpen className="size-3.5" />}
-                aria-label="Show in Explorer"
+                aria-label={w.showInFolder}
               />
             </div>
           );
@@ -135,6 +137,7 @@ export function DuplicatesView() {
   const { scanning, scanGeneration, toast, reportError, settings } = useStore();
   const overview = useAsync<StorageOverview>(() => api.getStorageOverview(), []);
   const report = useAsync<DuplicateReport | null>(() => api.getDuplicates(), [scanGeneration]);
+  const w = usePlatformWords();
 
   // Seeded from Settings, so the preference there is the one that applies.
   const [minBytes, setMinBytes] = React.useState(() =>
@@ -196,7 +199,7 @@ export function DuplicatesView() {
     setSelected(new Set());
     toast({
       tone: failed > 0 ? "warning" : "success",
-      title: `${removed} ${removed === 1 ? "copy" : "copies"} moved to the Recycle Bin`,
+      title: `${removed} ${removed === 1 ? "copy" : "copies"} moved to the ${w.trash}`,
       body: failed > 0 ? `${failed} could not be moved and were left alone.` : undefined,
     });
     report.reload();
@@ -274,7 +277,7 @@ export function DuplicatesView() {
         <>
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-3">
             <div>
-              <p className="numeric font-display text-xl font-semibold text-[var(--color-accent)]">
+              <p className="readout text-[26px] text-[var(--color-accent)]">
                 {formatBytes(report.data.total_reclaimable_bytes)}
               </p>
               <p className="text-2xs text-[var(--color-ink-muted)]">
@@ -303,7 +306,7 @@ export function DuplicatesView() {
                 icon={<Trash2 className="size-3.5" />}
                 onClick={() => setConfirming(true)}
               >
-                Move selected to Recycle Bin
+                Move selected to {w.trash}
               </Button>
             </div>
           </div>
@@ -332,15 +335,15 @@ export function DuplicatesView() {
 
       <Hint>
         Duplicates are never removed automatically. At least one copy of every group is always
-        kept, and anything you do remove goes to the Recycle Bin.
+        kept, and anything you do remove goes to the {w.trash}.
       </Hint>
 
       <ConfirmDialog
         open={confirming}
         onOpenChange={setConfirming}
-        title={`Move ${selected.size} duplicate ${selected.size === 1 ? "copy" : "copies"} to the Recycle Bin?`}
+        title={`Move ${selected.size} duplicate ${selected.size === 1 ? "copy" : "copies"} to the ${w.trash}?`}
         loading={removing}
-        confirmLabel="Move to Recycle Bin"
+        confirmLabel={`Move to ${w.trash}`}
         onConfirm={removeSelected}
         estimate={
           <div className="flex items-baseline justify-between">
@@ -352,7 +355,7 @@ export function DuplicatesView() {
             </span>
           </div>
         }
-        whatHappens="Each selected copy is moved to the Windows Recycle Bin, where it stays recoverable until the bin is emptied."
+        whatHappens={`Each selected copy is moved to the ${w.trash}, where it stays recoverable until it is emptied.`}
         whatIsUntouched="At least one copy of every group. Protected files. Anything you did not select."
       />
     </div>

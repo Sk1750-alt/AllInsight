@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import "@fontsource-variable/instrument-sans";
 import "./index.css";
 
 // The context menu belongs to a browser, not to a desktop utility. Text

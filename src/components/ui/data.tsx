@@ -200,8 +200,9 @@ export function ScoreRing({
   partial?: boolean;
   size?: number;
 }) {
-  const stroke = 9;
-  const radius = (size - stroke) / 2;
+  const stroke = 3;
+  // Room outside the arc for the dial's tick marks.
+  const radius = (size - stroke) / 2 - 8;
   const circumference = 2 * Math.PI * radius;
   const clamped = Math.max(0, Math.min(100, score));
   const offset = circumference - (clamped / 100) * circumference;
@@ -216,12 +217,29 @@ export function ScoreRing({
   return (
     <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90" aria-hidden>
+        {Array.from({ length: 50 }).map((_, i) => {
+          const angle = (i / 50) * 2 * Math.PI;
+          const major = i % 5 === 0;
+          const r1 = radius + 5;
+          const r2 = radius + (major ? 10 : 7.5);
+          return (
+            <line
+              key={i}
+              x1={size / 2 + r1 * Math.cos(angle)}
+              y1={size / 2 + r1 * Math.sin(angle)}
+              x2={size / 2 + r2 * Math.cos(angle)}
+              y2={size / 2 + r2 * Math.sin(angle)}
+              stroke={major ? "var(--color-ink-subtle)" : "var(--color-line-strong)"}
+              strokeWidth={1}
+            />
+          );
+        })}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="var(--color-surface-hover)"
+          stroke="var(--color-line)"
           strokeWidth={stroke}
           strokeDasharray={partial ? "4 6" : undefined}
         />
@@ -240,8 +258,7 @@ export function ScoreRing({
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span
-          className="numeric font-display text-3xl font-semibold leading-none"
-          style={{ color: strokeColor }}
+          className="readout text-[40px] leading-none text-[var(--color-ink)]"
         >
           {Math.round(clamped)}
         </span>

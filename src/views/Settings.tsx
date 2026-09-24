@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 
+import { usePlatformWords } from "@/lib/platform";
 import { api } from "@/lib/api";
 import { useAsync, useStore } from "@/app/store";
 import {
@@ -84,9 +85,9 @@ const SECTIONS: { id: SectionId; label: string; icon: React.ComponentType<{ clas
   ];
 
 const THEMES: { value: Theme; label: string; hint?: string }[] = [
-  { value: "system", label: "System", hint: "follows Windows" },
-  { value: "dark", label: "Dark", hint: "default" },
-  { value: "light", label: "Light" },
+  { value: "system", label: "System", hint: "follows your OS" },
+  { value: "dark", label: "Dark" },
+  { value: "light", label: "Light", hint: "default" },
   { value: "midnight", label: "Midnight", hint: "deeper, warmer" },
   { value: "contrast", label: "High contrast", hint: "pure black, OLED" },
   { value: "paper", label: "Paper", hint: "muted light" },
@@ -107,6 +108,7 @@ const DUPLICATE_SIZES = [
 
 export function SettingsView() {
   const { settings, saveSettings, environment, toast, reportError } = useStore();
+  const w = usePlatformWords();
   const [section, setSection] = React.useState<SectionId>("general");
   const [draft, setDraft] = React.useState<SettingsType | null>(null);
 
@@ -242,7 +244,7 @@ export function SettingsView() {
               <div className="divide-y divide-[var(--color-line)]">
                 <SettingRow
                   title="Theme"
-                  description="System follows the Windows light and dark setting. The others are fixed palettes."
+                  description={`System follows the ${w.os} light and dark setting. The others are fixed palettes.`}
                   control={
                     <Select
                       label="Theme"
@@ -320,7 +322,7 @@ export function SettingsView() {
               <Panel>
                 <PanelHeader
                   title="Automatic cleanup"
-                  description="Only categories whose data Windows rebuilds by itself can ever run unattended."
+                  description={`Only categories whose data ${w.os} rebuilds by itself can ever run unattended.`}
                 />
                 <div className="divide-y divide-[var(--color-line)]">
                   <SettingRow
@@ -337,7 +339,7 @@ export function SettingsView() {
                   <SettingRow
                     title="Run when free space falls below"
                     disabled={!draft.auto_clean_enabled}
-                    description="Measured on the drive that holds Windows."
+                    description={`Measured on the drive that holds ${w.os}.`}
                     control={
                       <NumberField
                         label="Free space threshold"
@@ -357,7 +359,7 @@ export function SettingsView() {
                   </p>
                   <p className="mt-0.5 text-2xs text-[var(--color-ink-muted)]">
                     This list is fixed in AllInsight itself. Downloads, documents, media, duplicates
-                    and the Recycle Bin can never appear here, whatever is selected.
+                    and the {w.trash} can never appear here, whatever is selected.
                   </p>
                   <div className="mt-3 space-y-2">
                     {autoCleanEligible.map((category) => (
@@ -420,7 +422,7 @@ export function SettingsView() {
                         </ul>
                       ) : (
                         <p className="mt-1 text-2xs text-[var(--color-ink-subtle)]">
-                          Handled by Windows rather than by folder.
+                          Handled by {w.os} rather than by folder.
                         </p>
                       )}
                     </div>
@@ -436,7 +438,7 @@ export function SettingsView() {
               <div className="divide-y divide-[var(--color-line)]">
                 <SettingRow
                   title="Show notifications"
-                  description="Uses the Windows notification centre."
+                  description={w.isWindows ? "Uses the Windows notification centre." : "Uses your desktop's notifications."}
                   control={
                     <Switch
                       checked={draft.notifications_enabled}
@@ -819,7 +821,7 @@ export function SettingsView() {
                 <PanelHeader title="Process safety" />
                 <SettingRow
                   title="Confirm before ending a process"
-                  description="Processes Windows needs are refused outright, whatever this is set to."
+                  description={`Processes ${w.os} needs are refused outright, whatever this is set to.`}
                   control={
                     <Switch
                       checked={draft.require_confirmation_for_processes}
@@ -877,6 +879,7 @@ export function SettingsView() {
                     </Button>
                   }
                 />
+                {w.canElevate ? (
                 <SettingRow
                   title="Administrator permission"
                   description={
@@ -895,6 +898,7 @@ export function SettingsView() {
                     </Button>
                   }
                 />
+                ) : null}
               </div>
             </Panel>
           ) : null}
@@ -925,7 +929,7 @@ export function SettingsView() {
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-[var(--color-ink-muted)]">Operating system</dt>
-                    <dd className="text-[var(--color-ink)]">{environment?.os_name ?? "Windows"}</dd>
+                    <dd className="text-[var(--color-ink)]">{environment?.os_name ?? w.os}</dd>
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-[var(--color-ink-muted)]">Network access</dt>
@@ -995,7 +999,7 @@ function ThirdPartyLicences() {
         <div className="px-5 pb-5 pt-3">
           {failed ? (
             <p className="text-xs text-[var(--color-ink-muted)]">
-              The licence file could not be read. It is also published at allinsight.info.
+              The licence file could not be read. It is also published at allinsight.biz.
             </p>
           ) : text === null ? (
             <Skeleton className="h-64 w-full" />

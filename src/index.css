@@ -3,47 +3,68 @@
 /*
   AllInsight design tokens.
 
-  The palette is deliberately narrow: two greys for surfaces, one accent, and
-  four semantic colours. A device utility earns trust by being legible and
-  consistent, not by being colourful, so colour is reserved for state that
-  actually means something.
+  The product is a measuring instrument for one computer, so the interface
+  borrows from instruments rather than from dashboards: a pale porcelain
+  ground, graphite ink, hairline rules, and one colour - the deep teal of the
+  mark - reserved for what is being measured. Depth comes from hairlines, not
+  shadows; hierarchy comes from type, not boxes.
 
-  Type is Segoe UI Variable where Windows 11 provides it, falling back to
-  Segoe UI on Windows 10. Numbers are tabular everywhere so figures line up in
-  tables and stop jittering while they update.
+  Instrument Sans (bundled, so it works offline) is used with restraint: page
+  titles and the large readout numerals. Everything else is set in the
+  platform's own UI face, so the application still feels native on Windows,
+  Linux and macOS. Figures are tabular everywhere.
+
+  Light is the default palette. The dark palette redefines the same tokens.
 */
 
 @theme {
-  --font-sans: "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, -apple-system, sans-serif;
-  --font-display: "Segoe UI Variable Display", "Segoe UI Semibold", "Segoe UI", Inter, system-ui, sans-serif;
-  --font-mono: "Cascadia Mono", "Cascadia Code", Consolas, "SF Mono", monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", Cantarell, Ubuntu, "Noto Sans", system-ui, sans-serif;
+  --font-display: "Instrument Sans Variable", -apple-system, "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 
-  --color-canvas: #0b0e11;
-  --color-surface: #12161a;
-  --color-surface-raised: #171d22;
-  --color-surface-hover: #1c232a;
-  --color-line: #232b32;
-  --color-line-strong: #2f3941;
+  /* Porcelain, White, Graphite, Slate, Hairline, Deep Teal. */
+  --color-canvas: #f5f6f4;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-hover: #eef0ed;
+  --color-line: #e3e5e2;
+  --color-line-strong: #cfd3ce;
+  --color-sidebar: #eceeea;
+  --color-selection: #e1e4df;
 
-  --color-ink: #e8eff3;
-  --color-ink-muted: #96a4ad;
-  --color-ink-subtle: #6c7a84;
+  --color-ink: #17181a;
+  --color-ink-muted: #5d6168;
+  --color-ink-subtle: #8a8e94;
 
-  --color-accent: #31b0c6;
-  --color-accent-hover: #45c8de;
-  --color-accent-ink: #04171c;
-  --color-accent-soft: #123840;
+  --color-accent: #0b6e80;
+  --color-accent-hover: #095e6d;
+  --color-accent-ink: #ffffff;
+  --color-accent-soft: #e2eff1;
 
-  --color-ok: #3fb950;
-  --color-ok-soft: #10291a;
-  --color-warn: #d8a02a;
-  --color-warn-soft: #2e2410;
-  --color-danger: #e05a52;
-  --color-danger-soft: #33191a;
-  --color-unknown: #7d8b94;
-  --color-unknown-soft: #1e252a;
+  --color-primary: #17181a;
+  --color-primary-hover: #2c2e31;
+  --color-primary-ink: #ffffff;
 
-  --radius-panel: 10px;
+  --color-ok: #2e7d4f;
+  --color-ok-soft: #e5f1e9;
+  --color-warn: #a35a00;
+  --color-warn-soft: #f8eedf;
+  --color-danger: #b42318;
+  --color-danger-soft: #f9e6e4;
+  --color-unknown: #7a7e84;
+  --color-unknown-soft: #eceeea;
+
+  --shadow-panel: 0 1px 0 rgba(23, 24, 26, 0.03);
+  --shadow-float: 0 0 0 1px rgba(23, 24, 26, 0.06), 0 18px 48px rgba(23, 24, 26, 0.12);
+
+  --radius-panel: 12px;
+
+  /* Motion. Everything decelerates into place, the way AppKit and UIKit
+     animations do: fast out of the gate, a long soft landing, no bounce on
+     anything that carries information. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
 
   --text-2xs: 0.6875rem;
   --text-xs: 0.75rem;
@@ -51,32 +72,59 @@
   --text-base: 0.875rem;
 }
 
-/* Light theme. Same token names, so no component knows which one is active. */
-:root[data-theme="light"] {
-  --color-canvas: #f3f5f7;
-  --color-surface: #ffffff;
-  --color-surface-raised: #ffffff;
-  --color-surface-hover: #eef1f4;
-  --color-line: #dfe4e8;
-  --color-line-strong: #c8d0d6;
+/* Dark: graphite ground, same restraint. */
+:root[data-theme="dark"] {
+  --color-canvas: #121314;
+  --color-surface: #1a1b1d;
+  --color-surface-raised: #202124;
+  --color-surface-hover: #242528;
+  --color-line: #2a2c2f;
+  --color-line-strong: #3a3d41;
+  --color-sidebar: #161719;
+  --color-selection: #26282b;
 
-  --color-ink: #101619;
-  --color-ink-muted: #55636c;
-  --color-ink-subtle: #78848c;
+  --color-ink: #ecedee;
+  --color-ink-muted: #a0a4aa;
+  --color-ink-subtle: #6f737a;
 
-  --color-accent: #1c8ba1;
-  --color-accent-hover: #157689;
-  --color-accent-ink: #ffffff;
-  --color-accent-soft: #dcf0f4;
+  --color-accent: #4fb7c9;
+  --color-accent-hover: #6cc6d5;
+  --color-accent-ink: #0b1a1d;
+  --color-accent-soft: #15292d;
 
-  --color-ok: #1a7f37;
-  --color-ok-soft: #dcf5e3;
-  --color-warn: #9a6700;
-  --color-warn-soft: #fbf0d5;
-  --color-danger: #c0362e;
-  --color-danger-soft: #fbe3e1;
-  --color-unknown: #6c7a84;
-  --color-unknown-soft: #eaeef1;
+  --color-primary: #ecedee;
+  --color-primary-hover: #ffffff;
+  --color-primary-ink: #121314;
+
+  --color-ok: #5cc28a;
+  --color-ok-soft: #16261d;
+  --color-warn: #e0a24a;
+  --color-warn-soft: #2b2216;
+  --color-danger: #ec6b5e;
+  --color-danger-soft: #2e1a18;
+  --color-unknown: #8b8f95;
+  --color-unknown-soft: #222326;
+
+  --shadow-panel: none;
+  --shadow-float: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 18px 48px rgba(0, 0, 0, 0.5);
+}
+
+/* The other themes predate the primary token; give them one. */
+:root[data-theme="midnight"],
+:root[data-theme="contrast"] {
+  --color-primary: var(--color-ink);
+  --color-primary-hover: var(--color-ink);
+  --color-primary-ink: var(--color-canvas);
+  --color-sidebar: var(--color-surface);
+  --color-selection: var(--color-surface-hover);
+  --shadow-panel: none;
+}
+:root[data-theme="paper"] {
+  --color-primary: var(--color-ink);
+  --color-primary-hover: var(--color-ink);
+  --color-primary-ink: var(--color-surface);
+  --color-sidebar: var(--color-canvas);
+  --color-selection: var(--color-surface-hover);
 }
 
 @layer base {
@@ -96,13 +144,21 @@
     color: var(--color-ink);
     font-family: var(--font-sans);
     font-size: var(--text-base);
-    line-height: 1.45;
+    line-height: 1.5;
+    letter-spacing: -0.006em;
     -webkit-font-smoothing: antialiased;
     font-variant-numeric: tabular-nums;
     /* A desktop application is not a document: text selection everywhere
        makes drag interactions feel broken. Re-enabled where it is useful. */
     user-select: none;
     overflow: hidden;
+    /* A theme change fades rather than flashes. */
+    transition: background-color 320ms var(--ease-in-out), color 320ms var(--ease-in-out);
+  }
+
+  main {
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
   }
 
   input,
@@ -114,19 +170,19 @@
   h1, h2, h3, h4 {
     font-family: var(--font-display);
     font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
   }
 
   /* Focus is always visible. Keyboard users are not second-class here. */
   :focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
     outline-offset: 2px;
-    border-radius: 4px;
+    border-radius: 7px;
   }
 
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
@@ -144,16 +200,49 @@
 }
 
 @layer utilities {
+  /* A card is a hairline on the porcelain ground, like a plate on a bench. */
   .panel {
     background: var(--color-surface);
     border: 1px solid var(--color-line);
     border-radius: var(--radius-panel);
+    box-shadow: var(--shadow-panel);
   }
 
   .panel-raised {
     background: var(--color-surface-raised);
     border: 1px solid var(--color-line);
     border-radius: var(--radius-panel);
+    box-shadow: var(--shadow-float);
+  }
+
+  .vibrancy {
+    background: var(--color-sidebar);
+  }
+
+  /* Large measured values: the instrument's readout. */
+  .readout {
+    font-family: var(--font-display);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    letter-spacing: -0.035em;
+    line-height: 1;
+  }
+
+  /* The signature: a scale rule under each page title, minor ticks every
+     8px and a major tick every 40px, fading out to the right. It is the one
+     place the interface says "measurement" out loud. */
+  .scale-rule {
+    height: 9px;
+    background-image:
+      linear-gradient(to right, var(--color-ink) 1px, transparent 1px),
+      linear-gradient(to right, var(--color-line-strong) 1px, transparent 1px),
+      linear-gradient(to right, var(--color-line) 0 100%);
+    background-size: 40px 9px, 8px 5px, 100% 1px;
+    background-position: 0 0, 0 4px, 0 8px;
+    background-repeat: repeat-x, repeat-x, no-repeat;
+    -webkit-mask-image: linear-gradient(to right, #000 0, #000 55%, transparent 100%);
+    mask-image: linear-gradient(to right, #000 0, #000 55%, transparent 100%);
+    opacity: 0.55;
   }
 
   .hairline {
@@ -168,24 +257,80 @@
   /* One shared transition, so nothing in the interface animates for longer
      than it takes to read the change. */
   .transition-quick {
-    transition-property: background-color, border-color, color, opacity, transform;
-    transition-duration: 120ms;
-    transition-timing-function: cubic-bezier(0.2, 0, 0.2, 1);
+    transition-property: background-color, border-color, color, opacity, transform, translate, scale,
+      box-shadow;
+    transition-duration: 220ms;
+    transition-timing-function: var(--ease-out);
   }
 
+  /* A screen arrives as a short cascade: the header, then each block a beat
+     later. Forty milliseconds apart is felt rather than seen. */
   .view-enter {
-    animation: view-enter 140ms cubic-bezier(0.2, 0, 0.2, 1);
+    animation: view-enter 420ms var(--ease-out) both;
+  }
+  .view-enter > * {
+    animation: view-enter 520ms var(--ease-out) both;
+  }
+  .view-enter > :nth-child(2) { animation-delay: 40ms; }
+  .view-enter > :nth-child(3) { animation-delay: 80ms; }
+  .view-enter > :nth-child(4) { animation-delay: 120ms; }
+  .view-enter > :nth-child(5) { animation-delay: 160ms; }
+  .view-enter > :nth-child(n + 6) { animation-delay: 200ms; }
+
+  .dialog-overlay {
+    animation: fade-in 260ms var(--ease-out) both;
+  }
+  .dialog-enter {
+    animation: dialog-enter 360ms var(--ease-spring) both;
+  }
+  .toast-enter {
+    animation: toast-enter 420ms var(--ease-spring) both;
+  }
+
+  /* Pressing a control gives way slightly under the pointer. */
+  .press:active:not(:disabled) {
+    scale: 0.97;
+    transition-duration: 80ms;
   }
 }
 
 @keyframes view-enter {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    translate: 0 10px;
   }
   to {
     opacity: 1;
-    transform: none;
+    translate: 0 0;
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dialog-enter {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+    scale: 0.98;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
   }
 }
 

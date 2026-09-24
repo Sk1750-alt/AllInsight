@@ -35,20 +35,19 @@ export function Switch({
       disabled={disabled}
       aria-label={label}
       className={cn(
-        "relative h-[18px] w-8 shrink-0 rounded-full border transition-quick",
+        "relative h-[22px] w-[38px] shrink-0 rounded-full p-[2px] transition-colors duration-300",
         "disabled:opacity-40 disabled:pointer-events-none",
-        checked
-          ? "border-[var(--color-accent)] bg-[var(--color-accent)]"
-          : "border-[var(--color-line-strong)] bg-[var(--color-surface-hover)]",
+        checked ? "bg-[var(--color-accent)]" : "bg-[var(--color-line-strong)]",
       )}
+      style={{ transitionTimingFunction: "var(--ease-out)" }}
     >
       <SwitchPrimitive.Thumb
         className={cn(
-          "block size-3 rounded-full transition-quick",
-          checked
-            ? "translate-x-[15px] bg-[var(--color-accent-ink)]"
-            : "translate-x-[2px] bg-[var(--color-ink-subtle)]",
+          "block size-[18px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.25),0_0_0_0.5px_rgba(0,0,0,0.06)]",
+          "transition-transform duration-300",
+          checked ? "translate-x-4" : "translate-x-0",
         )}
+        style={{ transitionTimingFunction: "var(--ease-spring)" }}
       />
     </SwitchPrimitive.Root>
   );

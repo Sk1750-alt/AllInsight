@@ -23,27 +23,20 @@ function NavItem({ route, active, onSelect }: { route: Route; active: boolean; o
   const Icon = ICONS[route.id];
   return (
     <button
+      data-route={route.id}
       onClick={onSelect}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-left text-xs transition-quick",
+        "group relative z-10 flex w-full items-center gap-2.5 rounded-md px-2.5 py-[6px] text-left text-[13px] transition-quick",
         active
-          ? "bg-[var(--color-surface-hover)] font-medium text-[var(--color-ink)]"
-          : "text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-ink)]",
+          ? "font-medium text-[var(--color-ink)]"
+          : "text-[var(--color-ink-muted)] hover:bg-[var(--color-selection)] hover:text-[var(--color-ink)]",
       )}
     >
-      <span
-        className={cn(
-          "absolute left-0 h-4 w-[2px] rounded-r-full transition-quick",
-          active ? "bg-[var(--color-accent)]" : "bg-transparent",
-        )}
-        style={{ position: "relative", left: -6 }}
-        aria-hidden
-      />
       <Icon
         className={cn(
           "size-4 shrink-0",
-          active ? "text-[var(--color-accent)]" : "text-[var(--color-ink-subtle)]",
+          active ? "text-[var(--color-accent)]" : "text-[var(--color-ink-subtle)] group-hover:text-[var(--color-ink-muted)]",
         )}
       />
       <span className="truncate">{route.label}</span>
@@ -53,6 +46,22 @@ function NavItem({ route, active, onSelect }: { route: Route; active: boolean; o
 
 function Sidebar({ onOpenPalette }: { onOpenPalette: () => void }) {
   const { route, navigate, environment } = useStore();
+  const listRef = React.useRef<HTMLDivElement>(null);
+  const [plate, setPlate] = React.useState<{ top: number; height: number; animate: boolean } | null>(
+    null,
+  );
+
+  React.useLayoutEffect(() => {
+    const list = listRef.current;
+    const item = list?.querySelector<HTMLElement>(`[data-route="${route}"]`);
+    if (!list || !item) {
+      setPlate(null);
+      return;
+    }
+    const top = item.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop;
+    // The first placement is instant; every later one glides.
+    setPlate((prev) => ({ top, height: item.offsetHeight, animate: prev !== null }));
+  }, [route]);
 
   const groups = React.useMemo(() => {
     const order: Route["group"][] = ["main", "storage", "system", "tools"];
@@ -66,29 +75,43 @@ function Sidebar({ onOpenPalette }: { onOpenPalette: () => void }) {
   return (
     <nav
       aria-label="Main"
-      className="flex w-[212px] shrink-0 flex-col border-r border-[var(--color-line)] bg-[var(--color-surface)]"
+      className="vibrancy flex w-[228px] shrink-0 flex-col border-r border-[var(--color-line)]"
     >
-      <div className="flex items-center gap-2.5 px-4 py-4">
+      <div className="flex items-center gap-2.5 px-5 pb-4 pt-5">
         <Logo size={26} />
         <Wordmark />
       </div>
 
       <button
         onClick={onOpenPalette}
-        className="mx-3 mb-3 flex items-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-canvas)] px-2.5 py-1.5 text-2xs text-[var(--color-ink-subtle)] transition-quick hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-muted)]"
+        className="mx-3 mb-5 flex items-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-surface)] px-2.5 py-1.5 text-xs text-[var(--color-ink-subtle)] transition-quick hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-muted)]"
       >
         <Search className="size-3.5" />
         <span className="flex-1 text-left">Search</span>
-        <kbd className="rounded border border-[var(--color-line)] px-1 font-mono text-[10px]">
-          Ctrl K
+        <kbd className="font-sans text-[11px] opacity-70">
+          {environment?.platform === "macos" ? "⌘K" : "Ctrl K"}
         </kbd>
       </button>
 
-      <div className="flex-1 space-y-4 overflow-y-auto px-3 pb-3">
+      <div ref={listRef} className="relative flex-1 space-y-5 overflow-y-auto px-3 pb-3">
+        {/* One selection plate that glides to the chosen item rather than
+            jumping, like a source list on macOS. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-3 right-3 top-0 rounded-md bg-[var(--color-surface)] shadow-[0_0_0_1px_var(--color-line),0_1px_2px_rgba(23,24,26,0.04)]"
+          style={{
+            height: plate?.height ?? 0,
+            translate: `0 ${plate?.top ?? 0}px`,
+            opacity: plate ? 1 : 0,
+            transition: plate?.animate
+              ? "translate 380ms var(--ease-out), height 380ms var(--ease-out), opacity 200ms"
+              : "none",
+          }}
+        />
         {groups.map(({ group, label, routes }) => (
           <div key={group}>
             {label ? (
-              <p className="px-2.5 pb-1.5 text-2xs font-semibold uppercase tracking-wider text-[var(--color-ink-subtle)]">
+              <p className="px-2.5 pb-1.5 text-[10.5px] font-medium uppercase tracking-[0.08em] text-[var(--color-ink-subtle)]">
                 {label}
               </p>
             ) : null}
@@ -106,14 +129,18 @@ function Sidebar({ onOpenPalette }: { onOpenPalette: () => void }) {
         ))}
       </div>
 
-      <div className="space-y-2 border-t border-[var(--color-line)] px-3 py-3">
+      <div className="space-y-2 px-5 py-4">
         <div className="flex items-center gap-1.5 text-2xs text-[var(--color-ink-subtle)]">
           <WifiOff className="size-3" />
           Offline mode - all local features available
         </div>
         <div className="flex items-center justify-between">
           <Badge tone={environment?.elevated ? "accent" : "neutral"} dot>
-            {environment?.elevated ? "Administrator" : "Standard user"}
+            {environment?.elevated
+              ? environment.platform === "windows"
+                ? "Administrator"
+                : "root"
+              : "Standard user"}
           </Badge>
           <span className="text-2xs text-[var(--color-ink-subtle)]">
             v{environment?.app_version ?? "1.0.0"}
@@ -130,7 +157,7 @@ function ScanStrip() {
   if (!scanning || !scanProgress) return null;
 
   return (
-    <div className="border-b border-[var(--color-line)] bg-[var(--color-surface)] px-6 py-2">
+    <div className="vibrancy border-b border-[var(--color-line)] px-10 py-2">
       <div className="flex items-center justify-between gap-4 text-2xs text-[var(--color-ink-muted)]">
         <span className="truncate">
           Scanning {scanProgress.current ? shortenPath(scanProgress.current, 60) : "..."}
@@ -163,7 +190,7 @@ function Toasts() {
           key={t.id}
           role="status"
           className={cn(
-            "pointer-events-auto view-enter rounded-md border bg-[var(--color-surface-raised)] p-3 shadow-xl",
+            "pointer-events-auto toast-enter panel-raised rounded-2xl border p-3.5",
             tones[t.tone],
           )}
         >
@@ -212,7 +239,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <EmergencyBanner />
         <ScanStrip />
         <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[1400px] px-6 py-6">{children}</div>
+          <div className="mx-auto w-full max-w-[1180px] px-12 py-10">{children}</div>
         </main>
       </div>
 
@@ -222,7 +249,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* A quiet affordance so a long scan can always be stopped, wherever the
           user has navigated to. */}
       {scanning ? (
-        <div className="fixed bottom-4 left-[228px] z-40">
+        <div className="fixed bottom-4 left-[244px] z-40">
           <Tooltip content="Stop the running scan">
             <span>
               <IconButton

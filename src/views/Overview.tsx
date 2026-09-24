@@ -21,6 +21,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { usePlatformWords } from "@/lib/platform";
 import { api } from "@/lib/api";
 import { useAsync, usePolled, useStore } from "@/app/store";
 import { routeForAction } from "@/app/navigation";
@@ -76,7 +77,16 @@ function VitalCard({
       </div>
 
       <div>
-        <div className={cn("numeric font-display text-2xl font-semibold leading-none", t.text)}>
+        {/* Numbers are readouts; a word such as "Healthy" is a state, and is
+            set at text size rather than dressed up as a measurement. */}
+        <div
+          className={cn(
+            /\d/.test(String(value))
+              ? "readout text-[30px] leading-none"
+              : "font-display text-[19px] font-semibold leading-tight tracking-[-0.01em]",
+            t.text,
+          )}
+        >
           {value}
         </div>
         {detail ? (
@@ -131,6 +141,7 @@ function InsightRow({ insight, onAct }: { insight: Insight; onAct: () => void })
 
 export function OverviewView() {
   const { navigate, scanGeneration, toast } = useStore();
+  const w = usePlatformWords();
   const { data, loading, error, reload } = useAsync<DashboardSnapshot>(
     () => api.getDashboard(),
     [scanGeneration],
@@ -395,9 +406,13 @@ export function OverviewView() {
                 <p className="text-2xs uppercase tracking-wider text-[var(--color-ink-subtle)]">
                   Potentially reclaimable
                 </p>
-                <p className="numeric mt-1 font-display text-2xl font-semibold text-[var(--color-accent)]">
-                  {data?.reclaimable_bytes ? formatBytes(data.reclaimable_bytes) : "Not measured"}
-                </p>
+                {data?.reclaimable_bytes ? (
+                  <p className="readout mt-1 text-[30px] text-[var(--color-accent)]">
+                    {formatBytes(data.reclaimable_bytes)}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-[15px] font-medium text-[var(--color-ink-muted)]">Not measured</p>
+                )}
               </div>
               <div className="flex gap-2">
                 <Button
@@ -541,7 +556,7 @@ export function OverviewView() {
                 </p>
                 <p className="text-2xs text-[var(--color-ink-subtle)]">
                   {volume.filesystem ?? "Unknown filesystem"} · {volume.kind.replace("_", " ")}
-                  {volume.is_system ? " · Windows" : ""}
+                  {volume.is_system ? ` · ${w.os}` : ""}
                 </p>
               </div>
 

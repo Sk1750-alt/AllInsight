@@ -8,6 +8,7 @@
 import * as React from "react";
 import { FolderOpen, Info, Lock, Power, RefreshCw } from "lucide-react";
 
+import { usePlatformWords } from "@/lib/platform";
 import { api } from "@/lib/api";
 import { useAsync, useStore } from "@/app/store";
 import {
@@ -43,6 +44,7 @@ const IMPACT_LABEL: Record<StartupImpact, string> = {
 export function StartupView() {
   const { toast, reportError } = useStore();
   const { data, loading, error, reload } = useAsync<StartupList>(() => api.getStartupItems(), []);
+  const w = usePlatformWords();
   const [query, setQuery] = React.useState("");
   const [busy, setBusy] = React.useState<string | null>(null);
 
@@ -65,7 +67,7 @@ export function StartupView() {
       await api.setStartupEnabled(id, enabled);
       toast({
         tone: "success",
-        title: enabled ? `${name} will start with Windows` : `${name} will no longer start with Windows`,
+        title: enabled ? `${name} will start when you sign in` : `${name} will no longer start when you sign in`,
       });
       reload();
     } catch (e) {
@@ -81,7 +83,7 @@ export function StartupView() {
     <div className="view-enter space-y-5">
       <PageHeader
         title="Startup"
-        subtitle="Programs that run when you sign in to Windows."
+        subtitle={`Programs that run when you sign in to ${w.os}.`}
         actions={
           <Button variant="ghost" icon={<RefreshCw className="size-3.5" />} onClick={reload}>
             Refresh
@@ -94,7 +96,7 @@ export function StartupView() {
           <p className="text-2xs uppercase tracking-wider text-[var(--color-ink-subtle)]">
             Enabled
           </p>
-          <p className="numeric mt-1 font-display text-2xl font-semibold text-[var(--color-ink)]">
+          <p className="readout mt-1 text-[30px] text-[var(--color-ink)]">
             {formatCount(data?.enabled_count ?? 0)}
           </p>
           <p className="text-xs text-[var(--color-ink-muted)]">
@@ -106,7 +108,7 @@ export function StartupView() {
           <p className="text-2xs uppercase tracking-wider text-[var(--color-ink-subtle)]">
             Estimated high impact
           </p>
-          <p className="numeric mt-1 font-display text-2xl font-semibold text-[var(--color-ink)]">
+          <p className="readout mt-1 text-[30px] text-[var(--color-ink)]">
             {formatCount(highImpact)}
           </p>
           <p className="text-xs text-[var(--color-ink-muted)]">enabled and large on disk</p>
@@ -117,10 +119,10 @@ export function StartupView() {
             Permission
           </p>
           <p className="mt-1 font-display text-lg font-semibold text-[var(--color-ink)]">
-            {data?.elevated ? "Administrator" : "Standard user"}
+            {data?.elevated ? (w.isWindows ? "Administrator" : "root") : "Standard user"}
           </p>
           <p className="text-xs text-[var(--color-ink-muted)]">
-            {data?.elevated
+            {data?.elevated || !w.isWindows
               ? "All entries can be changed"
               : "Machine-wide entries need administrator permission"}
           </p>
@@ -136,7 +138,7 @@ export function StartupView() {
       <Panel>
         <PanelHeader
           title="Startup entries"
-          description="From the Run registry keys and the Startup folders, the same places Windows reads."
+          description={`From ${w.startupPlaces}.`}
         />
 
         {loading ? (
@@ -150,7 +152,7 @@ export function StartupView() {
         ) : rows.length === 0 ? (
           <EmptyState
             icon={<Power className="size-5" />}
-            title={query ? "Nothing matched that filter" : "Nothing starts with Windows"}
+            title={query ? "Nothing matched that filter" : "Nothing starts when you sign in"}
             description={
               query ? undefined : "No programs are registered to run when you sign in."
             }
@@ -187,7 +189,7 @@ export function StartupView() {
                   </Td>
                   <Td className="text-[var(--color-ink-muted)]">{item.location_label}</Td>
                   <Td>
-                    <Tooltip content="Windows does not publish its measured startup impact, so this band is estimated from the size of the program.">
+                    <Tooltip content={`${w.os} does not publish a measured startup impact, so this band is estimated from the size of the program.`}>
                       <span>
                         <Badge tone={IMPACT_TONE[item.impact]}>{IMPACT_LABEL[item.impact]}</Badge>
                       </span>
@@ -210,7 +212,7 @@ export function StartupView() {
                             checked={item.enabled}
                             disabled={!item.can_toggle || busy === item.id}
                             onCheckedChange={(value) => toggle(item.id, value, item.name)}
-                            label={`${item.name} starts with Windows`}
+                            label={`${item.name} starts when you sign in`}
                           />
                         </span>
                       </Tooltip>
@@ -239,9 +241,9 @@ export function StartupView() {
       <div className="flex gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-surface)] p-3">
         <Info className="mt-0.5 size-3.5 shrink-0 text-[var(--color-ink-subtle)]" />
         <Hint>
-          Disabling an entry does not uninstall anything and does not delete the registry value or
-          the shortcut. Windows records the change in the same place Task Manager uses, so you can
-          undo it from either application.
+          {w.isWindows
+            ? "Disabling an entry does not uninstall anything and does not delete the registry value or the shortcut. Windows records the change in the same place Task Manager uses, so you can undo it from either application."
+            : "Disabling an entry does not uninstall anything and deletes no file. AllInsight writes a personal copy of the entry marked Hidden in ~/.config/autostart, which is what your desktop's own startup settings do, so you can undo it from either place."}
         </Hint>
       </div>
     </div>

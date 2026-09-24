@@ -179,11 +179,11 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 pt-[12vh]"
+      className="dialog-overlay fixed inset-0 z-50 flex items-start justify-center bg-[rgba(23,24,26,0.22)] pt-[14vh] backdrop-blur-[6px]"
       onClick={onClose}
     >
       <div
-        className="view-enter w-full max-w-lg overflow-hidden rounded-lg border border-[var(--color-line-strong)] bg-[var(--color-surface-raised)] shadow-2xl"
+        className="dialog-enter w-full max-w-xl overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-raised)] shadow-[var(--shadow-float)]"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label="Search AllInsight"

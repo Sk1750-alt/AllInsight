@@ -444,7 +444,12 @@ export interface InstalledApp {
   scope: AppScope;
   has_uninstaller: boolean;
   is_windows_component: boolean;
+  source: AppSource;
+  /** When removal needs an administrator, the command to run in a terminal. */
+  uninstall_hint: string | null;
 }
+
+export type AppSource = "registry" | "dpkg" | "rpm" | "pacman" | "flatpak" | "snap" | "manual";
 
 export interface AppList {
   apps: InstalledApp[];
@@ -459,7 +464,9 @@ export type StartupLocation =
   | "machine_run"
   | "machine_run32"
   | "user_startup_folder"
-  | "common_startup_folder";
+  | "common_startup_folder"
+  | "user_autostart"
+  | "system_autostart";
 
 export interface StartupItem {
   id: string;
@@ -623,7 +630,11 @@ export interface ProtectedPathView {
   user_added: boolean;
 }
 
+export type Platform = "windows" | "linux" | "macos" | "other";
+
 export interface EnvironmentInfo {
+  platform: Platform;
+  desktop: string | null;
   elevated: boolean;
   os_name: string;
   host_name: string;

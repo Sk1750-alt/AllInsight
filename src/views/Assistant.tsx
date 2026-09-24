@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 
+import { usePlatformWords } from "@/lib/platform";
 import { api } from "@/lib/api";
 import { useAsync, useStore } from "@/app/store";
 import { routeForAction } from "@/app/navigation";
@@ -56,6 +57,7 @@ let turnId = 0;
 
 export function AssistantView() {
   const { navigate, toast, reportError } = useStore();
+  const w = usePlatformWords();
   const status = useAsync<EngineStatus>(() => api.getAiStatus(), []);
   const models = useAsync<ModelInventory>(() => api.getLocalModels(), []);
 
@@ -381,7 +383,7 @@ export function AssistantView() {
             {models.data && !models.data.engine_present ? (
               <div className="rounded-md border border-[color-mix(in_srgb,var(--color-warn)_35%,transparent)] bg-[var(--color-warn-soft)] p-2.5">
                 <p className="text-2xs leading-relaxed text-[var(--color-ink)]">
-                  The inference engine was not found. Put <code>llama-server.exe</code> in{" "}
+                  The inference engine was not found. Put <code>{w.isWindows ? "llama-server.exe" : "llama-server"}</code> in{" "}
                   <span className="font-mono">
                     {models.data.directory.replace(/models$/, "engine")}
                   </span>

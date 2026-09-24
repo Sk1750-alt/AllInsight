@@ -35,12 +35,12 @@ export function Dialog({
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/55 backdrop-blur-[1px]" />
+        <DialogPrimitive.Overlay className="dialog-overlay fixed inset-0 z-50 bg-[rgba(23,24,26,0.28)] backdrop-blur-[6px]" />
         <DialogPrimitive.Content
           className={cn(
             "fixed left-1/2 top-1/2 z-50 w-[calc(100vw-3rem)] -translate-x-1/2 -translate-y-1/2",
-            "rounded-lg border border-[var(--color-line-strong)] bg-[var(--color-surface-raised)] shadow-2xl",
-            "view-enter",
+            "rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-raised)] shadow-[var(--shadow-float)]",
+            "dialog-enter",
             widths[width],
           )}
         >

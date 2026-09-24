@@ -11,6 +11,7 @@ import { AlertOctagon, ChevronRight, X } from "lucide-react";
 import * as React from "react";
 
 import { usePolled, useStore } from "@/app/store";
+import { usePlatformWords } from "@/lib/platform";
 import { api } from "@/lib/api";
 import { Button } from "./ui/primitives";
 import { formatBytes } from "@/lib/format";
@@ -20,6 +21,7 @@ const CRITICAL_FREE_PERCENT = 5;
 
 export function EmergencyBanner() {
   const { navigate } = useStore();
+  const w = usePlatformWords();
   const [dismissed, setDismissed] = React.useState<string[]>([]);
   const storage = usePolled<StorageOverview>(() => api.getStorageOverview(), 60_000);
 
@@ -47,8 +49,8 @@ export function EmergencyBanner() {
             Critical storage shortage on {name}
           </p>
           <p className="text-2xs text-[var(--color-ink-muted)]">
-            Only {formatBytes(volume.free_bytes)} of {formatBytes(volume.total_bytes)} remains.
-            Windows needs free space to update and to page memory, and applications can fail to
+            Only {formatBytes(volume.free_bytes)} of {formatBytes(volume.total_bytes)} remains.{" "}
+            {w.os} needs free space to update and to page memory, and applications can fail to
             save below this point.
           </p>
         </div>

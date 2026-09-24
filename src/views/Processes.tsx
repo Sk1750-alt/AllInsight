@@ -8,6 +8,7 @@
 import * as React from "react";
 import { FolderOpen, Lock, RefreshCw, ShieldAlert, XCircle } from "lucide-react";
 
+import { usePlatformWords } from "@/lib/platform";
 import { api } from "@/lib/api";
 import { usePolled, useStore } from "@/app/store";
 import {
@@ -28,6 +29,7 @@ import type { ProcessInfo, ProcessList } from "@/lib/types";
 type SortKey = "cpu" | "memory" | "name" | "disk";
 
 export function ProcessesView() {
+  const w = usePlatformWords();
   const { toast, reportError, settings } = useStore();
   const [query, setQuery] = React.useState("");
   const [sort, setSort] = React.useState<SortKey>("cpu");
@@ -83,7 +85,7 @@ export function ProcessesView() {
     try {
       const location = process.executable ?? (await api.getProcessLocation(process.pid));
       if (!location) {
-        toast({ tone: "warning", title: "Windows did not report a location for that process." });
+        toast({ tone: "warning", title: `${w.os} did not report a location for that process.` });
         return;
       }
       await api.showInExplorer(location);
@@ -173,7 +175,7 @@ export function ProcessesView() {
                           {process.name}
                         </span>
                         {process.risk === "critical" ? (
-                          <Tooltip content="Windows needs this process. AllInsight will not end it.">
+                          <Tooltip content={`${w.os} needs this process. AllInsight will not end it.`}>
                             <span>
                               <Lock className="size-3 text-[var(--color-ink-subtle)]" />
                             </span>
@@ -224,7 +226,7 @@ export function ProcessesView() {
                         <Tooltip
                           content={
                             process.risk === "critical"
-                              ? "Windows requires this process."
+                              ? `${w.os} requires this process.`
                               : "End this process"
                           }
                         >
@@ -251,7 +253,7 @@ export function ProcessesView() {
 
       <Hint>
         Ending a process discards anything it has not saved. AllInsight refuses outright for the
-        processes Windows needs in order to keep running.
+        processes {w.os} needs in order to keep running.
       </Hint>
 
       <ConfirmDialog
@@ -288,8 +290,9 @@ export function ProcessesView() {
             <div className="flex gap-2 rounded-md border border-[color-mix(in_srgb,var(--color-warn)_35%,transparent)] bg-[var(--color-warn-soft)] p-2.5">
               <ShieldAlert className="mt-0.5 size-3.5 shrink-0 text-[var(--color-warn)]" />
               <p className="text-2xs leading-relaxed text-[var(--color-ink)]">
-                This is part of Windows. Ending it can make the desktop, the Start menu or the
-                taskbar disappear until Windows restarts it or you sign out and back in.
+                {w.isWindows
+                  ? "This is part of Windows. Ending it can make the desktop, the Start menu or the taskbar disappear until Windows restarts it or you sign out and back in."
+                  : `This is part of your desktop session. Ending it can stop sound, networking or the panel until ${w.os} restarts it or you sign out and back in.`}
               </p>
             </div>
           ) : settings?.require_confirmation_for_processes === false ? null : null

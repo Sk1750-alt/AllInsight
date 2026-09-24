@@ -9,6 +9,7 @@
 import * as React from "react";
 import { Blocks, FolderOpen, Info, RefreshCw, Ruler, Trash2 } from "lucide-react";
 
+import { usePlatformWords } from "@/lib/platform";
 import { api } from "@/lib/api";
 import { useAsync, useStore } from "@/app/store";
 import {
@@ -31,6 +32,14 @@ type SortKey = "size" | "name" | "date";
 
 export function ApplicationsView() {
   const { toast, reportError } = useStore();
+  const w = usePlatformWords();
+
+  const copyCommand = (command: string) => {
+    navigator.clipboard
+      .writeText(command)
+      .then(() => toast({ tone: "info", title: "Command copied", body: `Run it in a terminal: ${command}` }))
+      .catch(() => toast({ tone: "info", title: "Run this in a terminal", body: command }));
+  };
   const [measure, setMeasure] = React.useState(false);
   const { data, loading, error, reload } = useAsync<AppList>(
     () => api.getInstalledApplications(measure),
@@ -136,7 +145,7 @@ export function ApplicationsView() {
       <Panel>
         <PanelHeader
           title="Installed applications"
-          description="Read from the same registry entries Windows Settings uses."
+          description={`Read from ${w.appsSource}.`}
         />
 
         {loading ? (
@@ -241,16 +250,26 @@ export function ApplicationsView() {
                           <Tooltip
                             content={
                               app.has_uninstaller
-                                ? "Start this application's own uninstaller"
-                                : "This application did not register an uninstaller with Windows."
+                                ? w.isWindows
+                                  ? "Start this application's own uninstaller"
+                                  : `Remove through ${app.source === "snap" ? "snapd" : "Flatpak"}`
+                                : app.uninstall_hint
+                                  ? `Needs ${w.admin}. Click to copy: ${app.uninstall_hint}`
+                                  : w.isWindows
+                                    ? "This application did not register an uninstaller with Windows."
+                                    : "This was not installed by a package manager, so AllInsight cannot remove it safely."
                             }
                           >
                             <span>
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                disabled={!app.has_uninstaller}
-                                onClick={() => setPending(app)}
+                                disabled={!app.has_uninstaller && !app.uninstall_hint}
+                                onClick={() =>
+                                  app.has_uninstaller
+                                    ? setPending(app)
+                                    : app.uninstall_hint && copyCommand(app.uninstall_hint)
+                                }
                                 icon={<Trash2 className="size-3.5" />}
                                 aria-label="Uninstall"
                               />
@@ -270,9 +289,9 @@ export function ApplicationsView() {
       <div className="flex gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-surface)] p-3">
         <Info className="mt-0.5 size-3.5 shrink-0 text-[var(--color-ink-subtle)]" />
         <Hint>
-          Sizes without the measured label come from the value the installer wrote into the
-          registry, which vendors frequently leave stale or omit. Measuring reads the install
-          folder directly.
+          {w.isWindows
+            ? "Sizes without the measured label come from the value the installer wrote into the registry, which vendors frequently leave stale or omit. Measuring reads the install folder directly."
+            : "Sizes without the measured label come from the package database. Applications installed by a system package manager are removed with it, so AllInsight shows the command rather than asking for root itself."}
         </Hint>
       </div>
 
@@ -282,10 +301,20 @@ export function ApplicationsView() {
         title={`Uninstall ${pending?.name ?? ""}?`}
         loading={starting}
         destructive={false}
-        confirmLabel="Start uninstaller"
+        confirmLabel={w.isWindows ? "Start uninstaller" : "Remove"}
         onConfirm={uninstall}
-        whatHappens="AllInsight starts the uninstaller that this application registered with Windows, and steps back. The uninstaller takes over from there, including any administrator prompt Windows decides to show."
-        whatIsUntouched="AllInsight does not delete any folder or registry entry itself. If the uninstaller leaves files behind, they stay until you remove them deliberately."
+        whatHappens={
+          w.isWindows
+            ? "AllInsight starts the uninstaller that this application registered with Windows, and steps back. The uninstaller takes over from there, including any administrator prompt Windows decides to show."
+            : pending?.source === "snap"
+              ? "AllInsight asks snapd to remove this snap. Your system may ask you to authenticate first."
+              : "AllInsight asks Flatpak to remove this application. Shared runtimes other applications use are left installed."
+        }
+        whatIsUntouched={
+          w.isWindows
+            ? "AllInsight does not delete any folder or registry entry itself. If the uninstaller leaves files behind, they stay until you remove them deliberately."
+            : "AllInsight does not delete any folder itself. Your personal data for the application stays in your home folder until you remove it deliberately."
+        }
       />
     </div>
   );
