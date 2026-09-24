@@ -61,6 +61,18 @@ $json = [ordered]@{
     portable  = Get-Entry $portableName
 }
 
+# Linux packages are built on Linux (scripts/build-linux.sh or CI) and copied
+# into dist-release. They are optional here: when none are present the page
+# keeps its fallback text for them rather than publishing a wrong hash.
+$linux = [ordered]@{}
+foreach ($pair in @(
+        @('deb',      "AllInsight_${tauriVersion}_amd64.deb"),
+        @('rpm',      "AllInsight-${tauriVersion}-1.x86_64.rpm"),
+        @('appimage', "AllInsight_${tauriVersion}_amd64.AppImage"))) {
+    if (Test-Path (Join-Path $release $pair[1])) { $linux[$pair[0]] = Get-Entry $pair[1] }
+}
+if ($linux.Count -gt 0) { $json.linux = $linux }
+
 # Written without a byte order mark. Windows PowerShell's -Encoding utf8 emits
 # one, and a BOM at the head of a .json file is a decoding hazard for anything
 # that reads the bytes rather than running them through a UTF-8 decoder.
@@ -74,5 +86,7 @@ Write-Host "Wrote $out" -ForegroundColor Green
 Write-Host "  installer : $($json.installer.sha256)"
 Write-Host "  portable  : $($json.portable.sha256)"
 Write-Host ''
-Write-Host 'Copy both .exe files to the VM at /var/www/allinsight/downloads/ so the'
+if ($json.linux) { $json.linux.Keys | ForEach-Object { Write-Host ("  {0,-9} : {1}" -f $_, $json.linux[$_].sha256) } }
+Write-Host ''
+Write-Host 'Copy every listed file to the VM at /var/www/allinsight/downloads/ so the'
 Write-Host 'hashes on the page match the files being served.'

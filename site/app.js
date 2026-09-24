@@ -1,644 +1,321 @@
 /*
-  AllInsight — landing page behaviour.
+  AllInsight — site behaviour.
 
-  No dependencies, no build step, no external requests. Every continuous
-  animation is gated on an IntersectionObserver so it stops running the moment
-  its section leaves the viewport: the audience for this product is people
-  whose machine is already struggling.
+  No dependencies, no third-party requests. Every continuous animation runs
+  only while its element is on screen, and prefers-reduced-motion shows every
+  visual in its finished state instead.
 */
 
 (() => {
   'use strict';
 
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const $  = (s, r = document) => r.querySelector(s);
+  const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  const lerp  = (a, b, t) => a + (b - a) * t;
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const easeOut = (t) => 1 - Math.pow(1 - t, 3);
 
-  /* ── Reveal on scroll ───────────────────────────────────────────── */
+  /* Animate a number from 0 to `to` over `ms`, calling `draw` each frame. */
+  const tween = (to, ms, draw, from = 0) => {
+    if (reduced) { draw(to); return; }
+    const start = performance.now();
+    const step = (now) => {
+      const t = clamp((now - start) / ms, 0, 1);
+      draw(from + (to - from) * easeOut(t));
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
 
+  /* Run `enter` once when `el` scrolls into view. */
+  const once = (el, enter, margin = '0px 0px -15% 0px') => {
+    if (!el) return;
+    if (reduced || !('IntersectionObserver' in window)) { enter(); return; }
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) { io.disconnect(); enter(); }
+    }, { rootMargin: margin });
+    io.observe(el);
+  };
+
+  /* Toggle `live` state while `el` is visible. */
+  const whileVisible = (el, onChange) => {
+    if (!el || !('IntersectionObserver' in window)) return;
+    new IntersectionObserver((entries) => {
+      entries.forEach((e) => onChange(e.isIntersecting));
+    }).observe(el);
+  };
+
+  /* ── Reveal on scroll ─────────────────────────────────────────── */
+  $$('.reveal').forEach((el) => once(el, () => el.classList.add('in'), '0px 0px -8% 0px'));
+
+  /* ── Nav: hairline, dark mode over the dark section, progress, section ── */
   {
-    const items = $$('[data-reveal]');
-    items.forEach(el => el.style.setProperty('--d', el.dataset.delay || 0));
-
-    if (reduced || !('IntersectionObserver' in window)) {
-      items.forEach(el => el.classList.add('in'));
-    } else {
-      const io = new IntersectionObserver((entries) => {
-        entries.forEach(e => {
-          if (!e.isIntersecting) return;
-          e.target.classList.add('in');
-          io.unobserve(e.target);
-        });
-      }, { rootMargin: '0px 0px -12% 0px', threshold: 0.08 });
-      items.forEach(el => io.observe(el));
-    }
-  }
-
-  /* ── Scroll progress + sticky nav ───────────────────────────────── */
-
-  {
-    const bar = $('#progress');
     const nav = $('#nav');
+    const bar = $('#progress');
+    const dark = $('#privacy');
+    const links = $$('.nav-links a');
+    const sections = links.map((a) => $(a.getAttribute('href')));
     let queued = false;
 
-    const onScroll = () => {
-      const max = document.documentElement.scrollHeight - innerHeight;
-      const p = max > 0 ? clamp(scrollY / max, 0, 1) : 0;
-      bar.style.transform = `scaleX(${p})`;
-      nav.classList.toggle('stuck', scrollY > 12);
+    const frame = () => {
       queued = false;
+      const y = scrollY;
+      nav.classList.toggle('is-stuck', y > 8);
+      const max = document.documentElement.scrollHeight - innerHeight;
+      bar.style.transform = `scaleX(${max > 0 ? clamp(y / max, 0, 1) : 0})`;
+      if (dark) {
+        const r = dark.getBoundingClientRect();
+        nav.classList.toggle('is-dark', r.top < 52 && r.bottom > 52);
+      }
+      let here = -1;
+      sections.forEach((s, i) => { if (s && s.getBoundingClientRect().top < innerHeight * 0.4) here = i; });
+      links.forEach((a, i) => a.classList.toggle('is-here', i === here));
+      gates();
     };
+    addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(frame); } }, { passive: true });
+    addEventListener('resize', frame, { passive: true });
 
-    addEventListener('scroll', () => {
-      if (queued) return;
-      queued = true;
-      requestAnimationFrame(onScroll);
-    }, { passive: true });
-    onScroll();
-  }
-
-  /* ── Pointer spotlight ──────────────────────────────────────────── */
-
-  if (!reduced && matchMedia('(pointer: fine)').matches) {
-    const sp = $('#spotlight');
-    let tx = innerWidth / 2, ty = innerHeight * 0.4;
-    let cx = tx, cy = ty, running = false;
-
-    addEventListener('pointermove', (e) => {
-      tx = e.clientX; ty = e.clientY;
-      sp.classList.add('on');
-      if (!running) { running = true; requestAnimationFrame(tick); }
-    }, { passive: true });
-
-    function tick() {
-      cx = lerp(cx, tx, 0.12);
-      cy = lerp(cy, ty, 0.12);
-      sp.style.setProperty('--mx', cx + 'px');
-      sp.style.setProperty('--my', cy + 'px');
-      if (Math.abs(cx - tx) > 0.5 || Math.abs(cy - ty) > 0.5) requestAnimationFrame(tick);
-      else running = false;
+    /* ── Safety gates: a file travels the rail as the page scrolls ── */
+    const gatesEl = $('#gates');
+    const items = $$('.gates-list li');
+    const verdict = $('#gatesVerdict');
+    function gates() {
+      if (!gatesEl) return;
+      const r = gatesEl.getBoundingClientRect();
+      const p = reduced ? 1 : clamp((innerHeight * 0.6 - r.top) / (r.height - 60), 0, 1);
+      gatesEl.style.setProperty('--p', `${(p * 100).toFixed(2)}%`);
+      items.forEach((li, i) => li.classList.toggle('passed', p >= (i + 0.5) / items.length));
+      verdict.classList.toggle('shown', p > 0.97);
     }
+
+    frame();
   }
 
-  /* ── Magnetic buttons ───────────────────────────────────────────── */
-
-  if (!reduced && matchMedia('(pointer: fine)').matches) {
-    $$('[data-magnetic]').forEach(el => {
-      const strength = el.classList.contains('dl-card') ? 0.06 : 0.28;
-
-      el.addEventListener('pointermove', (e) => {
-        const r = el.getBoundingClientRect();
-        const dx = e.clientX - (r.left + r.width / 2);
-        const dy = e.clientY - (r.top + r.height / 2);
-        el.style.transform = `translate(${dx * strength}px, ${dy * strength}px)`;
-      });
-
-      el.addEventListener('pointerleave', () => { el.style.transform = ''; });
-    });
-  }
-
-  /* ── Card pointer glow + tilt ───────────────────────────────────── */
-
-  if (!reduced && matchMedia('(pointer: fine)').matches) {
-    $$('.card').forEach(card => {
-      card.addEventListener('pointermove', (e) => {
-        const r = card.getBoundingClientRect();
-        card.style.setProperty('--cx', ((e.clientX - r.left) / r.width * 100) + '%');
-        card.style.setProperty('--cy', ((e.clientY - r.top) / r.height * 100) + '%');
-      });
-    });
-
-    $$('[data-tilt]').forEach(el => {
-      const soft = el.hasAttribute('data-tilt-soft');
-      const max = soft ? 2.2 : 5;
-
-      el.addEventListener('pointermove', (e) => {
-        const r = el.getBoundingClientRect();
-        const px = (e.clientX - r.left) / r.width - 0.5;
-        const py = (e.clientY - r.top) / r.height - 0.5;
-        el.style.transform =
-          `perspective(900px) rotateX(${-py * max}deg) rotateY(${px * max}deg) translateZ(0)`;
-      });
-
-      el.addEventListener('pointerleave', () => { el.style.transform = ''; });
-    });
-  }
-
-  /* ── Headline scramble ──────────────────────────────────────────── */
-
+  /* ── Hero dial ─────────────────────────────────────────────────── */
   {
-    const el = $('[data-scramble]');
-    if (el && !reduced) {
-      const chars = '#$%&*+/<>[]{}~^01';
-      // Walk the text nodes only, so <br> and <em> survive intact.
-      const nodes = [];
-      (function walk(n) {
-        n.childNodes.forEach(c => {
-          if (c.nodeType === 3 && c.nodeValue.trim()) nodes.push({ node: c, text: c.nodeValue });
-          else if (c.nodeType === 1) walk(c);
-        });
-      })(el);
+    const ticks = $('#dialTicks');
+    const arc = $('#dialArc');
+    const value = $('#dialValue');
+    const SCORE = 86;
+    const R = 214;
+    const C = 2 * Math.PI * R;
+    const N = 100;
+    const ns = 'http://www.w3.org/2000/svg';
 
-      const total = nodes.reduce((a, n) => a + n.text.length, 0);
-      let frame = 0;
-      const speed = 1.6;
-
-      const run = () => {
-        let done = 0, seen = 0;
-        nodes.forEach(({ node, text }) => {
-          let out = '';
-          for (let i = 0; i < text.length; i++) {
-            const reveal = frame * speed - seen * 0.55;
-            if (reveal > 4) { out += text[i]; done++; }
-            else if (reveal > 0 && text[i] !== ' ')
-              out += chars[(Math.random() * chars.length) | 0];
-            else out += text[i] === ' ' ? ' ' : '';
-            seen++;
-          }
-          node.nodeValue = out;
-        });
-        frame++;
-        if (done < total) requestAnimationFrame(run);
-        else nodes.forEach(({ node, text }) => { node.nodeValue = text; });
-      };
-      requestAnimationFrame(run);
+    for (let i = 0; i < N; i++) {
+      const a = (i / N) * Math.PI * 2 - Math.PI / 2;
+      const major = i % 10 === 0;
+      const r1 = 246;
+      const r2 = major ? 270 : 260;
+      const line = document.createElementNS(ns, 'line');
+      line.setAttribute('x1', (300 + r1 * Math.cos(a)).toFixed(1));
+      line.setAttribute('y1', (300 + r1 * Math.sin(a)).toFixed(1));
+      line.setAttribute('x2', (300 + r2 * Math.cos(a)).toFixed(1));
+      line.setAttribute('y2', (300 + r2 * Math.sin(a)).toFixed(1));
+      if (major) line.classList.add('major');
+      ticks.appendChild(line);
     }
-  }
+    const tickEls = Array.from(ticks.children);
 
-  /* ── Count-up ───────────────────────────────────────────────────── */
+    arc.style.strokeDasharray = `${C}`;
+    arc.style.strokeDashoffset = `${C}`;
 
-  {
-    const nums = $$('[data-count]');
-    const play = (el) => {
-      const target = parseFloat(el.dataset.count);
-      if (reduced || target === 0) { el.textContent = target; return; }
-      const dur = 1100;
-      const t0 = performance.now();
-      const step = (t) => {
-        const p = clamp((t - t0) / dur, 0, 1);
-        const eased = 1 - Math.pow(1 - p, 3);
-        el.textContent = Math.round(target * eased);
-        if (p < 1) requestAnimationFrame(step);
-      };
-      requestAnimationFrame(step);
+    const draw = (v) => {
+      arc.style.strokeDashoffset = `${C * (1 - v / 100)}`;
+      value.textContent = Math.round(v);
+      const lit = Math.round(v);
+      tickEls.forEach((t, i) => t.classList.toggle('lit', i < lit));
     };
+    setTimeout(() => tween(SCORE, 2200, draw), reduced ? 0 : 1100);
 
-    if ('IntersectionObserver' in window) {
-      const io = new IntersectionObserver((es) => {
-        es.forEach(e => { if (e.isIntersecting) { play(e.target); io.unobserve(e.target); } });
-      }, { threshold: 0.5 });
-      nums.forEach(n => io.observe(n));
-    } else nums.forEach(play);
-  }
+    // Chips count up with the dial.
+    $$('.chip-v').forEach((el) => {
+      const to = Number(el.dataset.count);
+      setTimeout(() => tween(to, 1600, (v) => { el.textContent = `${Math.round(v)}${el.dataset.suffix || ''}`; }), reduced ? 0 : 1600);
+    });
 
-  /* ── Hero treemap ───────────────────────────────────────────────── */
-
-  {
-    const cv = $('#treemap');
-    const ctx = cv && cv.getContext('2d');
-
-    // The category split the application actually reports, so the shape of the
-    // map on this page matches the shape of the map in the product.
-    const DATA = [
-      { name: 'Windows',         gb: 40.7, c: '#31b0c6' },
-      { name: 'Applications',    gb: 28.3, c: '#5b8dd9' },
-      { name: 'User files',      gb: 25.9, c: '#9b7fd4' },
-      { name: 'Development',     gb: 21.4, c: '#d97fb0' },
-      { name: 'Other',           gb: 15.7, c: '#e0855a' },
-      { name: 'Cache',           gb: 15.2, c: '#d8a02a' },
-      { name: 'Documents',       gb: 6.99, c: '#7fbf6a' },
-      { name: 'Downloads',       gb: 5.90, c: '#4fb8a5' },
-      { name: 'Temporary files', gb: 2.49, c: '#6c7a84' }
-    ];
-
-    const PATHS = [
-      'C:\\Windows\\System32', 'C:\\Program Files', 'C:\\ProgramData\\Package Cache',
-      'C:\\Windows\\Installer', 'C:\\Program Files (x86)', 'C:\\Windows\\WinSxS',
-      'C:\\Windows\\SoftwareDistribution', 'C:\\Windows\\Temp', 'C:\\Windows\\Logs'
-    ];
-
-    /* Squarified treemap (Bruls, Huizing, van Wijk). */
-    function squarify(items, x, y, w, h) {
-      const out = [];
-      const total = items.reduce((a, i) => a + i.gb, 0);
-      let rest = items.map(i => ({ ...i, area: i.gb / total * w * h }));
-
-      const worst = (row, len) => {
-        const s = row.reduce((a, r) => a + r.area, 0);
-        const mx = Math.max(...row.map(r => r.area));
-        const mn = Math.min(...row.map(r => r.area));
-        return Math.max((len * len * mx) / (s * s), (s * s) / (len * len * mn));
-      };
-
-      while (rest.length) {
-        const vertical = w >= h;
-        const len = vertical ? h : w;
-        const row = [rest[0]];
-        let i = 1;
-        while (i < rest.length && worst(row.concat(rest[i]), len) <= worst(row, len)) {
-          row.push(rest[i]); i++;
-        }
-
-        const sum = row.reduce((a, r) => a + r.area, 0);
-        const thick = sum / len;
-        let off = 0;
-
-        row.forEach(r => {
-          const side = r.area / thick;
-          out.push(vertical
-            ? { ...r, x, y: y + off, w: thick, h: side }
-            : { ...r, x: x + off, y, w: side, h: thick });
-          off += side;
+    // The instrument drifts up a little slower than the page: depth, not
+    // decoration.
+    const inst = $('#instrument');
+    if (!reduced && inst) {
+      let q = false;
+      addEventListener('scroll', () => {
+        if (q) return;
+        q = true;
+        requestAnimationFrame(() => {
+          q = false;
+          const y = Math.min(scrollY, innerHeight * 1.2);
+          inst.style.transform = `translateY(${(y * 0.12).toFixed(1)}px)`;
         });
-
-        if (vertical) { x += thick; w -= thick; } else { y += thick; h -= thick; }
-        rest = rest.slice(i);
-      }
-      return out;
-    }
-
-    let tiles = [], dpr = 1, W = 0, H = 0;
-
-    function layout() {
-      dpr = Math.min(devicePixelRatio || 1, 2);
-      W = cv.clientWidth; H = cv.clientHeight;
-      cv.width = Math.round(W * dpr);
-      cv.height = Math.round(H * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      // Bias the map to the right half; the headline occupies the left.
-      const x0 = W * 0.34;
-      tiles = squarify(DATA, x0, 0, W - x0, H);
-    }
-
-    let raf = 0, start = 0, visible = false;
-    const bar   = $('#scanBar');
-    const pathEl = $('#scanPath');
-    const countEl = $('#scanCount');
-    const timeEl = $('#scanTime');
-    const legend = $('#scanLegend');
-
-    legend.innerHTML = DATA.slice(0, 5).map(d => `
-      <div class="leg-row">
-        <i class="leg-dot" style="background:${d.c}"></i>
-        <span class="leg-name">${d.name}</span>
-        <span class="leg-val" data-gb="${d.gb}">0 GB</span>
-      </div>`).join('');
-    const legVals = $$('.leg-val', legend);
-
-    const CYCLE = 5200;   // one full scan, ms
-    const HOLD  = 2600;   // then hold the finished map before restarting
-
-    function draw(now) {
-      const t = (now - start) % (CYCLE + HOLD);
-      const p = clamp(t / CYCLE, 0, 1);
-      const eased = 1 - Math.pow(1 - p, 2.2);
-
-      ctx.clearRect(0, 0, W, H);
-
-      tiles.forEach((tile, i) => {
-        // Tiles resolve one after another, left to right, as the scan advances.
-        const at = i / tiles.length * 0.55;
-        const local = clamp((eased - at) / 0.45, 0, 1);
-        if (local <= 0) return;
-
-        const g = 2;
-        const tw = (tile.w - g) * local;
-        const th = (tile.h - g) * local;
-        if (tw <= 0 || th <= 0) return;
-
-        ctx.globalAlpha = 0.30 + local * 0.42;
-        ctx.fillStyle = tile.c;
-        ctx.fillRect(tile.x, tile.y, tw, th);
-
-        ctx.globalAlpha = local * 0.5;
-        ctx.strokeStyle = tile.c;
-        ctx.lineWidth = 1;
-        ctx.strokeRect(tile.x + 0.5, tile.y + 0.5, tw, th);
-      });
-
-      // The scan line itself.
-      if (p < 1) {
-        const sx = W * 0.34 + (W - W * 0.34) * eased;
-        ctx.globalAlpha = 1;
-        const grad = ctx.createLinearGradient(sx - 70, 0, sx, 0);
-        grad.addColorStop(0, 'rgba(69,200,222,0)');
-        grad.addColorStop(1, 'rgba(69,200,222,.75)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(sx - 70, 0, 70, H);
-        ctx.fillStyle = 'rgba(180,240,250,.9)';
-        ctx.fillRect(sx - 1, 0, 1.5, H);
-      }
-      ctx.globalAlpha = 1;
-
-      // Readout panel, driven by the same clock.
-      bar.style.width = (p * 100).toFixed(1) + '%';
-      countEl.textContent = Math.round(1631216 * eased).toLocaleString('en-US');
-      timeEl.textContent = (39.5 * p).toFixed(1);
-      pathEl.textContent = p < 1
-        ? PATHS[Math.floor(eased * PATHS.length) % PATHS.length]
-        : 'C:\\  ·  complete';
-      legVals.forEach(v => {
-        v.textContent = (parseFloat(v.dataset.gb) * eased).toFixed(1) + ' GB';
-      });
-
-      raf = requestAnimationFrame(draw);
-    }
-
-    function play() {
-      if (raf || !visible) return;
-      start = performance.now();
-      raf = requestAnimationFrame(draw);
-    }
-    function stop() { cancelAnimationFrame(raf); raf = 0; }
-
-    function still() {
-      // Reduced motion, or off-screen: paint the finished map once.
-      ctx.clearRect(0, 0, W, H);
-      tiles.forEach(tile => {
-        ctx.globalAlpha = 0.6;
-        ctx.fillStyle = tile.c;
-        ctx.fillRect(tile.x, tile.y, tile.w - 2, tile.h - 2);
-      });
-      ctx.globalAlpha = 1;
-      bar.style.width = '100%';
-      countEl.textContent = (1631216).toLocaleString('en-US');
-      timeEl.textContent = '39.5';
-      pathEl.textContent = 'C:\\  ·  complete';
-      legVals.forEach(v => { v.textContent = parseFloat(v.dataset.gb).toFixed(1) + ' GB'; });
-    }
-
-    if (ctx) {
-      layout();
-      if (reduced) still();
-      else {
-        const io = new IntersectionObserver(([e]) => {
-          visible = e.isIntersecting;
-          visible ? play() : stop();
-        }, { threshold: 0.02 });
-        io.observe(cv);
-
-        document.addEventListener('visibilitychange', () => {
-          document.hidden ? stop() : play();
-        });
-      }
-
-      let rz;
-      addEventListener('resize', () => {
-        clearTimeout(rz);
-        rz = setTimeout(() => { layout(); if (reduced) still(); }, 180);
       }, { passive: true });
     }
   }
 
-  /* ── Outbound packets: the ones that do not exist ───────────────── */
-
+  /* ── Privacy wall: packets run only while visible ──────────────── */
   {
-    const cv = $('#packets');
-    const ctx = cv && cv.getContext('2d');
+    const wall = $('#wall');
+    whileVisible(wall, (on) => wall.classList.toggle('is-live', on));
+  }
 
-    if (ctx) {
-      let W = 0, H = 0, dpr = 1, raf = 0, visible = false;
-      let particles = [];
+  /* ── Story: the step nearest the middle drives the stage ───────── */
+  {
+    const steps = $$('.step');
+    const scenes = $$('.scene');
+    let current = 1;
+    const typed = new WeakSet();
 
-      const fit = () => {
-        dpr = Math.min(devicePixelRatio || 1, 2);
-        W = cv.clientWidth; H = cv.clientHeight;
-        cv.width = Math.round(W * dpr);
-        cv.height = Math.round(H * dpr);
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const typeLine = (el) => {
+      if (!el || typed.has(el)) return;
+      typed.add(el);
+      const text = el.dataset.text || '';
+      if (reduced) { el.textContent = text; el.classList.add('done'); return; }
+      let i = 0;
+      const tick = () => {
+        el.textContent = text.slice(0, ++i);
+        if (i < text.length) setTimeout(tick, 18 + Math.random() * 22);
+        else el.classList.add('done');
       };
+      setTimeout(tick, 350);
+    };
 
-      const spawn = () => ({
-        x: Math.random() * (W * 0.5) + 12,
-        y: Math.random() * (H - 24) + 12,
-        vx: 0.25 + Math.random() * 0.85,
-        vy: (Math.random() - 0.5) * 0.35,
-        r: 1.3 + Math.random() * 1.8,
-        life: 1,
-        hit: 0
-      });
-
-      const seed = () => { particles = Array.from({ length: 34 }, spawn); };
-
-      function frame(now) {
-        const wall = W * 0.62;
-        ctx.clearRect(0, 0, W, H);
-
-        // The membrane. Nothing on this page crosses it.
-        const pulse = 0.35 + Math.sin(now / 700) * 0.12;
-        ctx.strokeStyle = `rgba(224,90,82,${pulse})`;
-        ctx.lineWidth = 1.4;
-        ctx.setLineDash([5, 7]);
-        ctx.beginPath(); ctx.moveTo(wall, 6); ctx.lineTo(wall, H - 6); ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Dead zone beyond it, drawn as absence.
-        ctx.fillStyle = 'rgba(224,90,82,.03)';
-        ctx.fillRect(wall, 0, W - wall, H);
-
-        particles.forEach((p, i) => {
-          if (p.hit > 0) {
-            // Absorbed at the membrane: a ring that fades, then respawns.
-            p.hit += 0.045;
-            const a = Math.max(0, 1 - p.hit);
-            ctx.strokeStyle = `rgba(224,90,82,${a * 0.75})`;
-            ctx.lineWidth = 1.2;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, 3 + p.hit * 13, 0, Math.PI * 2);
-            ctx.stroke();
-            if (p.hit >= 1) particles[i] = spawn();
-            return;
-          }
-
-          p.x += p.vx; p.y += p.vy;
-          if (p.y < 8 || p.y > H - 8) p.vy *= -1;
-
-          if (p.x >= wall - p.r) { p.x = wall - p.r; p.hit = 0.001; return; }
-
-          const near = clamp((p.x - W * 0.2) / (wall - W * 0.2), 0, 1);
-          ctx.fillStyle = `rgba(49,176,198,${0.28 + near * 0.5})`;
-          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
-
-          // Trail.
-          ctx.strokeStyle = `rgba(49,176,198,${0.12 + near * 0.18})`;
-          ctx.lineWidth = 1;
-          ctx.beginPath(); ctx.moveTo(p.x - p.vx * 9, p.y - p.vy * 9); ctx.lineTo(p.x, p.y); ctx.stroke();
-        });
-
-        raf = requestAnimationFrame(frame);
-      }
-
-      const play = () => { if (!raf && visible) raf = requestAnimationFrame(frame); };
-      const stop = () => { cancelAnimationFrame(raf); raf = 0; };
-
-      fit(); seed();
-
-      if (reduced) {
-        // One static frame: the membrane and a handful of dots behind it.
-        const wall = W * 0.62;
-        ctx.strokeStyle = 'rgba(224,90,82,.4)'; ctx.setLineDash([5, 7]); ctx.lineWidth = 1.4;
-        ctx.beginPath(); ctx.moveTo(wall, 6); ctx.lineTo(wall, H - 6); ctx.stroke(); ctx.setLineDash([]);
-        particles.slice(0, 18).forEach(p => {
-          ctx.fillStyle = 'rgba(49,176,198,.5)';
-          ctx.beginPath(); ctx.arc(Math.min(p.x, wall - 14), p.y, p.r, 0, Math.PI * 2); ctx.fill();
-        });
-      } else {
-        const io = new IntersectionObserver(([e]) => {
-          visible = e.isIntersecting;
-          visible ? play() : stop();
-        }, { threshold: 0.1 });
-        io.observe(cv);
-        document.addEventListener('visibilitychange', () => { document.hidden ? stop() : play(); });
-
-        let rz;
-        addEventListener('resize', () => {
-          clearTimeout(rz);
-          rz = setTimeout(() => { fit(); seed(); }, 180);
-        }, { passive: true });
-      }
-    }
-  }
-
-  /* ── Safety pipeline, driven by scroll position ─────────────────── */
-
-  {
-    const pipe = $('#pipeline');
-    const fill = $('#pipeFill');
-    const gates = $$('[data-gate]');
-    const verdict = $('#pipeVerdict');
-
-    if (pipe) {
-      if (reduced) {
-        gates.forEach(g => g.classList.add('on'));
-        fill.style.width = '100%';
-        verdict.textContent = 'ValidatedPath issued — deletion permitted';
-        verdict.classList.add('pass');
-      } else {
-        let queued = false;
-
-        const update = () => {
-          const r = pipe.getBoundingClientRect();
-          // 0 when the block reaches the lower third, 1 when it passes the middle.
-          const p = clamp((innerHeight * 0.78 - r.top) / (innerHeight * 0.42), 0, 1);
-          fill.style.width = (p * 100).toFixed(1) + '%';
-
-          const openCount = Math.round(p * gates.length);
-          gates.forEach((g, i) => g.classList.toggle('on', i < openCount));
-
-          if (p >= 1) {
-            verdict.textContent = 'ValidatedPath issued — deletion permitted';
-            verdict.classList.add('pass');
-          } else {
-            verdict.textContent = openCount === 0
-              ? 'Waiting'
-              : `Gate ${openCount} of ${gates.length} cleared`;
-            verdict.classList.remove('pass');
-          }
-          queued = false;
-        };
-
-        addEventListener('scroll', () => {
-          if (queued) return;
-          queued = true;
-          requestAnimationFrame(update);
-        }, { passive: true });
-        update();
-      }
-    }
-  }
-
-  /* ── Screenshot rail ────────────────────────────────────────────── */
-
-  {
-    const img = $('#shotImg');
-    const cap = $('#shotCap');
-    const meta = {
-      overview: {
-        src: 'screens/overview.png',
-        alt: 'The AllInsight Overview screen: a device health score of 60 marked Fair, four vital-sign tiles, and ranked recommended actions.',
-        cap: 'A health score is never a number on its own. It arrives with the reasons that produced it.'
-      },
-      performance: {
-        src: 'screens/performance.png',
-        alt: 'The AllInsight Performance screen: live processor, memory, graphics, disk and network readings with history.',
-        cap: 'Processor, memory, graphics, disk and network — live, with ten minutes of history behind them.'
-      },
-      processes: {
-        src: 'screens/processes.png',
-        alt: 'The AllInsight Processes screen: a live table of running processes with publisher, processor share, memory, disk, process id and uptime.',
-        cap: 'Every process with its publisher and its cost. The End button refuses on the ones Windows needs.'
+    const show = (n) => {
+      if (n === current) return;
+      current = n;
+      steps.forEach((s) => s.classList.toggle('is-on', Number(s.dataset.step) === n));
+      scenes.forEach((s) => s.classList.toggle('is-on', Number(s.dataset.scene) === n));
+      if (n === 2) typeLine($('.type-line'));
+      if (n === 3) {
+        const num = $('.reclaim-num');
+        tween(Number(num.dataset.to), 1800, (v) => { num.textContent = v.toFixed(2); });
       }
     };
 
-    $$('.rail-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const key = btn.dataset.shot;
-        const m = meta[key];
-        if (!m || img.src.endsWith(m.src)) return;
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((e) => { if (e.isIntersecting) show(Number(e.target.dataset.step)); });
+      }, { rootMargin: '-45% 0px -45% 0px' });
+      steps.forEach((s) => io.observe(s));
+    }
+  }
 
-        $$('.rail-btn').forEach(b => {
-          const on = b === btn;
-          b.classList.toggle('is-on', on);
-          b.setAttribute('aria-selected', String(on));
-        });
+  /* ── Big numbers ───────────────────────────────────────────────── */
+  $$('.stat-n').forEach((el) => {
+    const to = Number(el.dataset.count);
+    once(el, () => tween(to, 1400, (v) => { el.textContent = Math.round(v); }));
+  });
 
-        const swap = () => { img.src = m.src; img.alt = m.alt; cap.textContent = m.cap; };
+  /* ── Living tiles ──────────────────────────────────────────────── */
+  {
+    // Drive ring fills to its reading.
+    const fill = $('#ringFill');
+    const ringValue = $('#ringValue');
+    const RC = 2 * Math.PI * 84;
+    fill.style.strokeDasharray = `${RC}`;
+    fill.style.strokeDashoffset = `${RC}`;
+    once($('[data-live="drive"]'), () => tween(93, 1800, (v) => {
+      fill.style.strokeDashoffset = `${RC * (1 - v / 100)}`;
+      ringValue.textContent = `${Math.round(v)}%`;
+    }));
 
-        if (reduced) { swap(); return; }
-        img.classList.add('swapping');
-        setTimeout(() => {
-          swap();
-          img.decode ? img.decode().catch(() => {}).finally(() => img.classList.remove('swapping'))
-                     : img.classList.remove('swapping');
-        }, 180);
-      });
+    // A processor trace that keeps drawing while it is on screen.
+    const line = $('#sparkLine');
+    const area = $('#sparkArea');
+    const cpu = $('#cpuValue');
+    const W = 300;
+    const H = 90;
+    const pts = Array.from({ length: 40 }, (_, i) => 18 + 8 * Math.sin(i / 3));
+    const render = () => {
+      const step = W / (pts.length - 1);
+      const d = pts.map((v, i) => `${i ? 'L' : 'M'}${(i * step).toFixed(1)},${(H - (v / 100) * H).toFixed(1)}`).join('');
+      line.setAttribute('d', d);
+      area.setAttribute('d', `${d}L${W},${H}L0,${H}Z`);
+      cpu.textContent = Math.round(pts[pts.length - 1]);
+    };
+    render();
+    let timer = null;
+    whileVisible($('[data-live="perf"]'), (on) => {
+      if (reduced) return;
+      if (on && !timer) {
+        timer = setInterval(() => {
+          const last = pts[pts.length - 1];
+          const burst = Math.random() < 0.06 ? 14 : 0;
+          pts.push(clamp(last + (Math.random() - 0.5) * 7 + burst - (last > 30 ? 5 : 0), 4, 60));
+          pts.shift();
+          render();
+        }, 700);
+      } else if (!on && timer) {
+        clearInterval(timer);
+        timer = null;
+      }
     });
 
-    // Warm the other two so the first swap is instant.
-    Object.values(meta).forEach(m => { const i = new Image(); i.src = m.src; });
+    // Two files, one content: they slide together, then apart again.
+    const dupes = $('.dupes');
+    let dupeTimer = null;
+    whileVisible($('[data-live="dupes"]'), (on) => {
+      if (reduced) { dupes.classList.add('merged'); return; }
+      if (on && !dupeTimer) {
+        dupes.classList.add('merged');
+        dupeTimer = setInterval(() => dupes.classList.toggle('merged'), 2600);
+      } else if (!on && dupeTimer) {
+        clearInterval(dupeTimer);
+        dupeTimer = null;
+      }
+    });
+
+    // The assistant thinks, then answers, once.
+    const chat = $('.chat');
+    const answer = $('.answer');
+    once($('[data-live="ai"]'), () => {
+      const text = answer.dataset.text;
+      const finish = () => { chat.classList.add('answered'); };
+      if (reduced) { finish(); answer.textContent = text; return; }
+      setTimeout(() => {
+        finish();
+        let i = 0;
+        const tick = () => {
+          answer.textContent = text.slice(0, ++i);
+          if (i < text.length) setTimeout(tick, 16 + Math.random() * 24);
+        };
+        tick();
+      }, 1400);
+    });
   }
 
-  /* ── Download metadata ──────────────────────────────────────────── */
-
-  /* Kept out of the markup so a release only has to touch downloads.json.
-     Fails silently: the hardcoded fallbacks in the HTML stay correct. */
+  /* ── Download details from downloads.json ─────────────────────── */
   {
-    const bytes = (n) => {
+    const size = (n) => {
       if (!Number.isFinite(n)) return null;
-      const u = ['B', 'KB', 'MB', 'GB'];
-      let i = 0, v = n;
-      while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
-      return `${v.toFixed(i >= 2 ? 1 : 0)} ${u[i]}`;
+      const units = ['B', 'KB', 'MB', 'GB'];
+      let i = 0;
+      let v = n;
+      while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+      return `${v.toFixed(i >= 2 ? 1 : 0)} ${units[i]}`;
+    };
+    const set = (sel, val) => { const el = $(sel); if (el && val) el.textContent = val; };
+    const fill = (entry, id) => {
+      if (!entry) return;
+      const a = $(`#dl${id}`);
+      if (a && entry.file) { a.href = `/downloads/${entry.file}`; set(`#dl${id}Name`, entry.file); }
+      set(`#dl${id}Size`, size(entry.bytes));
+      set(`#hash${id}`, entry.sha256);
     };
 
-    const set = (sel, val) => { const el = $(sel); if (el && val) el.textContent = val; };
-
     fetch('downloads.json', { cache: 'no-cache' })
-      .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then(d => {
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((d) => {
         set('#dlVersion', d.version);
+        set('#heroVersion', d.version && d.version.replace(/\.0$/, ''));
         set('#dlLicence', d.licence);
-
-        if (d.installer) {
-          const a = $('#dlInstaller');
-          if (d.installer.file) { a.href = `/downloads/${d.installer.file}`; set('#dlInstallerName', d.installer.file); }
-          set('#dlInstallerSize', bytes(d.installer.bytes));
-          set('#hashInstaller', d.installer.sha256);
+        fill(d.installer, 'Installer');
+        fill(d.portable, 'Portable');
+        if (d.linux) {
+          fill(d.linux.deb, 'Deb');
+          fill(d.linux.rpm, 'Rpm');
+          fill(d.linux.appimage, 'AppImage');
         }
-        if (d.portable) {
-          const a = $('#dlPortable');
-          if (d.portable.file) { a.href = `/downloads/${d.portable.file}`; set('#dlPortableName', d.portable.file); }
-          set('#dlPortableSize', bytes(d.portable.bytes));
-          set('#hashPortable', d.portable.sha256);
-        }
-
-        const cmd = $('.hash-how code');
-        if (cmd && d.installer && d.installer.file)
-          cmd.textContent = `Get-FileHash .\\${d.installer.file} -Algorithm SHA256`;
+        if (d.installer && d.installer.file) set('#dlInstallerCmd', d.installer.file);
       })
       .catch(() => { /* markup fallbacks stand */ });
   }
-
 })();

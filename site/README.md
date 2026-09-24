@@ -1,7 +1,8 @@
 # AllInsight landing site
 
 Static HTML, CSS and JavaScript. No build step, no framework, no external
-requests — not even a webfont. Nginx serves this directory as-is.
+requests. The one webfont, Instrument Sans (SIL OFL, licence beside it), is
+served from `assets/fonts/`. Nginx serves this directory as-is.
 
 ```
 site/
@@ -10,8 +11,8 @@ site/
   app.js                animation and behaviour, no dependencies
   downloads.json        version, file sizes and checksums (generated)
   update-downloads.ps1  regenerates downloads.json from dist-release
-  assets/               logo and favicon
-  screens/              product screenshots
+  assets/               logo, favicon and the bundled font
+  screens/              product screenshots (WebP, title bar cropped)
 ```
 
 ## Local preview
@@ -23,48 +24,15 @@ python -m http.server 8787 --bind 127.0.0.1
 
 Then open <http://127.0.0.1:8787/>.
 
-## Screenshots
+## Visuals
 
-`screens/` holds three shots copied from `shots/`, which is gitignored. They
-were picked deliberately:
-
-| File | Source | Why this one |
-| --- | --- | --- |
-| `overview.png` | `shots/overview.png` | The health score with its reasons. No user paths. |
-| `performance.png` | `shots/performance.png` | Live metrics. No user paths. |
-| `processes.png` | `shots/processes.png` | Publisher, cost and uptime per process. No user paths. |
-
-**Check any shot you add.** Several in `shots/` are not publishable as-is:
-
-- `assistant.png` prints the model folder as a full path, which contains the
-  **Windows username** (`C:\Users\<name>\AppData\Local\AllInsight\engine`)
-- `drive-health.png` exposes the drive **serial number**
-- `storage-map.png`, `large-files.png` and `duplicates.png` show real folder
-  and file names from the machine that captured them
-- `cleanup.png` is safe but catches the category rows mid-load, so it reads as
-  a set of empty grey bars
-
-Redact before publishing, or leave them out. A page whose whole argument is
-"nothing leaves your machine" cannot be the thing that publishes the author's
-username.
-
-### Recapturing
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\capture-all.ps1
-```
-
-It writes all fourteen screens to `shots/`. Two things to know:
-
-- It drives navigation by writing `ui.last_route` into the settings database,
-  so the app must have run once and finished its first-run wizard. On a fresh
-  profile every capture is otherwise the welcome screen.
-- `scripts\click-through-firstrun.ps1` completes that wizard, but `SendKeys`
-  fails with `Access is denied` when the shell and the app run at different
-  integrity levels. Failing that, set the flag directly: write
-  `{"first_run_complete": true}` to the `settings.v1` key in
-  `%LOCALAPPDATA%\AllInsight\allinsight.db`. `Settings` is `#[serde(default)]`,
-  so a partial blob fills in the rest.
+The page has no screenshots. Every visual is drawn in HTML, CSS and SVG and
+animated by `app.js`: the hero health dial, the packets that stop at the wall
+in the dark privacy section, the three-scene "How it works" story (a sticky
+stage that changes with the step nearest the middle of the viewport), the
+count-up numbers, the living feature tiles, and the file that travels the
+eight safety checks as the page scrolls. Figures shown in them are
+illustrative and match the kind of reading the app gives.
 
 ## Before every deploy
 
@@ -111,8 +79,8 @@ URLs, that nginx rule stops applying.
 
 ## Notes on the JavaScript
 
-Every continuous animation — the hero treemap, the packet field — is gated on
-an `IntersectionObserver` and on `document.hidden`, so nothing runs while it is
-off screen or in a background tab. `prefers-reduced-motion: reduce` replaces
-both canvases with a single static frame and disables the reveals, the
-scramble, and the count-ups.
+Every continuous animation (the packets, the processor trace, the duplicate
+files, the marquee) runs only while it is on screen. `prefers-reduced-motion:
+reduce` shows every visual in its finished state with no motion at all.
+`downloads.json` fills in the version, sizes and hashes, including the
+optional `linux` entries.
