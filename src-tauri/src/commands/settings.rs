@@ -6,6 +6,7 @@ use serde::Serialize;
 use tauri::State;
 
 use crate::error::{AllInsightError, Result};
+use crate::services::config;
 use crate::services::db::Settings;
 use crate::services::security::paths;
 use crate::state::AppState;
@@ -19,6 +20,13 @@ pub async fn get_settings(state: State<'_, AppState>) -> Result<Settings> {
 
 #[tauri::command]
 pub async fn save_settings(state: State<'_, AppState>, settings: Settings) -> Result<Settings> {
+    apply_settings(&state, settings)
+}
+
+/// Save settings and carry out what saving them implies. Shared by the
+/// Settings screen and by importing a settings file, so an import has exactly
+/// the effects the same changes made by hand would have.
+fn apply_settings(state: &AppState, settings: Settings) -> Result<Settings> {
     let previous = state.settings();
     let saved = state.update_settings(settings)?;
 
@@ -225,44 +233,7 @@ fn apply_launch_at_startup(_enabled: bool) -> Result<()> {
 /// because AllInsight has no code that transmits.
 #[tauri::command]
 pub async fn export_diagnostics(state: State<'_, AppState>, destination: String) -> Result<String> {
-    let target = paths::normalize_lexical(std::path::Path::new(&destination));
-    if !target.is_absolute() {
-        return Err(AllInsightError::InvalidInput(
-            "Choose where to save the diagnostics file.".into(),
-        ));
-    }
-    if paths::extension_lower(&target) != "json" {
-        return Err(AllInsightError::InvalidInput(
-            "The diagnostics file must be saved with a .json name.".into(),
-        ));
-    }
-    // The destination normally comes from a save dialog, but this command must
-    // hold on its own: without these checks it is a way to overwrite any file
-    // the user can write, which is exactly what the rest of AllInsight refuses to
-    // do.
-    let verdict = state.protected().classify(&target);
-    if verdict.protected {
-        return Err(AllInsightError::Protected {
-            path: target,
-            reason: verdict.describe(),
-        });
-    }
-    if let Some(link) = paths::first_reparse_ancestor(&target, None) {
-        return Err(AllInsightError::InvalidInput(format!(
-            "That location is reached through a link ({}), so it will not be written to.",
-            link.display()
-        )));
-    }
-    if let Ok(existing) = std::fs::symlink_metadata(paths::long_path(&target)) {
-        // Replacing an earlier diagnostics file is the expected case.
-        // Replacing anything else is not.
-        if !existing.is_file() || !is_previous_diagnostics(&target) {
-            return Err(AllInsightError::InvalidInput(
-                "A different file already exists there. Choose a new name."
-                    .into(),
-            ));
-        }
-    }
+    let target = checked_destination(&state, &destination, "diagnostics", is_previous_diagnostics)?;
 
     let settings = state.settings();
     let report = serde_json::json!({
@@ -298,6 +269,110 @@ pub async fn export_diagnostics(state: State<'_, AppState>, destination: String)
         .map_err(|e| AllInsightError::Other(format!("Could not write the diagnostics file: {e}")))?;
 
     Ok(target.to_string_lossy().into_owned())
+}
+
+/// Validate a path the user chose to write a JSON file to.
+///
+/// The path normally comes from a save dialog, but a command must hold on its
+/// own: without these checks it is a way to overwrite any file the user can
+/// write, which is exactly what the rest of AllInsight refuses to do. The only
+/// existing file that may be replaced is one `replaceable` recognises as an
+/// earlier file of the same kind.
+fn checked_destination(
+    state: &AppState,
+    destination: &str,
+    what: &str,
+    replaceable: fn(&std::path::Path) -> bool,
+) -> Result<PathBuf> {
+    let target = paths::normalize_lexical(std::path::Path::new(destination));
+    if !target.is_absolute() {
+        return Err(AllInsightError::InvalidInput(format!(
+            "Choose where to save the {what} file."
+        )));
+    }
+    if paths::extension_lower(&target) != "json" {
+        return Err(AllInsightError::InvalidInput(format!(
+            "The {what} file must be saved with a .json name."
+        )));
+    }
+    let verdict = state.protected().classify(&target);
+    if verdict.protected {
+        return Err(AllInsightError::Protected {
+            path: target,
+            reason: verdict.describe(),
+        });
+    }
+    if let Some(link) = paths::first_reparse_ancestor(&target, None) {
+        return Err(AllInsightError::InvalidInput(format!(
+            "That location is reached through a link ({}), so it will not be written to.",
+            link.display()
+        )));
+    }
+    if let Ok(existing) = std::fs::symlink_metadata(paths::long_path(&target)) {
+        if !existing.is_file() || !replaceable(&target) {
+            return Err(AllInsightError::InvalidInput(
+                "A different file already exists there. Choose a new name.".into(),
+            ));
+        }
+    }
+    Ok(target)
+}
+
+// ── Settings export, import and backups ──────────────────────────────────
+
+/// Write the current settings to a file the user chose.
+#[tauri::command]
+pub async fn export_config(state: State<'_, AppState>, destination: String) -> Result<String> {
+    let target = checked_destination(&state, &destination, "settings", config::is_config_file)?;
+    let text = config::ConfigDocument::from_settings(&state.settings()).to_json()?;
+    std::fs::write(&target, text)
+        .map_err(|e| AllInsightError::Other(format!("Could not write the settings file: {e}")))?;
+    Ok(target.to_string_lossy().into_owned())
+}
+
+/// Describe what importing a settings file would change. Changes nothing.
+#[tauri::command]
+pub async fn preview_config_import(
+    state: State<'_, AppState>,
+    source: String,
+) -> Result<config::ImportPreview> {
+    config::preview(&state.settings(), std::path::Path::new(&source))
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ImportResult {
+    pub settings: Settings,
+    pub backup: String,
+}
+
+/// Apply a previewed settings file. Refuses if the file changed since the
+/// preview, or if it weakens protection and the user did not accept that.
+/// The current settings are backed up first.
+#[tauri::command]
+pub async fn apply_config_import(
+    state: State<'_, AppState>,
+    source: String,
+    token: String,
+    accept_weakening: bool,
+) -> Result<ImportResult> {
+    let current = state.settings();
+    let next = config::prepare_apply(&current, std::path::Path::new(&source), &token, accept_weakening)?;
+    let backup = config::backup_before_import(&backup_directory(), &current)?;
+    let settings = apply_settings(&state, next)?;
+    tracing::info!("settings imported; previous settings backed up");
+    Ok(ImportResult {
+        settings,
+        backup: backup.to_string_lossy().into_owned(),
+    })
+}
+
+#[tauri::command]
+pub async fn list_config_backups() -> Result<Vec<config::BackupEntry>> {
+    Ok(config::list_backups(&backup_directory()))
+}
+
+pub fn backup_directory() -> PathBuf {
+    config::backup_directory(&crate::state::data_directory())
 }
 
 /// Whether the file already at the destination is one AllInsight wrote, which is

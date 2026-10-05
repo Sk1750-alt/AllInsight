@@ -630,6 +630,40 @@ export interface ProtectedPathView {
   user_added: boolean;
 }
 
+/** One setting an import would change, as described by the backend. */
+export interface SettingChange {
+  key: string;
+  label: string;
+  from: string;
+  to: string;
+  /** True when the change makes AllInsight less careful than it is now. */
+  weakens_protection: boolean;
+}
+
+export interface ImportPreview {
+  /** Binds the apply step to the exact file contents that were reviewed. */
+  token: string;
+  application_version: string;
+  exported_at: string;
+  changes: SettingChange[];
+  protected_added: string[];
+  protected_removed: string[];
+  weakens_protection: boolean;
+}
+
+export interface ImportResult {
+  settings: Settings;
+  backup: string;
+}
+
+export interface BackupEntry {
+  path: string;
+  file_name: string;
+  kind: "daily" | "before_import";
+  /** The timestamp from the file name: YYYY-MM-DD, or YYYY-MM-DD-HHMMSS. */
+  created: string;
+}
+
 export type Platform = "windows" | "linux" | "macos" | "other";
 
 export interface EnvironmentInfo {

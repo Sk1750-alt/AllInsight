@@ -6,6 +6,7 @@ pub mod ai;
 pub mod apps;
 pub mod battery;
 pub mod cleanup;
+pub mod config;
 pub mod db;
 pub mod health;
 pub mod process;

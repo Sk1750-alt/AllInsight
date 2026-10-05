@@ -39,6 +39,14 @@ fn run(app: AppHandle) {
         let interval = {
             let state = app.state::<AppState>();
             let settings = state.settings();
+            // A daily copy of the settings, kept for a week, whether or not
+            // background monitoring is on: it is one small file a day.
+            if let Err(e) = crate::services::config::ensure_daily_backup(
+                &crate::commands::settings::backup_directory(),
+                &settings,
+            ) {
+                tracing::warn!("daily settings backup failed: {e}");
+            }
             if settings.background_monitoring {
                 tick(&app, &state);
             }

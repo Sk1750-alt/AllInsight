@@ -8,6 +8,7 @@
  */
 import * as React from "react";
 import {
+  ArchiveRestore,
   Bug,
   CircleSlash,
   Cpu,
@@ -48,6 +49,7 @@ import {
   Switch,
 } from "@/components/ui/controls";
 import { Dialog } from "@/components/ui/overlay";
+import { ConfigTransfer } from "@/components/ConfigTransfer";
 import { cn } from "@/lib/utils";
 import type {
   CategoryDescription,
@@ -66,6 +68,7 @@ type SectionId =
   | "privacy"
   | "performance"
   | "security"
+  | "backup"
   | "advanced"
   | "about";
 
@@ -80,6 +83,7 @@ const SECTIONS: { id: SectionId; label: string; icon: React.ComponentType<{ clas
     { id: "privacy", label: "Privacy", icon: WifiOff },
     { id: "performance", label: "Performance", icon: Gauge },
     { id: "security", label: "Security", icon: Shield },
+    { id: "backup", label: "Backup", icon: ArchiveRestore },
     { id: "advanced", label: "Advanced", icon: Bug },
     { id: "about", label: "About", icon: Info },
   ];
@@ -833,6 +837,8 @@ export function SettingsView() {
               </Panel>
             </>
           ) : null}
+
+          {section === "backup" ? <ConfigTransfer /> : null}
 
           {section === "advanced" ? (
             <Panel>

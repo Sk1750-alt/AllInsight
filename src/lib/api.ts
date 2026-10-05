@@ -135,5 +135,11 @@ export const api = {
   removeProtectedPath: (path: string) => call<T.Settings>("remove_protected_path", { path }),
   exportDiagnostics: (destination: string) =>
     call<string>("export_diagnostics", { destination }),
+  exportConfig: (destination: string) => call<string>("export_config", { destination }),
+  previewConfigImport: (source: string) =>
+    call<T.ImportPreview>("preview_config_import", { source }),
+  applyConfigImport: (source: string, token: string, acceptWeakening: boolean) =>
+    call<T.ImportResult>("apply_config_import", { source, token, acceptWeakening }),
+  listConfigBackups: () => call<T.BackupEntry[]>("list_config_backups"),
   restartElevated: () => call<void>("restart_elevated"),
 };

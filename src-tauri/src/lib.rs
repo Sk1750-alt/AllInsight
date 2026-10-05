@@ -275,6 +275,10 @@ pub fn run() {
             commands::settings::add_protected_path,
             commands::settings::remove_protected_path,
             commands::settings::export_diagnostics,
+            commands::settings::export_config,
+            commands::settings::preview_config_import,
+            commands::settings::apply_config_import,
+            commands::settings::list_config_backups,
             commands::settings::restart_elevated,
         ])
         .run(tauri::generate_context!())
