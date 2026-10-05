@@ -12,7 +12,6 @@ site/
   downloads.json        version, file sizes and checksums (generated)
   update-downloads.ps1  regenerates downloads.json from dist-release
   assets/               app icon, favicons and the bundled font
-  screens/              product screenshots (WebP, title bar cropped)
 ```
 
 ## Local preview

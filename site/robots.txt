@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /stats/
+Disallow: /downloads/
+
+Sitemap: https://allinsight.biz/sitemap.xml
