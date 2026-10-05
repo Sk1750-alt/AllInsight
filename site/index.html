@@ -43,7 +43,8 @@
 }
 </script>
 <link rel="preload" href="assets/fonts/sora-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles.css">
+<link rel="preload" href="assets/fonts/instrument-serif-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
 
@@ -82,7 +83,7 @@
   <p class="label rise" style="--d:1"><span class="status" aria-hidden="true"></span>Now available for Windows &amp; Linux</p>
   <h1 class="headline" aria-label="Your device, understood.">
     <span class="line" aria-hidden="true"><span>Your device,</span></span>
-    <span class="line" aria-hidden="true"><span class="quiet">understood.</span></span>
+    <span class="line" aria-hidden="true"><span class="quiet accent">understood.</span></span>
   </h1>
 
   <p class="lede rise" style="--d:5">
@@ -92,7 +93,7 @@
   </p>
   <div class="cta rise" style="--d:6">
     <a class="btn" href="#download">Download</a>
-    <a class="link" href="#how">Discover the method</a>
+    <a class="link" href="#how">Discover the method<span class="arrow" aria-hidden="true">→</span></a>
   </div>
 </section>
 
@@ -100,7 +101,7 @@
 <section class="dark" id="privacy">
   <div class="wrap narrow">
     <p class="label reveal">Private by design</p>
-    <h2 class="statement reveal" style="--d:1">Nothing leaves<br>your computer.</h2>
+    <h2 class="statement reveal" style="--d:1">Nothing leaves<br><em class="accent">your computer.</em></h2>
     <p class="prose reveal" style="--d:2">
       Not as a setting. As an absence of code. AllInsight has no account, no
       update checker, no analytics and no cloud service. Pull the network cable
@@ -111,7 +112,7 @@
       <span class="horizon-line"><i></i></span>
       <span class="horizon-end horizon-far">The internet</span>
     </div>
-    <p class="figure reveal" style="--d:4"><span>0</span> bytes sent. Ever.</p>
+    <p class="figure reveal" style="--d:4"><span class="figure-num">0</span><span class="figure-text">bytes sent. Ever.</span></p>
   </div>
 </section>
 
@@ -120,7 +121,7 @@
   <div class="wrap">
     <header class="head">
       <p class="label reveal">The method</p>
-      <h2 class="reveal" style="--d:1">Measure. Explain.<br>Then, and only then, clean.</h2>
+      <h2 class="reveal" style="--d:1">Measure. Explain.<br>Then, and only then, <em class="accent">clean.</em></h2>
     </header>
 
     <ol class="method">
@@ -148,7 +149,7 @@
   <div class="wrap">
     <header class="head">
       <p class="label reveal">Instruments</p>
-      <h2 class="reveal" style="--d:1">Every number comes from the hardware.</h2>
+      <h2 class="reveal" style="--d:1">Every number comes from the <em class="accent">hardware.</em></h2>
       <p class="prose reveal" style="--d:2">Where it is silent, AllInsight says Unknown.</p>
     </header>
 
@@ -182,7 +183,7 @@
   <div class="wrap">
     <header class="head">
       <p class="label reveal">The safety model</p>
-      <h2 class="reveal" style="--d:1">Eight checks.<br>In order. Every time.</h2>
+      <h2 class="reveal" style="--d:1">Eight checks.<br><em class="accent">In order. Every time.</em></h2>
       <p class="prose reveal" style="--d:2">
         The interface never sends a file path to a destructive command. Removal
         needs a token only the deletion guard can issue, and the last five checks
@@ -291,21 +292,37 @@
 </main>
 
 <footer class="foot">
-  <div class="wrap foot-inner">
-    <a class="foot-brand" href="#top" aria-label="AllInsight home">
-      <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
-        <path d="M14 82 L50 20 L86 82" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="50" cy="66" r="9" fill="var(--amber)"/>
-      </svg>
-      <span class="wordmark" aria-hidden="true">all<span class="wi">ı</span>ns<span class="wi">ı</span>ght</span><span class="tm">™</span>
-    </a>
-    <div class="foot-text">
-      <p class="foot-contact">Questions, feedback or press: <a href="mailto:hello@allinsight.biz">hello@allinsight.biz</a></p>
-      <p class="foot-note">This page loads nothing from anywhere else. No fonts, scripts or analytics from third parties, the same rule the application follows.</p>
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-id">
+        <a class="foot-brand" href="#top" aria-label="AllInsight home">
+          <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
+            <path d="M14 82 L50 20 L86 82" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="50" cy="66" r="9" fill="var(--amber)"/>
+          </svg>
+          <span class="wordmark" aria-hidden="true">all<span class="wi">ı</span>ns<span class="wi">ı</span>ght</span><span class="tm">™</span>
+        </a>
+        <p class="foot-tag">Your device, <em class="accent">understood.</em></p>
+      </div>
+      <nav class="foot-links" aria-label="Footer">
+        <a href="#privacy">Privacy</a>
+        <a href="#how">Method</a>
+        <a href="#features">Instruments</a>
+        <a href="#safety">Safety</a>
+        <a href="#download">Download</a>
+      </nav>
+      <div class="foot-text">
+        <p class="foot-contact">Questions, feedback or press: <a href="mailto:hello@allinsight.biz">hello@allinsight.biz</a></p>
+        <p class="foot-note">This page loads nothing from anywhere else. No fonts, scripts or analytics from third parties, the same rule the application follows.</p>
+      </div>
+    </div>
+    <div class="foot-base">
+      <span>&copy; 2026 AllInsight</span>
+      <span>Windows &amp; Linux &middot; Works offline</span>
     </div>
   </div>
 </footer>
 
-<script src="app.js" defer></script>
+<script src="app.js?v=2" defer></script>
 </body>
 </html>
