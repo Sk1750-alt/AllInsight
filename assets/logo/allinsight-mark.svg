@@ -1,43 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="AllInsight">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="256" height="256" role="img" aria-label="AllInsight">
   <title>AllInsight</title>
-  <!--
-    The mark is an aperture held inside a hexagonal core, with two orbit arcs
-    breaking out of the shell. The hexagon reads as a protected system core; the
-    aperture reads as looking at what is inside it; the arcs read as something
-    being watched continuously.
-
-    The ring is broken once, and the break is the accent. That single opening is
-    what keeps the form from reading as a plain target or a record button, and
-    it is the same trick the old letterform used: one simple shape, one accent
-    detail.
-
-    At 16 px the arcs and the break fall away visually and a ring around a solid
-    centre still identifies the app, which is the only thing that has to survive
-    at that size.
-  -->
-  <defs>
-    <clipPath id="allinsight-core">
-      <path d="M128 20 214 70v116l-86 50-86-50V70z" />
-    </clipPath>
-  </defs>
-
-  <!-- Orbit arcs: drawn first so the core sits over them. -->
-  <g fill="none" stroke="#31B0C6" stroke-width="7" stroke-linecap="round" opacity="0.55">
-    <path d="M196 42a112 112 0 0 1 26 63" />
-    <path d="M60 214a112 112 0 0 1-26-63" />
-  </g>
-
-  <!-- Core shell -->
-  <path d="M128 20 214 70v116l-86 50-86-50V70z"
-        fill="#0E171C" stroke="#31B0C6" stroke-width="11" stroke-linejoin="round" />
-
-  <!-- The aperture. Drawn as two separated arcs rather than a dashed circle so
-       the icon rasteriser produces identical geometry at every size. The two
-       gaps are what stop the ring reading as a record button. -->
-  <g clip-path="url(#allinsight-core)" fill="none" stroke-width="15" stroke-linecap="round">
-    <path d="M169.3 143.1A44 44 0 1 1 150 89.9" stroke="#EAF6F8" />
-    <path d="M159.1 96.9A44 44 0 0 1 171.8 131.8" stroke="#31B0C6" />
-  </g>
-
-  <circle cx="128" cy="128" r="14" fill="#EAF6F8" clip-path="url(#allinsight-core)" />
+  <!-- The A·i mark on a light ground. Clear space: half the mark's height on every side. -->
+  <path d="M12 84 L50 18 L88 84" fill="none" stroke="#111318" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="50" y1="72" x2="50" y2="84" stroke="#111318" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="50" cy="54" r="7" fill="#F5A524"/>
 </svg>

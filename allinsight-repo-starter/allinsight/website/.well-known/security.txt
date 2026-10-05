@@ -1,0 +1,6 @@
+Contact: mailto:security@YOUR-DOMAIN
+Contact: https://github.com/OWNER/allinsight/security/advisories/new
+Expires: 2027-10-05T00:00:00.000Z
+Policy: https://github.com/OWNER/allinsight/blob/main/SECURITY.md
+Preferred-Languages: en, bn, hi
+Canonical: https://YOUR-DOMAIN/.well-known/security.txt

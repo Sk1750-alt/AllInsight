@@ -1,8 +1,8 @@
 # AllInsight landing site
 
 Static HTML, CSS and JavaScript. No build step, no framework, no external
-requests. The one webfont, Instrument Sans (SIL OFL, licence beside it), is
-served from `assets/fonts/`. Nginx serves this directory as-is.
+requests. The one webfont, Sora (SIL OFL, licence beside it), is served from
+`assets/fonts/`. Nginx serves this directory as-is.
 
 ```
 site/
@@ -11,7 +11,7 @@ site/
   app.js                animation and behaviour, no dependencies
   downloads.json        version, file sizes and checksums (generated)
   update-downloads.ps1  regenerates downloads.json from dist-release
-  assets/               logo, favicon and the bundled font
+  assets/               app icon, favicons and the bundled font
   screens/              product screenshots (WebP, title bar cropped)
 ```
 
@@ -26,13 +26,22 @@ Then open <http://127.0.0.1:8787/>.
 
 ## Visuals
 
-The page has no screenshots. Every visual is drawn in HTML, CSS and SVG and
-animated by `app.js`: the hero health dial, the packets that stop at the wall
-in the dark privacy section, the three-scene "How it works" story (a sticky
-stage that changes with the step nearest the middle of the viewport), the
-count-up numbers, the living feature tiles, and the file that travels the
-eight safety checks as the page scrolls. Figures shown in them are
-illustrative and match the kind of reading the app gives.
+The page follows the brand kit: Paper ground, Ink text, Graphite for the
+privacy section, Sora Light headlines, hairline rules instead of cards, and
+Insight Amber only for the dot in the mark and small status marks.
+
+The logo is the A·i mark (an A with a lowercase i inside it) and the
+lowercase wordmark, whose two i's are dotless with an amber dot set in CSS.
+Both are inline SVG and HTML, so nothing extra loads. Three animations, all
+CSS: the mark draws itself on load (the A, then the i, then the dot drops and
+sends out two scan rings, in the order of the promo kit's logo reveal); the
+app icon builds itself when the download section arrives; and one amber point
+of light stops at the wall in the privacy section. `prefers-reduced-motion`
+shows each in its finished state.
+
+`assets/allinsight.svg`, `favicon.ico` and `apple-touch-icon.png` are the
+brand kit's app icon: Slate tile, full mark above 32 px, the heavier small
+mark at 16 and 32 px.
 
 ## Before every deploy
 
@@ -79,8 +88,8 @@ URLs, that nginx rule stops applying.
 
 ## Notes on the JavaScript
 
-Every continuous animation (the packets, the processor trace, the duplicate
-files, the marquee) runs only while it is on screen. `prefers-reduced-motion:
+The one continuous animation, the privacy section's point of light, runs
+only while it is on screen. `prefers-reduced-motion:
 reduce` shows every visual in its finished state with no motion at all.
 `downloads.json` fills in the version, sizes and hashes, including the
 optional `linux` entries.

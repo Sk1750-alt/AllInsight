@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AllInsight — Your device, understood.</title>
+<meta name="description" content="AllInsight shows where your storage went, how your drive is holding up, and what is safe to clean, explained by an AI that runs entirely on your Windows laptop.">
+<meta name="theme-color" content="#0F1115">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --graphite:#0F1115; --slate:#1B1F27; --deep:#15181E; --row:#232833; --line-d:#2A2F38;
+  --fog:#9AA1AC; --paper:#F4F2EE; --surface:#FBFAF7; --ink:#111318; --stone:#5A606B; --hair:#DAD6CE;
+  --amber:#F5A524; --ok:#3DDC97;
+  --sans:"Sora","Segoe UI Variable","Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",Consolas,"Cascadia Mono",monospace;
+  --ease:cubic-bezier(.22,.61,.36,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:88px}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 17px/1.6 var(--sans);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+img,svg{display:block;max-width:100%}
+a{color:inherit}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--amber);outline-offset:3px;border-radius:6px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wrap{width:100%;max-width:1200px;margin:0 auto;padding:0 32px}
+.dark{background:var(--graphite);color:var(--paper)}
+.sec{padding:152px 0}
+.sec + .sec.light{border-top:1px solid var(--hair)}
+
+/* type */
+.display{font-weight:300;font-size:clamp(3.1rem,7.4vw,6.75rem);line-height:.98;letter-spacing:-.045em;margin:0}
+h2{font-weight:300;font-size:clamp(2.25rem,4.6vw,3.75rem);line-height:1.04;letter-spacing:-.035em;margin:0 0 28px}
+h3{font-weight:600;font-size:1.0625rem;letter-spacing:-.01em;margin:0}
+.lead{font-size:clamp(1.0625rem,1.6vw,1.25rem);line-height:1.6;color:var(--stone);max-width:34em;margin:0}
+.dark .lead{color:var(--fog)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:0 28px;border-radius:999px;border:1px solid transparent;font-weight:400;font-size:16px;text-decoration:none;cursor:pointer;transition:background .2s var(--ease),color .2s var(--ease),border-color .2s var(--ease)}
+.btn-paper{background:var(--paper);color:var(--ink)} .btn-paper:hover{background:#fff}
+.btn-ink{background:var(--ink);color:var(--paper)} .btn-ink:hover{background:#2a2e36}
+.btn-line{border-color:var(--line-d);color:var(--paper);background:transparent} .btn-line:hover{border-color:var(--fog)}
+.link{color:inherit;text-underline-offset:5px;text-decoration-thickness:1px;text-decoration-color:color-mix(in srgb,currentColor 40%,transparent)}
+.link:hover{text-decoration-color:currentColor}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:20;background:rgba(15,17,21,.94);backdrop-filter:saturate(140%) blur(14px);-webkit-backdrop-filter:saturate(140%) blur(14px);color:var(--paper);border-bottom:1px solid rgba(255,255,255,.06);padding-top:env(safe-area-inset-top,0px)}
+.nav .wrap{display:flex;align-items:center;gap:40px;height:72px}
+.nav .logo{height:22px;width:auto;color:var(--paper)}
+.nav ul{display:flex;gap:32px;list-style:none;margin:0 0 0 auto;padding:0;font-size:15px}
+.nav ul a{text-decoration:none;color:var(--fog);transition:color .2s}
+.nav ul a:hover{color:var(--paper)}
+.nav .btn{min-height:42px;padding:0 20px;font-size:15px}
+.logo-home{display:flex;border-radius:6px}
+.nav .short{display:none}
+@media (max-width:900px){.nav ul{display:none}.nav .btn{margin-left:auto}}
+@media (max-width:520px){.nav .full{display:none}.nav .short{display:inline}}
+/* logo draw — the page's one load moment, with the window readouts */
+.nav .mk-a{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1s .15s cubic-bezier(.65,0,.35,1) forwards}
+.nav .mk-s{opacity:0;animation:fade .3s .95s forwards}
+.nav .mk-d{transform-box:fill-box;transform-origin:center;transform:scale(0);animation:pop .5s 1.15s cubic-bezier(.34,1.56,.64,1) forwards}
+@keyframes draw{to{stroke-dashoffset:0}} @keyframes fade{to{opacity:1}} @keyframes pop{to{transform:scale(1)}}
+
+/* hero */
+.hero{padding:120px 0 0;overflow:hidden}
+.hero-copy{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:32px;align-items:end;margin-top:56px}
+.hero-copy .lead{grid-column:1 / span 6}
+.hero-actions{grid-column:7 / span 6;display:flex;flex-wrap:wrap;align-items:center;gap:16px 28px;justify-content:flex-end}
+.hero-note{grid-column:1 / -1;font-size:14px;color:var(--fog);margin:0}
+@media (max-width:900px){.hero-copy .lead,.hero-actions{grid-column:1 / -1;justify-content:flex-start}}
+.stage{margin-top:96px;padding-bottom:0;position:relative}
+.stage::after{content:"";position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(to bottom,transparent,var(--graphite));pointer-events:none}
+
+/* product window */
+.app{background:var(--slate);border:1px solid var(--line-d);border-radius:14px 14px 0 0;border-bottom:0;box-shadow:0 -30px 120px rgba(0,0,0,.35);color:var(--paper);overflow:hidden;font-size:14px}
+.app-bar{display:flex;align-items:center;height:44px;padding:0 0 0 18px;border-bottom:1px solid var(--line-d);background:var(--deep)}
+.app-bar .logo{height:13px;width:auto;color:var(--paper)}
+.win{margin-left:auto;display:flex}
+.win span{width:46px;height:44px;display:grid;place-items:center}
+.win svg{width:10px;height:10px;stroke:var(--fog);fill:none;stroke-width:1}
+.app-body{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:560px}
+.side{background:var(--deep);border-right:1px solid var(--line-d);padding:14px 10px;display:flex;flex-direction:column;gap:2px}
+.side button{display:flex;align-items:center;gap:12px;width:100%;min-height:40px;padding:0 14px;border:0;border-radius:8px;background:transparent;color:var(--fog);text-align:left;cursor:pointer;font-size:14px}
+.side button svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.side button:hover{color:var(--paper)}
+.side button[aria-selected="true"]{background:var(--row);color:var(--paper)}
+.side .muted{margin-top:auto;font-size:12px;color:var(--fog);padding:12px 14px;display:flex;gap:8px;align-items:center}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+.pane{padding:28px 32px 40px}
+.pane[hidden]{display:none}
+.pane-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.pane-head h3{font-size:22px;font-weight:400;letter-spacing:-.02em}
+.pane-head .mono{font-size:12px;color:var(--fog)}
+.cell{background:var(--deep);border:1px solid var(--line-d);border-radius:10px;padding:18px}
+.k{font-size:12px;color:var(--fog);margin:0 0 6px}
+.v{font-size:26px;font-weight:400;letter-spacing:-.02em;margin:0;line-height:1.15}
+.s{font-size:12px;color:var(--fog);margin:6px 0 0}
+.ov{display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr;gap:12px}
+.ov .health{grid-row:span 2;display:flex;flex-direction:column;justify-content:space-between}
+.ov .health .big{font-size:72px;font-weight:300;letter-spacing:-.05em;line-height:1;margin:10px 0 4px}
+.ring-cell{grid-column:span 2;grid-row:span 2;display:flex;align-items:center;gap:24px}
+.ring{width:132px;height:132px;flex:none;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:8}
+.ring .track{stroke:var(--line-d)}
+.ring .val{stroke:var(--paper);stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:18;transition:stroke-dashoffset 1.6s var(--ease)}
+.bar{height:3px;border-radius:2px;background:var(--line-d);margin-top:12px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--paper);width:var(--w);transition:width 1.4s var(--ease)}
+.lower{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px;margin-top:12px}
+.acts{list-style:none;margin:0;padding:0}
+.acts li{display:flex;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--line-d)}
+.acts li:first-child{border-top:0;padding-top:4px}
+.acts .t{flex:1;min-width:0}
+.acts .t b{display:block;font-weight:400}
+.acts .t span{font-size:12px;color:var(--fog)}
+.mini{display:inline-flex;align-items:center;text-decoration:none;min-height:32px;padding:0 14px;border-radius:999px;border:1px solid var(--line-d);background:transparent;color:var(--paper);font-size:12.5px;cursor:pointer;white-space:nowrap}
+.mini:hover{border-color:var(--fog)}
+.mini.solid{background:var(--paper);border-color:var(--paper);color:var(--ink)}
+.insight p{margin:0;color:#C9CDD3;line-height:1.6}
+.insight .k{display:flex;gap:8px;align-items:center}
+.insight .k::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--amber)}
+@media (max-width:1000px){.ov{grid-template-columns:1fr 1fr}.ov .health{grid-row:auto}.ring-cell{grid-column:1 / -1;grid-row:auto}.lower{grid-template-columns:1fr}}
+
+/* treemap */
+.crumbs{display:flex;align-items:center;gap:12px;margin-bottom:14px;font-size:12.5px;color:var(--fog);min-height:32px}
+.tm{position:relative;width:100%;aspect-ratio:100/54;border-radius:10px;overflow:hidden;background:var(--deep)}
+.tm button{position:absolute;border:1px solid var(--slate);background:var(--row);color:var(--paper);padding:10px 12px;text-align:left;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-start;gap:2px;overflow:hidden;border-radius:4px;transition:background .2s}
+.tm button:hover{background:#2B313C}
+.tm button[aria-pressed="true"]{background:#323947;box-shadow:inset 0 0 0 1.5px var(--paper)}
+.tm button b{font-weight:400;font-size:13px;white-space:nowrap}
+.tm button span{font-family:var(--mono);font-size:11.5px;color:var(--fog)}
+.tm button[data-tier="Protected"]{background:#1F242D}
+.tm-detail{display:flex;flex-wrap:wrap;gap:8px 24px;align-items:center;margin-top:16px;font-size:13.5px;color:#C9CDD3;min-height:48px}
+.tag{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--fog)}
+.tag::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--fog)}
+.tag.Safe::before{background:var(--ok)} .tag.Review::before{background:var(--amber)}
+
+/* drive */
+.drive{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:12px}
+.status{display:inline-flex;align-items:center;gap:10px;font-size:13px;padding:6px 14px 6px 12px;border-radius:999px;background:rgba(61,220,151,.1);color:#9FEBC6}
+.specs{margin:0;display:grid;grid-template-columns:auto 1fr;column-gap:24px}
+.specs dt,.specs dd{padding:11px 0;border-top:1px solid var(--line-d);margin:0;font-size:13.5px}
+.specs dt{color:var(--fog)}
+.specs dd{font-family:var(--mono);text-align:right}
+.specs dt:first-of-type,.specs dd:first-of-type{border-top:0}
+@media (max-width:1000px){.drive{grid-template-columns:1fr}}
+
+/* chat */
+.chat{display:flex;flex-direction:column;gap:18px;max-width:640px}
+.q{align-self:flex-end;background:var(--row);padding:10px 16px;border-radius:14px 14px 4px 14px;max-width:80%}
+.a{display:flex;gap:14px;align-items:flex-start}
+.a .av{width:28px;height:28px;flex:none;border-radius:8px;background:var(--deep);border:1px solid var(--line-d);display:grid;place-items:center}
+.a .av svg{width:16px;height:16px}
+.a .body{min-width:0}
+.a p{margin:0 0 10px;color:#DADDE1}
+.a ul{list-style:none;margin:0 0 12px;padding:0;max-width:300px}
+.a li{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line-d);font-size:13px}
+.a li span:last-child{font-family:var(--mono);color:var(--fog)}
+.a .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:24px;padding-top:20px;border-top:1px solid var(--line-d)}
+.chips .k{width:100%;margin:0 0 4px}
+
+@media (max-width:760px){
+  .app-body{grid-template-columns:1fr}
+  .side{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line-d);padding:8px}
+  .side button{width:auto;white-space:nowrap}
+  .side .muted{display:none}
+  .pane{padding:22px 18px 32px}
+}
+
+/* privacy */
+.split{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:32px;align-items:start}
+.split .l{grid-column:1 / span 5}
+.split .r{grid-column:7 / span 6}
+@media (max-width:900px){.split .l,.split .r{grid-column:1 / -1}}
+.panel{background:var(--surface);border:1px solid var(--hair);border-radius:16px;overflow:hidden}
+.prow{display:flex;align-items:center;gap:20px;padding:22px 26px;border-top:1px solid var(--hair)}
+.prow:first-child{border-top:0}
+.prow .t{flex:1}
+.prow .t b{display:block;font-weight:400}
+.prow .t span{font-size:14px;color:var(--stone)}
+.switch{width:46px;height:28px;border-radius:999px;background:var(--hair);position:relative;flex:none;border:0;padding:0;cursor:not-allowed}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.state{font-size:14px;color:var(--stone);width:28px;text-align:right}
+.prow.offline{background:#F0EEE8;font-size:14px;color:var(--stone)}
+.prow.offline .dot{background:var(--amber)}
+.facts{list-style:none;margin:40px 0 0;padding:0;display:grid;gap:14px;font-size:15.5px;color:var(--stone)}
+.facts li{padding-left:22px;position:relative}
+.facts li::before{content:"";position:absolute;left:0;top:.62em;width:9px;height:1px;background:currentColor}
+
+/* safety */
+.tiers{display:flex;gap:0;border-bottom:1px solid var(--hair);margin:56px 0 0;overflow-x:auto}
+.tiers button{flex:1;min-width:150px;border:0;background:none;padding:18px 4px 18px 0;text-align:left;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--stone)}
+.tiers button b{display:flex;align-items:center;gap:10px;font-weight:400;font-size:clamp(1.25rem,2.2vw,1.625rem);letter-spacing:-.02em;color:var(--ink)}
+.tiers button b::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--fog)}
+.tiers button[data-t="Safe"] b::before{background:var(--ok)} .tiers button[data-t="Review"] b::before{background:var(--amber)}
+.tiers button span{display:block;font-size:14px;margin-top:4px}
+.tiers button[aria-selected="true"]{border-bottom-color:var(--ink)}
+.tiers button[aria-selected="false"] b{color:var(--stone)}
+.tier-panels{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:32px;margin-top:48px}
+.tier-panel{grid-column:1 / span 6}
+.tier-panel[hidden]{display:none}
+.tier-panel h3{font-weight:400;font-size:1.25rem;margin-bottom:10px}
+.tier-panel p{color:var(--stone);margin:0 0 28px;max-width:32em}
+.tier-panel ul{list-style:none;margin:0;padding:0;columns:2;column-gap:32px}
+.tier-panel li{padding:9px 0;border-top:1px solid var(--hair);break-inside:avoid;font-size:15px}
+.dialog{grid-column:8 / span 5;background:var(--slate);color:var(--paper);border-radius:14px;padding:28px;border:1px solid var(--line-d);align-self:start}
+.dialog h3{font-weight:400;font-size:1.375rem;letter-spacing:-.02em;margin:0 0 18px}
+.dialog ul{list-style:none;margin:0 0 20px;padding:0}
+.dialog li{display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line-d);font-size:14px}
+.dialog li span:last-child{font-family:var(--mono);color:var(--fog)}
+.dialog .note{font-size:13px;color:var(--fog);margin:0 0 6px;line-height:1.55}
+.dialog .note b{color:var(--paper);font-weight:400}
+.dialog .row{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap;align-items:center}
+.dialog .done{font-size:14px;color:#9FEBC6;display:flex;gap:10px;align-items:center}
+@media (max-width:900px){.tier-panel,.dialog{grid-column:1 / -1}.tier-panel ul{columns:1}}
+@media (max-width:640px){.tiers button{min-width:0}.tiers button span{display:none}}
+
+/* ai flow */
+.flow{list-style:none;margin:0;padding:0;counter-reset:f;position:relative}
+.flow li{position:relative;padding:0 0 34px 64px}
+.flow li::before{counter-increment:f;content:counter(f);position:absolute;left:0;top:0;width:36px;height:36px;border-radius:50%;border:1px solid var(--line-d);display:grid;place-items:center;font-size:13px;color:var(--fog)}
+.flow li::after{content:"";position:absolute;left:18px;top:42px;bottom:6px;width:1px;background:var(--line-d)}
+.flow li:last-child{padding-bottom:0}.flow li:last-child::after{display:none}
+.flow h3{font-weight:400;font-size:1.125rem;margin:5px 0 4px}
+.flow p{margin:0;color:var(--fog);font-size:15px;max-width:30em}
+.flow li.ai::before{border-color:var(--amber);color:var(--amber)}
+.ai-points{list-style:none;padding:0;margin:40px 0 0;display:grid;gap:14px;color:var(--fog);font-size:15.5px}
+.ai-points li{padding-left:22px;position:relative}
+.ai-points li::before{content:"";position:absolute;left:0;top:.62em;width:9px;height:1px;background:currentColor}
+
+/* features */
+.feat{margin:72px 0 0;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:0}
+.feat dt,.feat dd{margin:0;padding:26px 0;border-top:1px solid var(--hair)}
+.feat dt{grid-column:1 / span 4;font-size:1.375rem;letter-spacing:-.02em;font-weight:400}
+.feat dd{grid-column:5 / span 8;color:var(--stone);padding-left:32px}
+@media (max-width:760px){.feat dt{grid-column:1 / -1;padding-bottom:4px}.feat dd{grid-column:1 / -1;border-top:0;padding-top:0;padding-left:0}}
+
+/* requirements */
+.req{width:100%;border-collapse:collapse;margin-top:56px}
+.req th,.req td{text-align:left;vertical-align:top;padding:20px 0;border-top:1px solid var(--hair);font-weight:400}
+.req th{width:32%;color:var(--stone);padding-right:24px}
+.req td small{display:block;color:var(--stone);font-size:14px;margin-top:4px}
+@media (max-width:640px){.req th,.req td{display:block;width:100%}.req td{border-top:0;padding-top:0}}
+
+/* access */
+.access{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:32px;align-items:end}
+.access .l{grid-column:1 / span 6}
+.access form,.access .ok{grid-column:7 / span 6}
+@media (max-width:900px){.access .l,.access form,.access .ok{grid-column:1 / -1}}
+.field{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.field label{font-size:14px;color:var(--fog)}
+.field input,.field select{height:54px;border-radius:12px;border:1px solid var(--line-d);background:var(--slate);color:var(--paper);padding:0 18px;font-size:16px;width:100%}
+.field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%239AA1AC' stroke-width='1.5'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 18px center}
+.field input:focus,.field select:focus{outline:none;border-color:var(--fog)}
+.field input[aria-invalid="true"]{border-color:#FF8A6B}
+.err{font-size:13.5px;color:#FFB4A0;min-height:1.4em;margin:0}
+.form-row{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+@media (max-width:640px){.form-row{grid-template-columns:1fr}}
+.access .fine{font-size:13px;color:var(--fog);margin:14px 0 0}
+.ok h3{font-weight:400;font-size:1.5rem;letter-spacing:-.02em;margin:0 0 8px}
+.ok p{color:var(--fog);margin:0}
+
+/* faq */
+.faq{margin-top:56px;border-bottom:1px solid var(--hair)}
+.faq details{border-top:1px solid var(--hair)}
+.faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:24px;padding:24px 0;font-size:1.1875rem;letter-spacing:-.01em}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"";width:14px;height:14px;flex:none;margin-top:6px;background:linear-gradient(currentColor,currentColor) center/14px 1.5px no-repeat,linear-gradient(currentColor,currentColor) center/1.5px 14px no-repeat;transition:transform .25s var(--ease)}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq details p{margin:0 0 26px;color:var(--stone);max-width:44em}
+
+/* footer */
+footer{padding:72px 0 calc(48px + env(safe-area-inset-bottom,0px))}
+.foot{display:flex;flex-wrap:wrap;gap:32px 64px;justify-content:space-between;align-items:flex-start}
+.foot .logo{height:24px;width:auto;color:var(--paper)}
+.foot p{color:var(--fog);font-size:14px;margin:14px 0 0}
+.foot nav{display:flex;gap:28px;flex-wrap:wrap;font-size:14px}
+.foot nav a{color:var(--fog);text-decoration:none}.foot nav a:hover{color:var(--paper)}
+.legal{margin-top:56px;padding-top:24px;border-top:1px solid var(--line-d);font-size:13px;color:var(--fog);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+
+@media (max-width:760px){.sec{padding:96px 0}.wrap{padding:0 20px}.hero{padding-top:72px}.stage{margin-top:64px}}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="logo-home" href="#top" aria-label="AllInsight home"><svg class="logo" viewBox="3.7 -79.5 577.0 103.0" role="img" aria-label="AllInsight"><g transform="translate(0.00 -85.50) scale(0.95000)"><path class="mk-a" pathLength="1" d="M12 84 L50 18 L88 84" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/><line class="mk-s" x1="50" y1="72" x2="50" y2="84" stroke="currentColor" stroke-width="12" stroke-linecap="round"/><circle class="mk-d" cx="50" cy="54" r="7" fill="#F5A524"/></g><path fill="currentColor" d="M165.75 0.0V-16.1H163.45V-34.0Q163.45 -38.650000000000006 161.14999999999998 -40.97500000000001Q158.85 -43.300000000000004 154.1 -43.300000000000004Q151.6 -43.300000000000004 148.1 -43.2Q144.6 -43.1 141.05 -42.95Q137.5 -42.800000000000004 134.7 -42.6V-54.400000000000006Q137.0 -54.6 139.875 -54.775000000000006Q142.75 -54.95 145.825 -55.025000000000006Q148.9 -55.1 151.6 -55.1Q159.95 -55.1 165.52499999999998 -52.875Q171.1 -50.650000000000006 173.925 -45.95Q176.75 -41.25 176.75 -33.65V0.0ZM148.25 1.4000000000000001Q142.35 1.4000000000000001 137.925 -0.6749999999999999Q133.5 -2.75 131.05 -6.675000000000001Q128.6 -10.600000000000001 128.6 -16.1Q128.6 -22.05 131.52499999999998 -25.875Q134.45 -29.700000000000003 139.8 -31.575000000000003Q145.15 -33.45 152.35 -33.45H164.95V-25.150000000000002H152.15Q147.4 -25.150000000000002 144.85000000000002 -22.825000000000003Q142.3 -20.5 142.3 -16.75Q142.3 -13.05 144.85000000000002 -10.775Q147.4 -8.5 152.15 -8.5Q155.05 -8.5 157.525 -9.55Q160.0 -10.600000000000001 161.625 -13.125Q163.25 -15.65 163.45 -20.1L166.85 -16.2Q166.35 -10.5 164.1 -6.6Q161.85 -2.7 157.89999999999998 -0.65Q153.95 1.4000000000000001 148.25 1.4000000000000001Z M189.4 0.0V-73.0H203.3V0.0ZM182.60000000000002 -62.6V-73.0H203.3V-62.6Z M216.9 0.0V-73.0H230.8V0.0ZM210.10000000000002 -62.6V-73.0H230.8V-62.6Z M246.3 0.0V-54.300000000000004H260.2V0.0ZM238.70000000000002 -43.900000000000006V-54.300000000000004H260.2V-43.900000000000006Z M273.2 0.0V-54.300000000000004H284.2V-31.0H283.2Q283.2 -39.25 285.375 -44.8Q287.55 -50.35 291.925 -53.175Q296.3 -56.0 302.75 -56.0H303.35Q313.1 -56.0 318.1 -49.725Q323.1 -43.45 323.1 -31.05V0.0H309.20000000000005V-32.300000000000004Q309.20000000000005 -37.300000000000004 306.32500000000005 -40.400000000000006Q303.45 -43.5 298.45 -43.5Q293.35 -43.5 290.225 -40.325Q287.1 -37.15 287.1 -31.900000000000002V0.0Z M354.70000000000005 1.7000000000000002Q343.45000000000005 1.7000000000000002 337.125 -3.025Q330.8 -7.75 330.45000000000005 -16.150000000000002H342.95000000000005Q343.25 -13.350000000000001 346.07500000000005 -11.075000000000001Q348.90000000000003 -8.8 354.90000000000003 -8.8Q359.85 -8.8 362.82500000000005 -10.600000000000001Q365.8 -12.4 365.8 -15.450000000000001Q365.8 -18.150000000000002 363.55 -19.75Q361.3 -21.35 355.85 -21.900000000000002L351.05 -22.400000000000002Q341.95000000000005 -23.35 337.05000000000007 -27.575000000000003Q332.15000000000003 -31.8 332.15000000000003 -38.75Q332.15000000000003 -44.35 334.95000000000005 -48.150000000000006Q337.75 -51.95 342.70000000000005 -53.925000000000004Q347.65000000000003 -55.900000000000006 354.05 -55.900000000000006Q364.1 -55.900000000000006 370.3 -51.47500000000001Q376.5 -47.050000000000004 376.8 -38.550000000000004H364.3Q364.05 -41.400000000000006 361.475 -43.400000000000006Q358.90000000000003 -45.400000000000006 353.95000000000005 -45.400000000000006Q349.6 -45.400000000000006 347.175 -43.7Q344.75 -42.0 344.75 -39.25Q344.75 -36.7 346.70000000000005 -35.3Q348.65000000000003 -33.9 353.05 -33.4L357.85 -32.9Q367.45000000000005 -31.900000000000002 372.92500000000007 -27.6Q378.40000000000003 -23.3 378.40000000000003 -15.950000000000001Q378.40000000000003 -10.600000000000001 375.45000000000005 -6.625000000000001Q372.5 -2.6500000000000004 367.175 -0.4750000000000001Q361.85 1.7000000000000002 354.70000000000005 1.7000000000000002Z M389.5 0.0V-54.300000000000004H403.4V0.0ZM381.9 -43.900000000000006V-54.300000000000004H403.4V-43.900000000000006Z M437.55 21.450000000000003Q433.65 21.450000000000003 429.6 21.150000000000002Q425.55 20.85 422.1 20.35V8.700000000000001Q425.65 9.15 429.775 9.5Q433.9 9.850000000000001 437.45 9.850000000000001Q444.2 9.850000000000001 448.35 8.225000000000001Q452.5 6.6000000000000005 454.425 3.1750000000000003Q456.35 -0.25 456.35 -5.6000000000000005V-16.3L459.35 -23.1Q459.1 -15.55 456.3 -10.3Q453.5 -5.050000000000001 448.7 -2.325Q443.9 0.4 437.6 0.4Q432.0 0.4 427.425 -1.675Q422.85 -3.75 419.6 -7.4750000000000005Q416.35 -11.200000000000001 414.57500000000005 -16.175Q412.8 -21.150000000000002 412.8 -26.85V-28.950000000000003Q412.8 -34.7 414.65 -39.650000000000006Q416.5 -44.6 419.9 -48.275000000000006Q423.3 -51.95 428.0 -53.975Q432.7 -56.0 438.4 -56.0Q445.05 -56.0 450.0 -53.1Q454.95 -50.2 457.775 -44.675000000000004Q460.6 -39.150000000000006 460.85 -31.200000000000003L458.45 -30.8V-54.300000000000004H469.45V-6.4Q469.45 3.5 466.075 9.625Q462.7 15.75 455.65 18.6Q448.6 21.450000000000003 437.55 21.450000000000003ZM441.55 -11.5Q445.6 -11.5 448.9 -13.3Q452.2 -15.100000000000001 454.17499999999995 -18.5Q456.15 -21.900000000000002 456.15 -26.650000000000002V-30.150000000000002Q456.15 -34.800000000000004 454.1 -38.0Q452.05 -41.2 448.75 -42.85Q445.45 -44.5 441.6 -44.5Q437.2 -44.5 433.825 -42.45Q430.45 -40.400000000000006 428.575 -36.675000000000004Q426.7 -32.95 426.7 -27.900000000000002Q426.7 -22.85 428.6 -19.150000000000002Q430.5 -15.450000000000001 433.85 -13.475000000000001Q437.2 -11.5 441.55 -11.5Z M481.7 0.0V-73.0H495.6V-30.400000000000002H493.2Q493.2 -38.550000000000004 495.275 -44.275000000000006Q497.35 -50.0 501.525 -53.0Q505.7 -56.0 512.05 -56.0H512.65Q521.95 -56.0 526.7750000000001 -49.575Q531.6 -43.150000000000006 531.6 -30.950000000000003V0.0H517.7V-32.300000000000004Q517.7 -37.45 514.725 -40.475Q511.75 -43.5 506.95 -43.5Q501.85 -43.5 498.725 -40.150000000000006Q495.6 -36.800000000000004 495.6 -31.35V0.0Z M567.0500000000001 0.7000000000000001Q559.5500000000001 0.7000000000000001 554.7 -1.25Q549.85 -3.2 547.475 -7.825000000000001Q545.1 -12.450000000000001 545.1 -20.35L545.15 -69.60000000000001H558.15L558.1 -19.5Q558.1 -15.5 560.25 -13.350000000000001Q562.4 -11.200000000000001 566.4 -11.200000000000001H574.9V0.7000000000000001ZM536.5 -44.1V-54.300000000000004H574.9V-44.1Z"/><circle cx="251.35" cy="-68.35" r="7.75" fill="#F5A524"/><circle cx="394.55" cy="-68.35" r="7.75" fill="#F5A524"/></svg></a>
+    <ul>
+      <li><a href="#privacy">Privacy</a></li>
+      <li><a href="#safety">Cleanup</a></li>
+      <li><a href="#ai">Local AI</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+    <a class="btn btn-paper" href="#access"><span class="full">Request early access</span><span class="short">Early access</span></a>
+  </div>
+</header>
+
+<main id="top">
+
+<section class="hero dark">
+  <div class="wrap">
+    <h1 class="display">Your device,<br>understood.</h1>
+    <div class="hero-copy">
+      <p class="lead">AllInsight shows where your storage went, how your drive is holding up and what is safe to clean, explained in plain language by an AI that runs entirely on your laptop.</p>
+      <div class="hero-actions">
+        <a class="btn btn-paper" href="#access">Request early access</a>
+        <a class="link" href="#safety">How cleanup stays safe</a>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="app" aria-label="AllInsight app preview">
+        <div class="app-bar">
+          <svg class="logo" viewBox="3.7 -79.5 577.0 103.0" role="img" aria-label="AllInsight"><g transform="translate(0.00 -85.50) scale(0.95000)"><path class="mk-a" pathLength="1" d="M12 84 L50 18 L88 84" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/><line class="mk-s" x1="50" y1="72" x2="50" y2="84" stroke="currentColor" stroke-width="12" stroke-linecap="round"/><circle class="mk-d" cx="50" cy="54" r="7" fill="#F5A524"/></g><path fill="currentColor" d="M165.75 0.0V-16.1H163.45V-34.0Q163.45 -38.650000000000006 161.14999999999998 -40.97500000000001Q158.85 -43.300000000000004 154.1 -43.300000000000004Q151.6 -43.300000000000004 148.1 -43.2Q144.6 -43.1 141.05 -42.95Q137.5 -42.800000000000004 134.7 -42.6V-54.400000000000006Q137.0 -54.6 139.875 -54.775000000000006Q142.75 -54.95 145.825 -55.025000000000006Q148.9 -55.1 151.6 -55.1Q159.95 -55.1 165.52499999999998 -52.875Q171.1 -50.650000000000006 173.925 -45.95Q176.75 -41.25 176.75 -33.65V0.0ZM148.25 1.4000000000000001Q142.35 1.4000000000000001 137.925 -0.6749999999999999Q133.5 -2.75 131.05 -6.675000000000001Q128.6 -10.600000000000001 128.6 -16.1Q128.6 -22.05 131.52499999999998 -25.875Q134.45 -29.700000000000003 139.8 -31.575000000000003Q145.15 -33.45 152.35 -33.45H164.95V-25.150000000000002H152.15Q147.4 -25.150000000000002 144.85000000000002 -22.825000000000003Q142.3 -20.5 142.3 -16.75Q142.3 -13.05 144.85000000000002 -10.775Q147.4 -8.5 152.15 -8.5Q155.05 -8.5 157.525 -9.55Q160.0 -10.600000000000001 161.625 -13.125Q163.25 -15.65 163.45 -20.1L166.85 -16.2Q166.35 -10.5 164.1 -6.6Q161.85 -2.7 157.89999999999998 -0.65Q153.95 1.4000000000000001 148.25 1.4000000000000001Z M189.4 0.0V-73.0H203.3V0.0ZM182.60000000000002 -62.6V-73.0H203.3V-62.6Z M216.9 0.0V-73.0H230.8V0.0ZM210.10000000000002 -62.6V-73.0H230.8V-62.6Z M246.3 0.0V-54.300000000000004H260.2V0.0ZM238.70000000000002 -43.900000000000006V-54.300000000000004H260.2V-43.900000000000006Z M273.2 0.0V-54.300000000000004H284.2V-31.0H283.2Q283.2 -39.25 285.375 -44.8Q287.55 -50.35 291.925 -53.175Q296.3 -56.0 302.75 -56.0H303.35Q313.1 -56.0 318.1 -49.725Q323.1 -43.45 323.1 -31.05V0.0H309.20000000000005V-32.300000000000004Q309.20000000000005 -37.300000000000004 306.32500000000005 -40.400000000000006Q303.45 -43.5 298.45 -43.5Q293.35 -43.5 290.225 -40.325Q287.1 -37.15 287.1 -31.900000000000002V0.0Z M354.70000000000005 1.7000000000000002Q343.45000000000005 1.7000000000000002 337.125 -3.025Q330.8 -7.75 330.45000000000005 -16.150000000000002H342.95000000000005Q343.25 -13.350000000000001 346.07500000000005 -11.075000000000001Q348.90000000000003 -8.8 354.90000000000003 -8.8Q359.85 -8.8 362.82500000000005 -10.600000000000001Q365.8 -12.4 365.8 -15.450000000000001Q365.8 -18.150000000000002 363.55 -19.75Q361.3 -21.35 355.85 -21.900000000000002L351.05 -22.400000000000002Q341.95000000000005 -23.35 337.05000000000007 -27.575000000000003Q332.15000000000003 -31.8 332.15000000000003 -38.75Q332.15000000000003 -44.35 334.95000000000005 -48.150000000000006Q337.75 -51.95 342.70000000000005 -53.925000000000004Q347.65000000000003 -55.900000000000006 354.05 -55.900000000000006Q364.1 -55.900000000000006 370.3 -51.47500000000001Q376.5 -47.050000000000004 376.8 -38.550000000000004H364.3Q364.05 -41.400000000000006 361.475 -43.400000000000006Q358.90000000000003 -45.400000000000006 353.95000000000005 -45.400000000000006Q349.6 -45.400000000000006 347.175 -43.7Q344.75 -42.0 344.75 -39.25Q344.75 -36.7 346.70000000000005 -35.3Q348.65000000000003 -33.9 353.05 -33.4L357.85 -32.9Q367.45000000000005 -31.900000000000002 372.92500000000007 -27.6Q378.40000000000003 -23.3 378.40000000000003 -15.950000000000001Q378.40000000000003 -10.600000000000001 375.45000000000005 -6.625000000000001Q372.5 -2.6500000000000004 367.175 -0.4750000000000001Q361.85 1.7000000000000002 354.70000000000005 1.7000000000000002Z M389.5 0.0V-54.300000000000004H403.4V0.0ZM381.9 -43.900000000000006V-54.300000000000004H403.4V-43.900000000000006Z M437.55 21.450000000000003Q433.65 21.450000000000003 429.6 21.150000000000002Q425.55 20.85 422.1 20.35V8.700000000000001Q425.65 9.15 429.775 9.5Q433.9 9.850000000000001 437.45 9.850000000000001Q444.2 9.850000000000001 448.35 8.225000000000001Q452.5 6.6000000000000005 454.425 3.1750000000000003Q456.35 -0.25 456.35 -5.6000000000000005V-16.3L459.35 -23.1Q459.1 -15.55 456.3 -10.3Q453.5 -5.050000000000001 448.7 -2.325Q443.9 0.4 437.6 0.4Q432.0 0.4 427.425 -1.675Q422.85 -3.75 419.6 -7.4750000000000005Q416.35 -11.200000000000001 414.57500000000005 -16.175Q412.8 -21.150000000000002 412.8 -26.85V-28.950000000000003Q412.8 -34.7 414.65 -39.650000000000006Q416.5 -44.6 419.9 -48.275000000000006Q423.3 -51.95 428.0 -53.975Q432.7 -56.0 438.4 -56.0Q445.05 -56.0 450.0 -53.1Q454.95 -50.2 457.775 -44.675000000000004Q460.6 -39.150000000000006 460.85 -31.200000000000003L458.45 -30.8V-54.300000000000004H469.45V-6.4Q469.45 3.5 466.075 9.625Q462.7 15.75 455.65 18.6Q448.6 21.450000000000003 437.55 21.450000000000003ZM441.55 -11.5Q445.6 -11.5 448.9 -13.3Q452.2 -15.100000000000001 454.17499999999995 -18.5Q456.15 -21.900000000000002 456.15 -26.650000000000002V-30.150000000000002Q456.15 -34.800000000000004 454.1 -38.0Q452.05 -41.2 448.75 -42.85Q445.45 -44.5 441.6 -44.5Q437.2 -44.5 433.825 -42.45Q430.45 -40.400000000000006 428.575 -36.675000000000004Q426.7 -32.95 426.7 -27.900000000000002Q426.7 -22.85 428.6 -19.150000000000002Q430.5 -15.450000000000001 433.85 -13.475000000000001Q437.2 -11.5 441.55 -11.5Z M481.7 0.0V-73.0H495.6V-30.400000000000002H493.2Q493.2 -38.550000000000004 495.275 -44.275000000000006Q497.35 -50.0 501.525 -53.0Q505.7 -56.0 512.05 -56.0H512.65Q521.95 -56.0 526.7750000000001 -49.575Q531.6 -43.150000000000006 531.6 -30.950000000000003V0.0H517.7V-32.300000000000004Q517.7 -37.45 514.725 -40.475Q511.75 -43.5 506.95 -43.5Q501.85 -43.5 498.725 -40.150000000000006Q495.6 -36.800000000000004 495.6 -31.35V0.0Z M567.0500000000001 0.7000000000000001Q559.5500000000001 0.7000000000000001 554.7 -1.25Q549.85 -3.2 547.475 -7.825000000000001Q545.1 -12.450000000000001 545.1 -20.35L545.15 -69.60000000000001H558.15L558.1 -19.5Q558.1 -15.5 560.25 -13.350000000000001Q562.4 -11.200000000000001 566.4 -11.200000000000001H574.9V0.7000000000000001ZM536.5 -44.1V-54.300000000000004H574.9V-44.1Z"/><circle cx="251.35" cy="-68.35" r="7.75" fill="#F5A524"/><circle cx="394.55" cy="-68.35" r="7.75" fill="#F5A524"/></svg>
+          <div class="win" aria-hidden="true">
+            <span><svg viewBox="0 0 10 10"><path d="M0 5h10"/></svg></span>
+            <span><svg viewBox="0 0 10 10"><rect x=".5" y=".5" width="9" height="9"/></svg></span>
+            <span><svg viewBox="0 0 10 10"><path d="M0 0l10 10M10 0L0 10"/></svg></span>
+          </div>
+        </div>
+        <div class="app-body">
+          <div class="side" role="tablist" aria-label="App sections" aria-orientation="vertical">
+            <button role="tab" id="t-ov" aria-controls="p-ov" aria-selected="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Overview</button>
+            <button role="tab" id="t-st" aria-controls="p-st" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18M12 12h9"/></svg>Storage map</button>
+            <button role="tab" id="t-dr" aria-controls="p-dr" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M7 12h4"/><circle cx="17" cy="12" r="1"/></svg>Drive health</button>
+            <button role="tab" id="t-ai" aria-controls="p-ai" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><circle cx="12" cy="10.5" r="1"/></svg>AllInsight AI</button>
+            <div class="muted"><span class="dot" style="background:var(--amber)"></span>Offline mode</div>
+          </div>
+
+          <!-- overview -->
+          <section class="pane" id="p-ov" role="tabpanel" aria-labelledby="t-ov">
+            <div class="pane-head"><h3>Overview</h3><span class="mono">Last checked just now</span></div>
+            <div class="ov">
+              <div class="cell health">
+                <div><p class="k">Device health</p><p class="big" data-count="92">92</p><p class="s">Good. Storage is the one area to watch.</p></div>
+              </div>
+              <div class="cell ring-cell">
+                <svg class="ring" viewBox="0 0 120 120" aria-hidden="true"><circle class="track" cx="60" cy="60" r="52"/><circle class="val" cx="60" cy="60" r="52" pathLength="100"/></svg>
+                <div>
+                  <p class="k">System drive (C:)</p>
+                  <p class="v"><span data-count="82">82</span>% used</p>
+                  <p class="s mono">167 GB free of 931 GB</p>
+                  <p class="s">11.4 GB is safe to clean now</p>
+                </div>
+              </div>
+              <div class="cell"><p class="k">Memory</p><p class="v mono">12.4 GB</p><p class="s">of 16 GB in use</p><div class="bar"><i style="--w:77%"></i></div></div>
+              <div class="cell"><p class="k">CPU</p><p class="v mono"><span data-count="17">17</span>%</p><p class="s">average this hour</p><div class="bar"><i style="--w:17%"></i></div></div>
+            </div>
+            <div class="lower">
+              <div class="cell">
+                <p class="k">Recommended</p>
+                <ul class="acts">
+                  <li><div class="t"><b>Clean temporary files</b><span class="mono">11.4 GB</span></div><a class="mini solid" href="#safety">Clean safely</a></li>
+                  <li><div class="t"><b>Review large downloads</b><span class="mono">18.2 GB</span></div><button class="mini" type="button" data-goto="t-st">Review</button></li>
+                  <li><div class="t"><b>Review duplicate files</b><span class="mono">4.7 GB</span></div><button class="mini" type="button" data-goto="t-st">Review</button></li>
+                </ul>
+              </div>
+              <div class="cell insight">
+                <p class="k">AI insight</p>
+                <p>Storage is tight mainly because of videos and app caches. 11.4 GB of temporary data can be cleaned safely right now; your personal files aren't part of that.</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- storage -->
+          <section class="pane" id="p-st" role="tabpanel" aria-labelledby="t-st" hidden>
+            <div class="pane-head"><h3>Storage map</h3><span class="mono">Select a block to see what it is</span></div>
+            <div class="crumbs"><button class="mini" type="button" id="tm-back" hidden>Back</button><span class="mono" id="tm-path">C:\Users\User  52.3 GB</span></div>
+            <div class="tm" id="tm" role="group" aria-label="Folder sizes"></div>
+            <div class="tm-detail" id="tm-detail" aria-live="polite"></div>
+          </section>
+
+          <!-- drive -->
+          <section class="pane" id="p-dr" role="tabpanel" aria-labelledby="t-dr" hidden>
+            <div class="pane-head"><h3>Drive health</h3><span class="status"><span class="dot"></span>Healthy</span></div>
+            <div class="drive">
+              <div class="cell">
+                <p class="k">Estimated life remaining</p>
+                <p class="v" style="font-size:44px;font-weight:300;letter-spacing:-.04em">92%</p>
+                <p class="s">Based on the wear level your drive reports.</p>
+                <div class="bar"><i style="--w:92%"></i></div>
+                <p class="s" style="margin-top:22px">Readings your drive doesn't provide are shown as not reported. They're never estimated.</p>
+              </div>
+              <div class="cell">
+                <dl class="specs">
+                  <dt>Drive</dt><dd>NVMe SSD, 1 TB</dd>
+                  <dt>Temperature</dt><dd>41 °C</dd>
+                  <dt>Available spare</dt><dd>100%</dd>
+                  <dt>Media errors</dt><dd>0</dd>
+                  <dt>Power-on hours</dt><dd>3,412</dd>
+                  <dt>Unsafe shutdowns</dt><dd>14</dd>
+                  <dt>TRIM</dt><dd>Enabled</dd>
+                  <dt>Firmware</dt><dd style="color:var(--fog)">Not reported</dd>
+                </dl>
+              </div>
+            </div>
+          </section>
+
+          <!-- ai -->
+          <section class="pane" id="p-ai" role="tabpanel" aria-labelledby="t-ai" hidden>
+            <div class="pane-head"><h3>AllInsight AI</h3><span class="mono">Local model · not connected to the internet</span></div>
+            <div class="chat" id="chat" aria-live="polite"></div>
+            <div class="chips" id="chips"><p class="k">Try asking</p></div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec light" id="privacy">
+  <div class="wrap split">
+    <div class="l">
+      <h2>Everything stays on this device.</h2>
+      <p class="lead">There's no account to create and nothing to sync. Unplug the network and every feature keeps working, including the AI.</p>
+      <ul class="facts">
+        <li>File contents are never read for indexing. Only names, sizes and dates.</li>
+        <li>Duplicate checks hash files locally, and the hashes never leave your laptop.</li>
+        <li>Cleanup history records totals, not your filenames.</li>
+      </ul>
+    </div>
+    <div class="r">
+      <div class="panel" role="group" aria-label="Privacy settings, as shipped">
+        <div class="prow"><div class="t"><b>Cloud services</b><span>Nothing is uploaded, ever.</span></div><span class="state">Off</span><button class="switch" type="button" role="switch" aria-checked="false" aria-label="Cloud services" disabled></button></div>
+        <div class="prow"><div class="t"><b>Telemetry</b><span>No usage data is collected.</span></div><span class="state">Off</span><button class="switch" type="button" role="switch" aria-checked="false" aria-label="Telemetry" disabled></button></div>
+        <div class="prow"><div class="t"><b>Crash reporting</b><span>Diagnostics stay local unless you export them.</span></div><span class="state">Off</span><button class="switch" type="button" role="switch" aria-checked="false" aria-label="Crash reporting" disabled></button></div>
+        <div class="prow offline"><span class="dot"></span>Offline mode. All local features are available.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec light" id="safety">
+  <div class="wrap">
+    <h2>Cleanup that never guesses.</h2>
+    <p class="lead">Before anything can be removed, every file AllInsight finds is sorted into one of three groups. Only one of them can ever be cleaned automatically.</p>
+
+    <div class="tiers" role="tablist" aria-label="Cleanup groups">
+      <button role="tab" id="tt-safe" data-t="Safe" aria-controls="tp-safe" aria-selected="true"><b>Safe</b><span>Can be cleaned for you</span></button>
+      <button role="tab" id="tt-rev" data-t="Review" aria-controls="tp-rev" aria-selected="false" tabindex="-1"><b>Review</b><span>Shown to you, never removed automatically</span></button>
+      <button role="tab" id="tt-pro" data-t="Protected" aria-controls="tp-pro" aria-selected="false" tabindex="-1"><b>Protected</b><span>Never touched</span></button>
+    </div>
+
+    <div class="tier-panels">
+      <div class="tier-panel" id="tp-safe" role="tabpanel" aria-labelledby="tt-safe">
+        <h3>Data Windows and your apps rebuild on their own</h3>
+        <p>Turn on Auto-Clean and AllInsight clears these when free space drops below the level you choose. It always shows you the total first.</p>
+        <ul><li>Windows temporary files</li><li>Application caches</li><li>Crash dumps</li><li>Thumbnail cache</li><li>Shader caches</li><li>Old update caches</li><li>Error reports</li><li>Recycle Bin, after you confirm</li></ul>
+      </div>
+      <div class="tier-panel" id="tp-rev" role="tabpanel" aria-labelledby="tt-rev" hidden>
+        <h3>Things only you can judge</h3>
+        <p>AllInsight lists them with size, location and date, and leaves the decision to you. Anything you remove goes to the Recycle Bin.</p>
+        <ul><li>Old downloads</li><li>Very large files</li><li>Duplicate files</li><li>Old installers</li><li>ZIP and RAR archives</li><li>ISO images</li><li>Large videos</li><li>Unused app data</li></ul>
+      </div>
+      <div class="tier-panel" id="tp-pro" role="tabpanel" aria-labelledby="tt-pro" hidden>
+        <h3>Your work, your system, and anything unknown</h3>
+        <p>These are excluded from every cleanup, automatic or manual. You can add your own folders to this list.</p>
+        <ul><li>Documents and Desktop</li><li>Pictures, Videos, Music</li><li>Project folders and source code</li><li>Databases</li><li>Browser profiles</li><li>App settings</li><li>Windows and Program Files</li><li>Unknown files</li></ul>
+      </div>
+
+      <div class="dialog" id="dialog">
+        <h3>11.4 GB can be safely reclaimed</h3>
+        <ul>
+          <li><span>Windows temporary files</span><span>4.2 GB</span></li>
+          <li><span>Application caches</span><span>3.1 GB</span></li>
+          <li><span>Crash dumps</span><span>1.8 GB</span></li>
+          <li><span>Thumbnail cache</span><span>1.2 GB</span></li>
+          <li><span>Other temporary data</span><span>1.1 GB</span></li>
+        </ul>
+        <p class="note"><b>What will happen:</b> these files are removed. Windows recreates them when they're needed.</p>
+        <p class="note"><b>What won't be affected:</b> your documents, photos, videos, downloads and anything you've protected.</p>
+        <div class="row" id="dialog-actions">
+          <button class="mini solid" type="button" id="clean">Clean safely</button>
+          <button class="mini" type="button" data-tier="tt-rev">Review items</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec dark" id="ai">
+  <div class="wrap split">
+    <div class="l">
+      <h2>It explains.<br>You decide.</h2>
+      <p class="lead">The assistant reads a short summary AllInsight prepares, with sizes, counts and drive readings, and answers in plain language. It can't delete files or run commands.</p>
+      <ul class="ai-points">
+        <li>Runs on your processor, and uses your graphics card when one is available.</li>
+        <li>Loads when you ask a question, then frees the memory.</li>
+        <li>Optional. Everything else works without a model installed.</li>
+      </ul>
+    </div>
+    <div class="r">
+      <ol class="flow">
+        <li><h3>AllInsight scans</h3><p>It reads file names, sizes and dates, plus the health data your drive reports.</p></li>
+        <li class="ai"><h3>The local AI explains</h3><p>It sees only the summary, never your files, and writes what it found and what it suggests.</p></li>
+        <li><h3>You approve</h3><p>Suggestions appear as buttons. Nothing happens until you press one.</p></li>
+        <li><h3>The safety layer acts</h3><p>Only a fixed list of cleanup actions can run, each checked against your protected folders.</p></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="sec light" id="features">
+  <div class="wrap">
+    <h2>The whole machine,<br>in one place.</h2>
+    <dl class="feat">
+      <dt>Storage map</dt><dd>A map of your drive where bigger folders take up more space. Select any block to open it.</dd>
+      <dt>Large files</dt><dd>Everything over 100 MB, 1 GB or a size you set, with where it lives and when you last opened it.</dd>
+      <dt>Duplicates</dt><dd>Files matched by size and content hash, not by name. You choose which copy to keep.</dd>
+      <dt>Drive health</dt><dd>Temperature, wear, errors and power-on hours from SMART and NVMe, with a plain verdict: healthy, warning, critical or unknown.</dd>
+      <dt>Performance</dt><dd>Processor, memory, graphics, disk and network over time, with the app behind each spike.</dd>
+      <dt>Startup apps</dt><dd>What launches with Windows, how much it slows startup, and a switch to turn it off.</dd>
+      <dt>Applications</dt><dd>Installed apps with size and install date. Uninstalls go through Windows, the proper way.</dd>
+      <dt>Battery</dt><dd>How much charge your battery holds today compared with when it was new.</dd>
+      <dt>Alerts</dt><dd>A quiet notification at 80, 90 and 95 percent full, or at thresholds you set. Never more than it needs to.</dd>
+    </dl>
+  </div>
+</section>
+
+<section class="sec light" id="requirements">
+  <div class="wrap">
+    <h2>Requirements</h2>
+    <table class="req">
+      <tr><th scope="row">Windows</th><td>Windows 10 and Windows 11, 64-bit</td></tr>
+      <tr><th scope="row">Internet</th><td>Not required</td></tr>
+      <tr><th scope="row">Account</th><td>Not required</td></tr>
+      <tr><th scope="row">Administrator access</th><td>Only for inspecting protected system storage<small>AllInsight tells you why before it asks.</small></td></tr>
+      <tr><th scope="row">AI model (optional)</th><td>A 1–3B model for laptops with less memory, or a 7–8B model with more<small>You import the model yourself. Nothing is ever downloaded without asking.</small></td></tr>
+      <tr><th scope="row">Background monitor (optional)</th><td>Watches free space and drive health with negligible processor use</td></tr>
+    </table>
+  </div>
+</section>
+
+<section class="sec dark" id="access">
+  <div class="wrap access">
+    <div class="l">
+      <h2>Be among the first<br>to try it.</h2>
+      <p class="lead">We're opening AllInsight to a small group of Windows users first. Leave your email and we'll write when your copy is ready.</p>
+    </div>
+    <form id="form" novalidate>
+      <div class="form-row">
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="email" placeholder="name@example.com" aria-describedby="email-err">
+        </div>
+        <div class="field">
+          <label for="os">Your Windows</label>
+          <select id="os" name="os"><option>Windows 11</option><option>Windows 10</option></select>
+        </div>
+      </div>
+      <p class="err" id="email-err" aria-live="polite"></p>
+      <button class="btn btn-paper" type="submit">Request early access</button>
+      <p class="fine">One email when it's ready. No newsletter.</p>
+    </form>
+    <div class="ok" id="ok" hidden tabindex="-1">
+      <h3>You're on the list.</h3>
+      <p>We'll email <span id="ok-email"></span> when AllInsight is ready for you.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec light" id="faq">
+  <div class="wrap">
+    <h2>Questions</h2>
+    <div class="faq">
+      <details><summary>Will AllInsight delete my files?</summary><p>Not without you. Automatic cleanup only touches the Safe group: temporary files and caches that Windows and your apps rebuild. Documents, photos, downloads and anything unknown are never removed automatically, and anything you choose to delete goes to the Recycle Bin when it can be restored.</p></details>
+      <details><summary>Does it need an internet connection?</summary><p>No. Every feature, including the AI assistant, runs offline. If AllInsight ever adds an online feature, it will be off until you turn it on.</p></details>
+      <details><summary>What does the AI actually see?</summary><p>A summary AllInsight prepares: folder sizes, file counts, drive readings and startup items. It never reads the contents of your files and it can't run commands or delete anything.</p></details>
+      <details><summary>Do I need a powerful laptop for the AI?</summary><p>No. AllInsight suggests a model that fits your memory, and it runs on an ordinary processor. If you'd rather not use AI at all, skip the model and every other feature still works.</p></details>
+      <details><summary>What if my drive doesn't report health data?</summary><p>AllInsight shows the status as Unknown and lists which readings are missing. It won't call a drive healthy without the data to back it up.</p></details>
+      <details><summary>Why does it sometimes ask for administrator permission?</summary><p>Some Windows folders can only be measured with elevated access. AllInsight explains what it needs and why before asking, and never asks on every launch.</p></details>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="dark">
+  <div class="wrap">
+    <div class="foot">
+      <div><svg class="logo" viewBox="3.7 -79.5 577.0 103.0" role="img" aria-label="AllInsight"><g transform="translate(0.00 -85.50) scale(0.95000)"><path class="mk-a" pathLength="1" d="M12 84 L50 18 L88 84" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/><line class="mk-s" x1="50" y1="72" x2="50" y2="84" stroke="currentColor" stroke-width="12" stroke-linecap="round"/><circle class="mk-d" cx="50" cy="54" r="7" fill="#F5A524"/></g><path fill="currentColor" d="M165.75 0.0V-16.1H163.45V-34.0Q163.45 -38.650000000000006 161.14999999999998 -40.97500000000001Q158.85 -43.300000000000004 154.1 -43.300000000000004Q151.6 -43.300000000000004 148.1 -43.2Q144.6 -43.1 141.05 -42.95Q137.5 -42.800000000000004 134.7 -42.6V-54.400000000000006Q137.0 -54.6 139.875 -54.775000000000006Q142.75 -54.95 145.825 -55.025000000000006Q148.9 -55.1 151.6 -55.1Q159.95 -55.1 165.52499999999998 -52.875Q171.1 -50.650000000000006 173.925 -45.95Q176.75 -41.25 176.75 -33.65V0.0ZM148.25 1.4000000000000001Q142.35 1.4000000000000001 137.925 -0.6749999999999999Q133.5 -2.75 131.05 -6.675000000000001Q128.6 -10.600000000000001 128.6 -16.1Q128.6 -22.05 131.52499999999998 -25.875Q134.45 -29.700000000000003 139.8 -31.575000000000003Q145.15 -33.45 152.35 -33.45H164.95V-25.150000000000002H152.15Q147.4 -25.150000000000002 144.85000000000002 -22.825000000000003Q142.3 -20.5 142.3 -16.75Q142.3 -13.05 144.85000000000002 -10.775Q147.4 -8.5 152.15 -8.5Q155.05 -8.5 157.525 -9.55Q160.0 -10.600000000000001 161.625 -13.125Q163.25 -15.65 163.45 -20.1L166.85 -16.2Q166.35 -10.5 164.1 -6.6Q161.85 -2.7 157.89999999999998 -0.65Q153.95 1.4000000000000001 148.25 1.4000000000000001Z M189.4 0.0V-73.0H203.3V0.0ZM182.60000000000002 -62.6V-73.0H203.3V-62.6Z M216.9 0.0V-73.0H230.8V0.0ZM210.10000000000002 -62.6V-73.0H230.8V-62.6Z M246.3 0.0V-54.300000000000004H260.2V0.0ZM238.70000000000002 -43.900000000000006V-54.300000000000004H260.2V-43.900000000000006Z M273.2 0.0V-54.300000000000004H284.2V-31.0H283.2Q283.2 -39.25 285.375 -44.8Q287.55 -50.35 291.925 -53.175Q296.3 -56.0 302.75 -56.0H303.35Q313.1 -56.0 318.1 -49.725Q323.1 -43.45 323.1 -31.05V0.0H309.20000000000005V-32.300000000000004Q309.20000000000005 -37.300000000000004 306.32500000000005 -40.400000000000006Q303.45 -43.5 298.45 -43.5Q293.35 -43.5 290.225 -40.325Q287.1 -37.15 287.1 -31.900000000000002V0.0Z M354.70000000000005 1.7000000000000002Q343.45000000000005 1.7000000000000002 337.125 -3.025Q330.8 -7.75 330.45000000000005 -16.150000000000002H342.95000000000005Q343.25 -13.350000000000001 346.07500000000005 -11.075000000000001Q348.90000000000003 -8.8 354.90000000000003 -8.8Q359.85 -8.8 362.82500000000005 -10.600000000000001Q365.8 -12.4 365.8 -15.450000000000001Q365.8 -18.150000000000002 363.55 -19.75Q361.3 -21.35 355.85 -21.900000000000002L351.05 -22.400000000000002Q341.95000000000005 -23.35 337.05000000000007 -27.575000000000003Q332.15000000000003 -31.8 332.15000000000003 -38.75Q332.15000000000003 -44.35 334.95000000000005 -48.150000000000006Q337.75 -51.95 342.70000000000005 -53.925000000000004Q347.65000000000003 -55.900000000000006 354.05 -55.900000000000006Q364.1 -55.900000000000006 370.3 -51.47500000000001Q376.5 -47.050000000000004 376.8 -38.550000000000004H364.3Q364.05 -41.400000000000006 361.475 -43.400000000000006Q358.90000000000003 -45.400000000000006 353.95000000000005 -45.400000000000006Q349.6 -45.400000000000006 347.175 -43.7Q344.75 -42.0 344.75 -39.25Q344.75 -36.7 346.70000000000005 -35.3Q348.65000000000003 -33.9 353.05 -33.4L357.85 -32.9Q367.45000000000005 -31.900000000000002 372.92500000000007 -27.6Q378.40000000000003 -23.3 378.40000000000003 -15.950000000000001Q378.40000000000003 -10.600000000000001 375.45000000000005 -6.625000000000001Q372.5 -2.6500000000000004 367.175 -0.4750000000000001Q361.85 1.7000000000000002 354.70000000000005 1.7000000000000002Z M389.5 0.0V-54.300000000000004H403.4V0.0ZM381.9 -43.900000000000006V-54.300000000000004H403.4V-43.900000000000006Z M437.55 21.450000000000003Q433.65 21.450000000000003 429.6 21.150000000000002Q425.55 20.85 422.1 20.35V8.700000000000001Q425.65 9.15 429.775 9.5Q433.9 9.850000000000001 437.45 9.850000000000001Q444.2 9.850000000000001 448.35 8.225000000000001Q452.5 6.6000000000000005 454.425 3.1750000000000003Q456.35 -0.25 456.35 -5.6000000000000005V-16.3L459.35 -23.1Q459.1 -15.55 456.3 -10.3Q453.5 -5.050000000000001 448.7 -2.325Q443.9 0.4 437.6 0.4Q432.0 0.4 427.425 -1.675Q422.85 -3.75 419.6 -7.4750000000000005Q416.35 -11.200000000000001 414.57500000000005 -16.175Q412.8 -21.150000000000002 412.8 -26.85V-28.950000000000003Q412.8 -34.7 414.65 -39.650000000000006Q416.5 -44.6 419.9 -48.275000000000006Q423.3 -51.95 428.0 -53.975Q432.7 -56.0 438.4 -56.0Q445.05 -56.0 450.0 -53.1Q454.95 -50.2 457.775 -44.675000000000004Q460.6 -39.150000000000006 460.85 -31.200000000000003L458.45 -30.8V-54.300000000000004H469.45V-6.4Q469.45 3.5 466.075 9.625Q462.7 15.75 455.65 18.6Q448.6 21.450000000000003 437.55 21.450000000000003ZM441.55 -11.5Q445.6 -11.5 448.9 -13.3Q452.2 -15.100000000000001 454.17499999999995 -18.5Q456.15 -21.900000000000002 456.15 -26.650000000000002V-30.150000000000002Q456.15 -34.800000000000004 454.1 -38.0Q452.05 -41.2 448.75 -42.85Q445.45 -44.5 441.6 -44.5Q437.2 -44.5 433.825 -42.45Q430.45 -40.400000000000006 428.575 -36.675000000000004Q426.7 -32.95 426.7 -27.900000000000002Q426.7 -22.85 428.6 -19.150000000000002Q430.5 -15.450000000000001 433.85 -13.475000000000001Q437.2 -11.5 441.55 -11.5Z M481.7 0.0V-73.0H495.6V-30.400000000000002H493.2Q493.2 -38.550000000000004 495.275 -44.275000000000006Q497.35 -50.0 501.525 -53.0Q505.7 -56.0 512.05 -56.0H512.65Q521.95 -56.0 526.7750000000001 -49.575Q531.6 -43.150000000000006 531.6 -30.950000000000003V0.0H517.7V-32.300000000000004Q517.7 -37.45 514.725 -40.475Q511.75 -43.5 506.95 -43.5Q501.85 -43.5 498.725 -40.150000000000006Q495.6 -36.800000000000004 495.6 -31.35V0.0Z M567.0500000000001 0.7000000000000001Q559.5500000000001 0.7000000000000001 554.7 -1.25Q549.85 -3.2 547.475 -7.825000000000001Q545.1 -12.450000000000001 545.1 -20.35L545.15 -69.60000000000001H558.15L558.1 -19.5Q558.1 -15.5 560.25 -13.350000000000001Q562.4 -11.200000000000001 566.4 -11.200000000000001H574.9V0.7000000000000001ZM536.5 -44.1V-54.300000000000004H574.9V-44.1Z"/><circle cx="251.35" cy="-68.35" r="7.75" fill="#F5A524"/><circle cx="394.55" cy="-68.35" r="7.75" fill="#F5A524"/></svg><p>Your device, understood.</p></div>
+      <nav aria-label="Footer">
+        <a href="#privacy">Privacy</a><a href="#safety">Cleanup</a><a href="#ai">Local AI</a><a href="#requirements">Requirements</a><a href="#faq">FAQ</a><a href="#access">Early access</a>
+      </nav>
+    </div>
+    <div class="legal"><span>© 2026 AllInsight</span><span>Made for Windows 10 and 11</span></div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* load moment: ring fills, readouts count up */
+  const ring = document.querySelector('.ring .val');
+  const bars = document.querySelectorAll('.app .bar i');
+  if(!reduce){
+    ring.style.strokeDashoffset = 100;
+    bars.forEach(b => { b.dataset.w = b.style.getPropertyValue('--w'); b.style.setProperty('--w','0%'); });
+    document.querySelectorAll('#p-ov [data-count]').forEach(el => el.textContent = '0');
+    requestAnimationFrame(() => setTimeout(() => {
+      ring.style.strokeDashoffset = 18;
+      bars.forEach(b => b.style.setProperty('--w', b.dataset.w));
+      document.querySelectorAll('#p-ov [data-count]').forEach(el => {
+        const end = +el.dataset.count, t0 = performance.now(), d = 1400;
+        const tick = now => { const p = Math.min(1,(now-t0)/d), e = 1-Math.pow(1-p,3);
+          el.textContent = Math.round(end*e); if(p<1) requestAnimationFrame(tick); };
+        requestAnimationFrame(tick);
+      });
+    }, 350));
+  }
+
+  /* accessible tabs (shared by the app window and cleanup groups) */
+  function tabs(list, onChange){
+    const t = [...list.querySelectorAll('[role="tab"]')];
+    function select(tab, focus){
+      t.forEach(x => { const on = x === tab; x.setAttribute('aria-selected', on); x.tabIndex = on ? 0 : -1;
+        document.getElementById(x.getAttribute('aria-controls')).hidden = !on; });
+      if(focus) tab.focus();
+      onChange && onChange(tab);
+    }
+    t.forEach((x,i) => {
+      x.addEventListener('click', () => select(x));
+      x.addEventListener('keydown', e => {
+        const k = e.key, n = t.length;
+        let j = null;
+        if(k==='ArrowDown'||k==='ArrowRight') j=(i+1)%n;
+        if(k==='ArrowUp'||k==='ArrowLeft') j=(i-1+n)%n;
+        if(k==='Home') j=0; if(k==='End') j=n-1;
+        if(j!==null){ e.preventDefault(); select(t[j], true); }
+      });
+    });
+    return select;
+  }
+  const selectApp = tabs(document.querySelector('.side'), tab => { if(tab.id==='t-st') drawTm(); });
+  document.querySelectorAll('[data-goto]').forEach(b => b.addEventListener('click', () => selectApp(document.getElementById(b.dataset.goto), true)));
+  const selectTier = tabs(document.querySelector('.tiers'));
+  document.querySelectorAll('[data-tier]').forEach(b => b.addEventListener('click', () => selectTier(document.getElementById(b.dataset.tier), true)));
+
+  /* storage treemap */
+  const TIER = {Safe:'Safe: can be cleaned for you.', Review:'Review: shown to you, never removed automatically.', Protected:'Protected: never touched.', Mixed:'Mixed: open it to see which parts are safe.'};
+  const ROOT = {name:'C:\\Users\\User', items:[
+    {n:'Videos', v:18.2, t:'Protected'},
+    {n:'Downloads', v:9.4, t:'Review', kids:[{n:'Installers',v:4.1,t:'Review'},{n:'Archives',v:2.6,t:'Review'},{n:'ISO images',v:1.9,t:'Review'},{n:'Other',v:0.8,t:'Review'}]},
+    {n:'AppData', v:8.1, t:'Mixed', kids:[{n:'App settings and data',v:3.6,t:'Protected'},{n:'Application caches',v:3.1,t:'Safe'},{n:'Browser cache',v:1.4,t:'Safe'}]},
+    {n:'Documents', v:6.7, t:'Protected'},
+    {n:'Other', v:5.7, t:'Review'},
+    {n:'Pictures', v:4.2, t:'Protected'}
+  ]};
+  let level = ROOT, picked = null;
+  const tm = document.getElementById('tm'), det = document.getElementById('tm-detail'), back = document.getElementById('tm-back'), path = document.getElementById('tm-path');
+  const H = 54;
+  function squarify(items, x, y, w, h){
+    const total = items.reduce((s,i)=>s+i.v,0), k = w*h/total, out = [];
+    let rest = items.map(i => ({...i, a:i.v*k}));
+    while(rest.length){
+      const side = Math.min(w,h);
+      const worst = r => { const s=r.reduce((a,b)=>a+b.a,0), mx=Math.max(...r.map(q=>q.a)), mn=Math.min(...r.map(q=>q.a)); return Math.max(side*side*mx/(s*s),(s*s)/(side*side*mn)); };
+      const row=[rest[0]]; let i=1;
+      while(i<rest.length && worst([...row,rest[i]]) <= worst(row)){ row.push(rest[i]); i++; }
+      const s = row.reduce((a,b)=>a+b.a,0);
+      if(w>=h){ const cw=s/h; let cy=y; row.forEach(r=>{ const rh=r.a/cw; out.push({...r,x,y:cy,w:cw,h:rh}); cy+=rh; }); x+=cw; w-=cw; }
+      else { const rh=s/w; let cx=x; row.forEach(r=>{ const rw=r.a/rh; out.push({...r,x:cx,y,w:rw,h:rh}); cx+=rw; }); y+=rh; h-=rh; }
+      rest = rest.slice(i);
+    }
+    return out;
+  }
+  function total(l){ return l.items.reduce((s,i)=>s+i.v,0); }
+  function drawTm(){
+    tm.innerHTML = '';
+    const items = [...level.items].sort((a,b)=>b.v-a.v);
+    const sum = total(level);
+    path.textContent = level.name + '  ' + sum.toFixed(1) + ' GB';
+    back.hidden = level === ROOT;
+    squarify(items, 0, 0, 100, H).forEach(r => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.style.cssText = `left:${r.x}%;top:${r.y/H*100}%;width:${r.w}%;height:${r.h/H*100}%`;
+      b.dataset.tier = r.t;
+      b.setAttribute('aria-pressed', picked === r.n);
+      b.setAttribute('aria-label', `${r.n}, ${r.v} GB, ${r.t}${r.kids ? ', opens folder' : ''}`);
+      const name = document.createElement('b'); name.textContent = r.n;
+      const size = document.createElement('span'); size.textContent = r.v.toFixed(1) + ' GB';
+      b.append(name, size);
+      b.addEventListener('click', () => {
+        if(r.kids){ level = {name: level.name + '\\' + r.n, items: r.kids, parent: level}; picked = null; drawTm(); showDetail(null); tm.querySelector('button')?.focus(); return; }
+        picked = r.n; drawTm(); showDetail(r, sum); tm.querySelector(`[aria-pressed="true"]`)?.focus();
+      });
+      tm.appendChild(b);
+    });
+  }
+  function showDetail(r, sum){
+    det.innerHTML = '';
+    if(!r){ det.textContent = level === ROOT ? 'Downloads and AppData open into their subfolders.' : 'Select a block for details.'; return; }
+    const a = document.createElement('span'); a.textContent = `${r.n}: ${r.v.toFixed(1)} GB, ${Math.round(r.v/sum*100)}% of this folder`;
+    const t = document.createElement('span'); t.className = 'tag ' + r.t; t.textContent = TIER[r.t];
+    det.append(a, t);
+  }
+  back.addEventListener('click', () => { level = level.parent || ROOT; picked = null; drawTm(); showDetail(null); back.hidden || back.focus(); });
+  showDetail(null);
+
+  /* AI chat (canned answers for the demo) */
+  const chat = document.getElementById('chat'), chips = document.getElementById('chips');
+  const MARK = '<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M12 84 L50 18 L88 84" fill="none" stroke="#F4F2EE" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/><line x1="50" y1="72" x2="50" y2="84" stroke="#F4F2EE" stroke-width="12" stroke-linecap="round"/><circle cx="50" cy="54" r="7" fill="#F5A524"/></svg>';
+  const QA = [
+    {q:'Why is my laptop storage full?', p:['Your 931 GB system drive is 82% full. The largest contributors are:'],
+     list:[['Videos','212 GB'],['Applications','171 GB'],['Downloads','88 GB'],['Temporary data','17 GB']],
+     after:'11.4 GB of that looks safe to clean right now. I\'d start with temporary files.', btn:[['Clean safe files','#safety',true],['Show storage map','t-st']]},
+    {q:'Is my drive healthy?', p:['Yes. Your NVMe drive reports 92% of its life remaining, no media errors and a temperature of 41 °C.','It doesn\'t report its firmware version, so that\'s shown as not reported.'], btn:[['Open drive health','t-dr']]},
+    {q:'What slows down my startup?', p:['Three apps account for most startup activity: a cloud sync client, a chat app and a game launcher. Together they add about 9 seconds.','You can turn any of them off in Startup apps. Nothing gets uninstalled.'], btn:[]}
+  ];
+  function el(tag, cls, txt){ const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; }
+  function ask(i, instant){
+    const d = QA[i];
+    chat.appendChild(el('div','q',d.q));
+    const a = el('div','a'), av = el('div','av'), body = el('div','body');
+    av.innerHTML = MARK; a.append(av, body);
+    d.p.forEach(t => body.appendChild(el('p',null,t)));
+    if(d.list){ const ul=el('ul'); d.list.forEach(([k,v])=>{ const li=el('li'); li.append(el('span',null,k), el('span',null,v)); ul.appendChild(li); }); body.appendChild(ul); }
+    if(d.after) body.appendChild(el('p',null,d.after));
+    if(d.btn.length){ const row=el('div','row'); d.btn.forEach(([label,target,solid])=>{
+      const b = target.startsWith('#') ? Object.assign(el('a','mini'+(solid?' solid':''),label),{href:target}) : el('button','mini',label);
+      if(!target.startsWith('#')){ b.type='button'; b.addEventListener('click',()=>selectApp(document.getElementById(target),true)); }
+      row.appendChild(b); }); body.appendChild(row); }
+    if(!instant && !reduce){ a.style.opacity=0; a.style.transition='opacity .4s'; requestAnimationFrame(()=>requestAnimationFrame(()=>a.style.opacity=1)); }
+    chat.appendChild(a);
+  }
+  ask(0, true);
+  QA.forEach((d,i) => { if(i===0) return; const b = el('button','mini',d.q); b.type='button';
+    b.addEventListener('click', () => { ask(i); b.remove(); if(chips.querySelectorAll('button').length===0) chips.hidden = true; }); chips.appendChild(b); });
+
+  /* cleanup dialog demo */
+  document.getElementById('clean').addEventListener('click', () => {
+    const row = document.getElementById('dialog-actions');
+    row.innerHTML = '';
+    const done = el('p','done'); done.innerHTML = '<span class="dot"></span>';
+    done.append('Cleaned 11.4 GB. Added to cleanup history.');
+    const reset = el('button','mini','Reset demo'); reset.type='button';
+    reset.addEventListener('click', () => location.reload());
+    row.append(done, reset);
+  });
+
+  /* early access form */
+  const form = document.getElementById('form'), email = document.getElementById('email'), err = document.getElementById('email-err');
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const v = email.value.trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){
+      email.setAttribute('aria-invalid','true');
+      err.textContent = v ? 'That email address looks incomplete. Check it and try again.' : 'Enter your email address so we can tell you when it\'s ready.';
+      email.focus(); return;
+    }
+    email.removeAttribute('aria-invalid'); err.textContent = '';
+    document.getElementById('ok-email').textContent = v;
+    form.hidden = true; const ok = document.getElementById('ok'); ok.hidden = false; ok.focus();
+  });
+  email.addEventListener('input', () => { if(email.getAttribute('aria-invalid')){ email.removeAttribute('aria-invalid'); err.textContent=''; } });
+})();
+</script>
+</body>
+</html>

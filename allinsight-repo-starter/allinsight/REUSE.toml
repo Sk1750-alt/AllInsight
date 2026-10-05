@@ -1,0 +1,15 @@
+version = 1
+SPDX-PackageName = "AllInsight"
+SPDX-PackageDownloadLocation = "https://github.com/OWNER/allinsight"
+
+[[annotations]]
+path = "**"
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 FULL_NAME and AllInsight contributors"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+[[annotations]]
+path = ".github/assets/**"
+precedence = "override"
+SPDX-FileCopyrightText = "2026 FULL_NAME"
+SPDX-License-Identifier = "LicenseRef-AllInsight-Brand"

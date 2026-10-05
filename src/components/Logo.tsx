@@ -1,56 +1,60 @@
 /**
- * The AllInsight mark, inline so it inherits the theme and never flashes while an
- * image loads. The SVG in assets/logo is the same artwork and remains the
- * source of truth for the application icon.
+ * The AllInsight mark: an A with a lowercase i standing inside it, read as
+ * "A·i". Inline so it inherits the theme and never flashes while an image
+ * loads. The A and the i take the ink colour, so the mark works on the light
+ * and dark themes; the dot is always Insight Amber.
+ *
+ * Below 32 px the brand kit drops the i-stem and draws a heavier stroke and a
+ * larger dot, so the mark still reads at sidebar size. The SVGs in assets/logo
+ * are the same artwork and remain the source of truth for the application icon.
  */
+const AMBER = "#F5A524";
+
 export function Logo({ size = 24, className }: { size?: number; className?: string }) {
+  const small = size < 32;
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 256 256"
+      viewBox="0 0 100 100"
       className={className}
       role="img"
       aria-label="AllInsight"
     >
-      <defs>
-        <clipPath id="allinsight-logo-core">
-          <path d="M128 20 214 70v116l-86 50-86-50V70z" />
-        </clipPath>
-      </defs>
-      <g
-        fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth="7"
-        strokeLinecap="round"
-        opacity="0.5"
-      >
-        <path d="M196 42a112 112 0 0 1 26 63" />
-        <path d="M60 214a112 112 0 0 1-26-63" />
-      </g>
-      <path
-        d="M128 20 214 70v116l-86 50-86-50V70z"
-        fill="var(--color-surface)"
-        stroke="var(--color-accent)"
-        strokeWidth="11"
-        strokeLinejoin="round"
-      />
-      <g
-        clipPath="url(#allinsight-logo-core)"
-        fill="none"
-        strokeWidth="15"
-        strokeLinecap="round"
-      >
-        <path d="M169.3 143.1A44 44 0 1 1 150 89.9" stroke="var(--color-ink)" />
-        <path d="M159.1 96.9A44 44 0 0 1 171.8 131.8" stroke="var(--color-accent)" />
-      </g>
-      <circle
-        cx="128"
-        cy="128"
-        r="14"
-        fill="var(--color-ink)"
-        clipPath="url(#allinsight-logo-core)"
-      />
+      {small ? (
+        <>
+          <path
+            d="M14 82 L50 20 L86 82"
+            fill="none"
+            stroke="var(--color-ink)"
+            strokeWidth="16"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx="50" cy="66" r="9" fill={AMBER} />
+        </>
+      ) : (
+        <>
+          <path
+            d="M12 84 L50 18 L88 84"
+            fill="none"
+            stroke="var(--color-ink)"
+            strokeWidth="12"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <line
+            x1="50"
+            y1="72"
+            x2="50"
+            y2="84"
+            stroke="var(--color-ink)"
+            strokeWidth="12"
+            strokeLinecap="round"
+          />
+          <circle cx="50" cy="54" r="7" fill={AMBER} />
+        </>
+      )}
     </svg>
   );
 }

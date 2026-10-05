@@ -1,0 +1,9 @@
+# Default owner
+*                         @OWNER
+
+# Anything that can delete files needs the maintainer's review
+/rules/                   @OWNER
+/CLEANUP_RULES.md         @OWNER
+/src-tauri/src/cleanup/   @OWNER
+/src-tauri/src/safety/    @OWNER
+/.github/workflows/       @OWNER

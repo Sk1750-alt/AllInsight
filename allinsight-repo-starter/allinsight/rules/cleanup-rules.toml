@@ -1,0 +1,243 @@
+# AllInsight cleanup rules, specification v0.1 (draft)
+# Human-readable contract: CLEANUP_RULES.md. The two files must match.
+#
+# Fields
+#   id               stable identifier, maps to a CleanupOperation enum variant
+#   tier             "safe" | "review"   (anything unmatched is protected)
+#   roots            starting folders; environment variables expanded at runtime
+#   include          glob patterns relative to each root ("**" = everything below)
+#   min_age_hours    skip files modified more recently than this
+#   requires_admin   only offered after the user agrees to elevate
+#   skip_if_running  skip the whole rule while any of these processes run
+#   method           "delete" | "recycle" | "windows_api" | "windows_cleanup"
+#   auto_clean       may run under Auto-Clean (safe tier only)
+#   operation        Rust enum variant implementing this rule
+
+schema_version = 1
+
+# ---------------------------------------------------------------- SAFE
+
+[[rule]]
+id = "user_temp"
+tier = "safe"
+roots = ["%TEMP%"]
+include = ["**"]
+min_age_hours = 24
+method = "delete"
+auto_clean = true
+operation = "DeleteUserTemp"
+
+[[rule]]
+id = "windows_temp"
+tier = "safe"
+roots = ["%SystemRoot%\\Temp"]
+include = ["**"]
+min_age_hours = 24
+requires_admin = true
+method = "delete"
+auto_clean = true
+operation = "DeleteWindowsTemp"
+
+[[rule]]
+id = "crash_dumps_user"
+tier = "safe"
+roots = ["%LOCALAPPDATA%\\CrashDumps"]
+include = ["*.dmp"]
+method = "delete"
+auto_clean = true
+operation = "ClearUserCrashDumps"
+
+[[rule]]
+id = "crash_dumps_system"
+tier = "safe"
+roots = ["%SystemRoot%\\Minidump", "%SystemRoot%"]
+include = ["*.dmp", "MEMORY.DMP"]
+requires_admin = true
+method = "delete"
+auto_clean = true
+operation = "ClearSystemCrashDumps"
+# Note: the "%SystemRoot%" root matches only MEMORY.DMP at its top level; no recursion.
+
+[[rule]]
+id = "error_reports"
+tier = "safe"
+roots = [
+  "%LOCALAPPDATA%\\Microsoft\\Windows\\WER",
+  "%ProgramData%\\Microsoft\\Windows\\WER\\ReportArchive",
+  "%ProgramData%\\Microsoft\\Windows\\WER\\ReportQueue",
+]
+include = ["**"]
+requires_admin = true   # only for the ProgramData roots; the user root runs unelevated
+method = "delete"
+auto_clean = true
+operation = "ClearErrorReports"
+
+[[rule]]
+id = "thumbnail_cache"
+tier = "safe"
+roots = ["%LOCALAPPDATA%\\Microsoft\\Windows\\Explorer"]
+include = ["thumbcache_*.db"]
+method = "delete"
+auto_clean = true
+operation = "DeleteThumbnailCache"
+
+[[rule]]
+id = "directx_shader_cache"
+tier = "safe"
+roots = ["%LOCALAPPDATA%\\D3DSCache"]
+include = ["**"]
+method = "delete"
+auto_clean = true
+operation = "ClearDirectXShaderCache"
+
+[[rule]]
+id = "nvidia_shader_cache"
+tier = "safe"
+roots = ["%LOCALAPPDATA%\\NVIDIA\\DXCache", "%LOCALAPPDATA%\\NVIDIA\\GLCache"]
+include = ["**"]
+method = "delete"
+auto_clean = true
+operation = "ClearNvidiaShaderCache"
+
+[[rule]]
+id = "amd_shader_cache"
+tier = "safe"
+roots = ["%LOCALAPPDATA%\\AMD\\DxCache", "%LOCALAPPDATA%\\AMD\\GLCache"]
+include = ["**"]
+method = "delete"
+auto_clean = true
+operation = "ClearAmdShaderCache"
+
+[[rule]]
+id = "chrome_cache"
+tier = "safe"
+roots = ["%LOCALAPPDATA%\\Google\\Chrome\\User Data"]
+include = ["*/Cache/**", "*/Code Cache/**"]
+skip_if_running = ["chrome.exe"]
+method = "delete"
+auto_clean = true
+operation = "ClearChromeCache"
+
+[[rule]]
+id = "edge_cache"
+tier = "safe"
+roots = ["%LOCALAPPDATA%\\Microsoft\\Edge\\User Data"]
+include = ["*/Cache/**", "*/Code Cache/**"]
+skip_if_running = ["msedge.exe"]
+method = "delete"
+auto_clean = true
+operation = "ClearEdgeCache"
+
+[[rule]]
+id = "firefox_cache"
+tier = "safe"
+roots = ["%LOCALAPPDATA%\\Mozilla\\Firefox\\Profiles"]
+include = ["*/cache2/**"]
+skip_if_running = ["firefox.exe"]
+method = "delete"
+auto_clean = true
+operation = "ClearFirefoxCache"
+
+[[rule]]
+id = "windows_update_cache"
+tier = "safe"
+roots = ["%SystemRoot%\\SoftwareDistribution\\Download"]
+include = ["**"]
+requires_admin = true
+skip_if_service_active = ["wuauserv"]
+method = "delete"
+auto_clean = false   # opt-in per run until field-tested
+operation = "ClearWindowsUpdateCache"
+
+[[rule]]
+id = "delivery_optimization"
+tier = "safe"
+requires_admin = true
+method = "windows_api"
+auto_clean = false
+operation = "ClearDeliveryOptimizationCache"
+
+[[rule]]
+id = "recycle_bin"
+tier = "safe"
+method = "windows_api"   # SHEmptyRecycleBin
+always_confirm = true
+auto_clean = false       # never part of Auto-Clean
+operation = "EmptyRecycleBin"
+
+# -------------------------------------------------------------- REVIEW
+# Review rules only *find* items. Removal always means: user selects -> Recycle Bin.
+
+[[rule]]
+id = "old_downloads"
+tier = "review"
+roots = ["{KnownFolder:Downloads}"]
+include = ["**"]
+min_age_days = 90        # user-configurable
+method = "recycle"
+
+[[rule]]
+id = "large_files"
+tier = "review"
+roots = ["{ScannedVolumes}"]
+min_size_mb = 1024       # user-configurable: 100, 500, 1024, 5120, custom
+method = "recycle"
+
+[[rule]]
+id = "duplicates"
+tier = "review"
+roots = ["{ScannedVolumes}"]
+match = "size+partial_hash+sha256"
+method = "recycle"
+
+[[rule]]
+id = "old_installers"
+tier = "review"
+roots = ["{KnownFolder:Downloads}"]
+include = ["*.exe", "*.msi"]
+min_age_days = 30
+method = "recycle"
+
+[[rule]]
+id = "old_archives"
+tier = "review"
+roots = ["{ScannedVolumes}"]
+include = ["*.zip", "*.rar", "*.7z"]
+min_age_days = 90
+method = "recycle"
+
+[[rule]]
+id = "disk_images"
+tier = "review"
+roots = ["{ScannedVolumes}"]
+include = ["*.iso", "*.img"]
+method = "recycle"
+
+[[rule]]
+id = "windows_old"
+tier = "review"
+roots = ["%SystemDrive%\\Windows.old"]
+requires_admin = true
+method = "windows_cleanup"   # never deleted directly
+
+# ----------------------------------------------------------- PROTECTED
+# Checked after every match. Any hit blocks the action. Unmatched = protected.
+
+[protected]
+known_folders = ["Documents", "Desktop", "Pictures", "Videos", "Music"]
+cloud_sync_roots = true          # OneDrive and other cloud provider roots
+roots = [
+  "%APPDATA%",
+  "%LOCALAPPDATA%",              # except exact Safe roots above
+  "%SystemRoot%",                # except exact Safe roots above
+  "%ProgramFiles%",
+  "%ProgramFiles(x86)%",
+  "%ProgramData%",               # except exact Safe roots above
+]
+project_markers = [".git", "Cargo.toml", "package.json", "*.sln", "pyproject.toml", "go.mod"]
+extensions = [".db", ".sqlite", ".mdf", ".ldf", ".accdb"]
+files = ["pagefile.sys", "hiberfil.sys", "swapfile.sys"]
+folders = ["System Volume Information", "$Recycle.Bin"]
+partitions = ["efi_system", "recovery"]
+skip_reparse_points = true
+user_defined = true              # Settings -> Protected folders

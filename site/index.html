@@ -5,16 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AllInsight — Your device, understood.</title>
 <meta name="description" content="AllInsight measures your computer's storage, drive health and performance, finds what is genuinely safe to clean, and explains what it finds. For Windows and Linux. No account, no server, no telemetry.">
-<meta name="theme-color" content="#f5f6f4">
+<meta name="theme-color" content="#f4f2ee">
 <link rel="icon" href="assets/favicon.ico" sizes="any">
 <link rel="icon" href="assets/allinsight.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="canonical" href="https://allinsight.biz/">
 <meta property="og:title" content="AllInsight — Your device, understood.">
 <meta property="og:description" content="Storage, drive health and cleanup, measured on your own machine. For Windows and Linux. Nothing leaves the device.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://allinsight.biz/">
 <meta property="og:site_name" content="AllInsight">
-<link rel="preload" href="assets/fonts/instrument-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/sora-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -24,283 +25,146 @@
 <header class="nav" id="nav">
   <div class="nav-inner">
     <a class="brand" href="#top" aria-label="AllInsight home">
-      <svg class="mark" viewBox="0 0 256 256" aria-hidden="true">
-        <defs><clipPath id="core"><path d="M128 20 214 70v116l-86 50-86-50V70z"/></clipPath></defs>
-        <path d="M128 20 214 70v116l-86 50-86-50V70z" fill="none" stroke="currentColor" stroke-width="13" stroke-linejoin="round"/>
-        <g clip-path="url(#core)">
-          <path d="M169.3 143.1A44 44 0 1 1 150 89.9" fill="none" stroke="var(--teal)" stroke-width="16" stroke-linecap="round"/>
-          <circle cx="128" cy="128" r="15" fill="currentColor"/>
-        </g>
+      <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
+        <path d="M14 82 L50 20 L86 82" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="50" cy="66" r="9" fill="var(--amber)"/>
       </svg>
-      <span>AllInsight</span>
+      <span class="wordmark" aria-hidden="true">all<span class="wi">ı</span>ns<span class="wi">ı</span>ght</span>
     </a>
     <nav class="nav-links" aria-label="Sections">
       <a href="#privacy">Privacy</a>
-      <a href="#how">How it works</a>
-      <a href="#features">Features</a>
+      <a href="#how">Method</a>
+      <a href="#features">Instruments</a>
       <a href="#safety">Safety</a>
     </nav>
     <a class="nav-cta" href="#download">Download</a>
   </div>
-  <div class="nav-progress" id="progress" aria-hidden="true"></div>
 </header>
 
 <main id="main">
 
 <!-- ───────────────────────── Hero ───────────────────────── -->
 <section class="hero" id="top">
-  <p class="eyebrow rise">AllInsight <span id="heroVersion">1.0</span> &nbsp;·&nbsp; for Windows and Linux</p>
+  <svg class="hero-mark" id="heroMark" viewBox="0 0 100 100" role="img" aria-label="The AllInsight mark: an A with a lowercase i inside it.">
+    <circle class="pulse" cx="50" cy="54" r="7"/>
+    <circle class="pulse pulse-2" cx="50" cy="54" r="7"/>
+    <path class="mark-a" d="M12 84 L50 18 L88 84" pathLength="1"/>
+    <line class="mark-stem" x1="50" y1="72" x2="50" y2="84"/>
+    <circle class="mark-dot" cx="50" cy="54" r="7"/>
+  </svg>
+  <p class="label rise" style="--d:1"><span class="status" aria-hidden="true"></span>Now available for Windows &amp; Linux</p>
   <h1 class="headline" aria-label="Your device, understood.">
-    <span class="word" aria-hidden="true"><span>Your</span></span>
-    <span class="word" aria-hidden="true"><span>device,</span></span>
-    <br>
-    <span class="word" aria-hidden="true"><span class="ink-teal">understood.</span></span>
+    <span class="line" aria-hidden="true"><span>Your device,</span></span>
+    <span class="line" aria-hidden="true"><span class="quiet">understood.</span></span>
   </h1>
+
   <p class="lede rise" style="--d:5">
     Storage, drive health and performance, measured on the machine itself.
     It finds what is genuinely safe to clean, explains why, and never sends a
     byte anywhere.
   </p>
   <div class="cta rise" style="--d:6">
-    <a class="btn" href="#download">Download free</a>
-    <a class="link" href="#how">See how it works <span aria-hidden="true">›</span></a>
-  </div>
-
-  <!-- The instrument: a live dial, drawn rather than photographed. -->
-  <div class="instrument" id="instrument" role="img" aria-label="An animated health dial reading 86 out of 100, Healthy, surrounded by readings for storage, memory, drive life and battery.">
-    <svg class="dial" viewBox="0 0 600 600" aria-hidden="true">
-      <defs>
-        <linearGradient id="arcGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#23a5b8"/>
-          <stop offset="1" stop-color="#0b6e80"/>
-        </linearGradient>
-        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="6" result="b"/>
-          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-      </defs>
-      <g class="dial-ticks" id="dialTicks"></g>
-      <circle class="dial-track" cx="300" cy="300" r="214"/>
-      <circle class="dial-arc" id="dialArc" cx="300" cy="300" r="214" filter="url(#glow)"/>
-      <g class="dial-sweep" id="dialSweep"><line x1="300" y1="300" x2="300" y2="78"/></g>
-    </svg>
-    <div class="dial-center" aria-hidden="true">
-      <span class="dial-value" id="dialValue">0</span>
-      <span class="dial-label">Healthy</span>
-    </div>
-    <div class="chip chip-a" aria-hidden="true"><span class="chip-k">Storage</span><span class="chip-v" data-count="62" data-suffix="%">0%</span></div>
-    <div class="chip chip-b" aria-hidden="true"><span class="chip-k">Memory</span><span class="chip-v" data-count="41" data-suffix="%">0%</span></div>
-    <div class="chip chip-c" aria-hidden="true"><span class="chip-k">Drive life</span><span class="chip-v" data-count="93" data-suffix="%">0%</span></div>
-    <div class="chip chip-d" aria-hidden="true"><span class="chip-k">Battery</span><span class="chip-v" data-count="96" data-suffix="%">0%</span></div>
+    <a class="btn" href="#download">Download</a>
+    <a class="link" href="#how">Discover the method</a>
   </div>
 </section>
 
 <!-- ───────────────────────── Privacy (dark) ───────────────────────── -->
 <section class="dark" id="privacy">
-  <div class="wrap center">
-    <p class="kicker kicker-dark reveal">Private by design</p>
-    <h2 class="display-dark reveal" style="--d:1">Nothing leaves<br>your computer.</h2>
-    <p class="body body-dark reveal" style="--d:2">
+  <div class="wrap narrow">
+    <p class="label reveal">Private by design</p>
+    <h2 class="statement reveal" style="--d:1">Nothing leaves<br>your computer.</h2>
+    <p class="prose reveal" style="--d:2">
       Not as a setting. As an absence of code. AllInsight has no account, no
       update checker, no analytics and no cloud service. Pull the network cable
       and every screen works exactly the same.
     </p>
+    <div class="horizon reveal" style="--d:3" id="horizon" aria-hidden="true">
+      <span class="horizon-end">This device</span>
+      <span class="horizon-line"><i></i></span>
+      <span class="horizon-end horizon-far">The internet</span>
+    </div>
+    <p class="figure reveal" style="--d:4"><span>0</span> bytes sent. Ever.</p>
   </div>
-
-  <div class="wall reveal" style="--d:2" id="wall" aria-hidden="true">
-    <div class="wall-side">
-      <svg viewBox="0 0 64 64" class="wall-icon"><rect x="8" y="12" width="48" height="32" rx="4"/><path d="M22 52h20M32 44v8"/></svg>
-      <span>This device</span>
-    </div>
-    <div class="wall-lane">
-      <i class="packet"></i><i class="packet"></i><i class="packet"></i><i class="packet"></i><i class="packet"></i>
-      <span class="wall-line"></span>
-    </div>
-    <div class="wall-side wall-far">
-      <svg viewBox="0 0 64 64" class="wall-icon"><path d="M20 46a12 12 0 0 1 1-24 16 16 0 0 1 30 5 10 10 0 0 1-2 19Z"/></svg>
-      <span>The internet</span>
-    </div>
-  </div>
-  <p class="wall-count reveal" style="--d:3"><span class="wall-zero">0</span> bytes sent. Ever.</p>
 </section>
 
-<!-- ───────────────────────── How it works (sticky story) ───────────────────────── -->
-<section class="story" id="how">
+<!-- ───────────────────────── Method ───────────────────────── -->
+<section class="section" id="how">
   <div class="wrap">
-    <div class="section-head">
-      <p class="kicker reveal">How it works</p>
-      <h2 class="reveal" style="--d:1">Measure. Explain.<br><span class="soft">Then, and only then, clean.</span></h2>
-    </div>
+    <header class="head">
+      <p class="label reveal">The method</p>
+      <h2 class="reveal" style="--d:1">Measure. Explain.<br>Then, and only then, clean.</h2>
+    </header>
 
-    <div class="story-grid">
-      <div class="story-stage" aria-hidden="true">
-        <div class="stage-card">
-          <!-- Scene 1: a storage map assembling itself -->
-          <div class="scene is-on" data-scene="1">
-            <div class="map">
-              <div class="cell c1"><b>Applications</b><i>38.2 GB</i></div>
-              <div class="cell c2"><b>Photos</b><i>24.9 GB</i></div>
-              <div class="cell c3"><b>System</b><i>21.4 GB</i></div>
-              <div class="cell c4"><b>Games</b><i>18.0 GB</i></div>
-              <div class="cell c5"><b>Cache</b><i>6.1 GB</i></div>
-              <div class="cell c6"><b>Downloads</b><i>5.3 GB</i></div>
-              <div class="cell c7"><b>Temp</b><i>2.1 GB</i></div>
-            </div>
-            <p class="scene-foot">1,284,331 files measured in 38 seconds</p>
-          </div>
-
-          <!-- Scene 2: an insight, with its reason -->
-          <div class="scene" data-scene="2">
-            <div class="insight">
-              <div class="insight-head">
-                <span class="insight-dot"></span>
-                <b>2.1 GB can be reclaimed safely</b>
-              </div>
-              <p class="type-line" data-text="Temporary files and browser caches that your system and applications rebuild on their own."></p>
-              <div class="insight-rows">
-                <div><span>Browser cache</span><b>1.18 GB</b></div>
-                <div><span>Temporary files</span><b>0.64 GB</b></div>
-                <div><span>Shader cache</span><b>0.31 GB</b></div>
-              </div>
-              <p class="insight-note">No documents, downloads or media are included.</p>
-            </div>
-          </div>
-
-          <!-- Scene 3: a cleanup with its receipts -->
-          <div class="scene" data-scene="3">
-            <ul class="ticklist">
-              <li><span class="tick"></span>Browser cache<b>1.18 GB</b></li>
-              <li><span class="tick"></span>Temporary files<b>0.64 GB</b></li>
-              <li><span class="tick"></span>Shader cache<b>0.31 GB</b></li>
-              <li class="skip-row"><span class="tick tick-skip"></span>Documents<b>never</b></li>
-            </ul>
-            <div class="reclaim">
-              <div class="reclaim-bar"><i></i></div>
-              <p><b class="reclaim-num" data-to="2.13">0.00</b> GB reclaimed</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="story-steps">
-        <article class="step is-on" data-step="1">
-          <span class="step-n">1</span>
-          <h3>Measure everything.</h3>
-          <p>A parallel scan maps every folder on the drive, and every file lands in a category you recognise. Links are never followed, so nothing is counted twice.</p>
-        </article>
-        <article class="step" data-step="2">
-          <span class="step-n">2</span>
-          <h3>Explain it plainly.</h3>
-          <p>Every recommendation comes with the measurement behind it. Where the hardware is silent, AllInsight says Unknown instead of guessing.</p>
-        </article>
-        <article class="step" data-step="3">
-          <span class="step-n">3</span>
-          <h3>Clean only what regrows.</h3>
-          <p>Caches and temporary files, after a dry run and a confirmation that lists exactly what will and will not be touched. Your documents are never candidates.</p>
-        </article>
-      </div>
-    </div>
+    <ol class="method">
+      <li class="reveal">
+        <span class="numeral">I</span>
+        <h3>Measure everything.</h3>
+        <p>A parallel scan maps every folder on the drive, and every file lands in a category you recognise. Links are never followed, so nothing is counted twice.</p>
+      </li>
+      <li class="reveal" style="--d:1">
+        <span class="numeral">II</span>
+        <h3>Explain it plainly.</h3>
+        <p>Every recommendation comes with the measurement behind it. Where the hardware is silent, AllInsight says Unknown instead of guessing.</p>
+      </li>
+      <li class="reveal" style="--d:2">
+        <span class="numeral">III</span>
+        <h3>Clean only what regrows.</h3>
+        <p>Caches and temporary files, after a dry run and a confirmation that lists exactly what will and will not be touched. Your documents are never candidates.</p>
+      </li>
+    </ol>
   </div>
 </section>
 
-<!-- ───────────────────────── Numbers ───────────────────────── -->
-<section class="numbers band-white">
-  <div class="wrap numbers-grid">
-    <div class="stat reveal"><span class="stat-n" data-count="0">0</span><span class="stat-l">bytes sent to anyone</span></div>
-    <div class="stat reveal" style="--d:1"><span class="stat-n" data-count="8">0</span><span class="stat-l">safety checks before any delete</span></div>
-    <div class="stat reveal" style="--d:2"><span class="stat-n" data-count="14">0</span><span class="stat-l">screens, every switch real</span></div>
-    <div class="stat reveal" style="--d:3"><span class="stat-n" data-count="2">0</span><span class="stat-l">platforms, Windows and Linux</span></div>
-  </div>
-</section>
-
-<!-- ───────────────────────── Features (living bento) ───────────────────────── -->
-<section class="band" id="features">
+<!-- ───────────────────────── Instruments ───────────────────────── -->
+<section class="section section-paper" id="features">
   <div class="wrap">
-    <div class="section-head">
-      <p class="kicker reveal">What it measures</p>
-      <h2 class="reveal" style="--d:1">Every number comes from the hardware.<br><span class="soft">Where it is silent, AllInsight says Unknown.</span></h2>
-    </div>
+    <header class="head">
+      <p class="label reveal">Instruments</p>
+      <h2 class="reveal" style="--d:1">Every number comes from the hardware.</h2>
+      <p class="prose reveal" style="--d:2">Where it is silent, AllInsight says Unknown.</p>
+    </header>
 
-    <div class="bento">
-      <article class="tile tile-wide reveal live" data-live="drive">
-        <div class="tile-copy">
-          <p class="tile-k">Drive Health</p>
-          <h3>Read from the drive itself. No admin needed.</h3>
-          <p>Wear, temperature and power-on hours come from the drive's own health log, not an estimate.</p>
-        </div>
-        <div class="drive-vis" aria-hidden="true">
-          <div class="ring-wrap">
-            <svg viewBox="0 0 200 200" class="ring">
-              <circle cx="100" cy="100" r="84" class="ring-track"/>
-              <circle cx="100" cy="100" r="84" class="ring-fill" id="ringFill"/>
-            </svg>
-            <div class="ring-center"><b id="ringValue">0%</b><span>life left</span></div>
-          </div>
-          <dl class="drive-stats">
-            <div><dt>Temperature</dt><dd>39 °C</dd></div>
-            <div><dt>Powered on</dt><dd>6,053 h</dd></div>
-            <div><dt>Status</dt><dd class="ok">Healthy</dd></div>
-          </dl>
-        </div>
-      </article>
-
-      <article class="tile reveal live" data-live="perf">
-        <p class="tile-k">Performance</p>
-        <h3>Counted the way Task Manager counts.</h3>
-        <div class="spark" aria-hidden="true">
-          <div class="spark-read"><b id="cpuValue">12</b><span>% processor</span></div>
-          <svg viewBox="0 0 300 90" preserveAspectRatio="none"><path id="sparkArea" class="spark-area"/><path id="sparkLine" class="spark-line"/></svg>
-        </div>
-      </article>
-
-      <article class="tile reveal live" style="--d:1" data-live="dupes">
-        <p class="tile-k">Duplicates</p>
-        <h3>Found by content, never by name.</h3>
-        <div class="dupes" aria-hidden="true">
-          <div class="doc d1"><i></i><i></i><i></i><span>holiday.jpg</span></div>
-          <div class="doc d2"><i></i><i></i><i></i><span>IMG_2041.jpg</span></div>
-          <p class="dupes-hash">BLAKE3 · identical</p>
-        </div>
-      </article>
-
-      <article class="tile reveal" data-live="os">
-        <p class="tile-k">Everywhere you work</p>
-        <h3>At home on Windows and Linux.</h3>
-        <div class="marquee" aria-hidden="true">
-          <div class="marquee-track">
-            <span>Windows 11</span><span>Ubuntu</span><span>Fedora</span><span>Arch</span><span>Debian</span><span>Mint</span><span>openSUSE</span><span>Windows 10</span>
-            <span>Windows 11</span><span>Ubuntu</span><span>Fedora</span><span>Arch</span><span>Debian</span><span>Mint</span><span>openSUSE</span><span>Windows 10</span>
-          </div>
-        </div>
-      </article>
-
-      <article class="tile reveal live" style="--d:1" data-live="ai">
-        <p class="tile-k">AllInsight AI</p>
-        <h3>An assistant that can read, not act.</h3>
-        <div class="chat" aria-hidden="true">
-          <p class="bubble q">Why is my laptop storage full?</p>
-          <p class="bubble a"><span class="typing"><i></i><i></i><i></i></span><span class="answer" data-text="Photos take 24.9 GB. About 2.1 GB is cache that is safe to clear."></span></p>
-        </div>
-      </article>
-    </div>
+    <dl class="specs">
+      <div class="spec reveal">
+        <dt>Drive health</dt>
+        <dd>Wear, temperature and power-on hours, read from the drive's own health log. No administrator rights needed.</dd>
+      </div>
+      <div class="spec reveal">
+        <dt>Performance</dt>
+        <dd>Processor, memory and disk activity, counted the way Task Manager counts.</dd>
+      </div>
+      <div class="spec reveal">
+        <dt>Duplicates</dt>
+        <dd>Found by content with BLAKE3, never by name.</dd>
+      </div>
+      <div class="spec reveal">
+        <dt>Assistant</dt>
+        <dd>AllInsight AI answers questions about your machine. It can read, never act.</dd>
+      </div>
+      <div class="spec reveal">
+        <dt>Platforms</dt>
+        <dd>Windows 10 and 11. Ubuntu, Debian, Fedora, Arch, Mint, openSUSE.</dd>
+      </div>
+    </dl>
   </div>
 </section>
 
 <!-- ───────────────────────── Safety ───────────────────────── -->
-<section class="safety band-white" id="safety">
+<section class="section" id="safety">
   <div class="wrap">
-    <div class="section-head">
-      <p class="kicker reveal">The safety model</p>
-      <h2 class="reveal" style="--d:1">Before anything is deleted,<br><span class="soft">it passes eight checks. In order.</span></h2>
-      <p class="body reveal" style="--d:2">
+    <header class="head">
+      <p class="label reveal">The safety model</p>
+      <h2 class="reveal" style="--d:1">Eight checks.<br>In order. Every time.</h2>
+      <p class="prose reveal" style="--d:2">
         The interface never sends a file path to a destructive command. Removal
         needs a token only the deletion guard can issue, and the last five checks
         run at the moment of deletion, not when the preview was built.
       </p>
-    </div>
+    </header>
 
     <div class="gates" id="gates">
-      <div class="gates-rail" aria-hidden="true"><i id="gatesFill"></i><span class="gates-token" id="gatesToken"></span></div>
+      <div class="gates-rail" aria-hidden="true"><i></i></div>
       <ol class="gates-list">
         <li>Collapse <code>..</code> and <code>.</code> so a path cannot sneak past the list</li>
         <li>Refuse the protected list: the system, your folders, your credentials</li>
@@ -311,26 +175,31 @@
         <li>Resolve the real path, and run checks two and three again</li>
         <li>Confirm it is still what the scan recorded</li>
       </ol>
-      <p class="gates-verdict" id="gatesVerdict"><span>Removed safely.</span></p>
     </div>
 
     <div class="never reveal">
-      <p>Never part of a cleanup</p>
-      <div class="never-chips">
-        <span>Documents</span><span>Desktop</span><span>Pictures</span><span>Videos</span><span>Music</span><span>Downloads</span><span>Source code</span><span>Databases</span><span>Browser profiles</span><span>Saved passwords</span><span>The operating system</span>
-      </div>
+      <p class="label">Never part of a cleanup</p>
+      <p class="never-list">Documents · Desktop · Pictures · Videos · Music · Downloads · Source code · Databases · Browser profiles · Saved passwords · The operating system</p>
     </div>
   </div>
 </section>
 
 <!-- ───────────────────────── Download ───────────────────────── -->
-<section class="band" id="download">
+<section class="section section-paper" id="download">
   <div class="wrap">
-    <div class="section-head center">
-      <p class="kicker reveal">Download</p>
+    <header class="head head-center">
+      <svg class="app-icon" id="appIcon" viewBox="0 0 100 100" role="img" aria-label="The AllInsight app icon">
+        <rect class="tile" x="0.5" y="0.5" width="99" height="99" rx="22"/>
+        <g transform="translate(19 19) scale(0.62)">
+          <path class="mark-a" d="M12 84 L50 18 L88 84" pathLength="1"/>
+          <line class="mark-stem" x1="50" y1="72" x2="50" y2="84"/>
+          <circle class="mark-dot" cx="50" cy="54" r="7"/>
+        </g>
+      </svg>
+      <p class="label reveal">Download</p>
       <h2 class="reveal" style="--d:1">AllInsight <span id="dlVersion">1.0.0</span></h2>
-      <p class="body reveal" style="--d:2">Free. Runs as an ordinary user. Works offline from the first launch.</p>
-    </div>
+      <p class="prose reveal" style="--d:2">Free. Runs as an ordinary user. Works offline from the first launch.</p>
+    </header>
 
     <div class="platforms">
       <article class="platform reveal">
@@ -386,7 +255,7 @@
       </article>
     </div>
 
-    <p class="fine center reveal">
+    <p class="fine reveal">
       Licence <span id="dlLicence">MIT</span> &nbsp;·&nbsp; <a href="third-party-licenses.txt">Third-party licences</a>
     </p>
   </div>
@@ -396,7 +265,13 @@
 
 <footer class="foot">
   <div class="wrap foot-inner">
-    <p class="foot-brand"><b>AllInsight</b> &nbsp;Local device intelligence.</p>
+    <a class="foot-brand" href="#top" aria-label="AllInsight home">
+      <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
+        <path d="M14 82 L50 20 L86 82" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="50" cy="66" r="9" fill="var(--amber)"/>
+      </svg>
+      <span class="wordmark" aria-hidden="true">all<span class="wi">ı</span>ns<span class="wi">ı</span>ght</span><span class="tm">™</span>
+    </a>
     <p class="foot-note">This page loads nothing from anywhere else. No fonts, scripts or analytics from third parties, the same rule the application follows.</p>
   </div>
 </footer>

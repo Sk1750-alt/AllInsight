@@ -1,0 +1,23 @@
+# Node / frontend
+node_modules/
+dist/
+*.log
+
+# Rust / Tauri
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# Local AI models are never committed
+models/
+*.gguf
+
+# Release staging
+dist-release/
+
+# Editors / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
