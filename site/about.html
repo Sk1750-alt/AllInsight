@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>About — AllInsight</title>
+<meta name="description" content="How AllInsight is built: Rust services behind a thin Tauri command layer and a React interface that holds no privilege. Architecture, engineering decisions and licence.">
+<meta name="theme-color" content="#f4f2ee">
+<link rel="icon" href="/assets/favicon.ico" sizes="any">
+<link rel="icon" href="/assets/allinsight.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="canonical" href="https://allinsight.biz/about">
+<meta property="og:title" content="About — AllInsight">
+<meta property="og:description" content="How AllInsight is built: Rust services behind a thin Tauri command layer and a React interface that holds no privilege. Architecture, engineering decisions and licence.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://allinsight.biz/about">
+<meta property="og:site_name" content="AllInsight">
+<meta property="og:image" content="https://allinsight.biz/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="AllInsight: Your device, understood. Storage, drive health and cleanup, measured on your own machine.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" href="/assets/fonts/sora-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/instrument-serif-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/styles.css?v=3">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/" aria-label="AllInsight home">
+      <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
+        <path d="M14 82 L50 20 L86 82" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="50" cy="66" r="9" fill="var(--amber)"/>
+      </svg>
+      <span class="wordmark" aria-hidden="true">all<span class="wi">ı</span>ns<span class="wi">ı</span>ght</span>
+    </a>
+    <nav class="nav-links" aria-label="Pages">
+      <a href="/features">Features</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/safety">Safety</a>
+      <a href="/ai">AI</a>
+      <a href="/about">About</a>
+    </nav>
+    <div class="nav-right">
+      <a class="nav-cta" href="/download">Download</a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="menu">Menu</button>
+    </div>
+  </div>
+  <nav class="menu" id="menu" aria-label="Pages" hidden>
+    <a href="/">Home</a>
+    <a href="/features">Features</a>
+    <a href="/privacy">Privacy</a>
+    <a href="/safety">Safety</a>
+    <a href="/ai">AI</a>
+    <a href="/about">About</a>
+    <a href="/download">Download</a>
+  </nav>
+</header>
+
+<main id="main">
+
+<section class="page-hero has-field">
+  <canvas class="field" data-field="light" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <p class="label rise" style="--d:0">About the project</p>
+    <h1 class="page-title rise" style="--d:1">Built to be <em class="accent">fast, and honest.</em></h1>
+    <p class="lede rise" style="--d:2">AllInsight is a desktop application written in Rust and TypeScript on Tauri 2. These are the decisions behind it.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <header class="head head-center">
+      <p class="label reveal">Architecture</p>
+      <h2 class="reveal" style="--d:1">Three layers, <em class="accent">one direction.</em></h2>
+      <p class="prose reveal" style="--d:2">The window renders state and collects intent. Every decision that matters is made in Rust.</p>
+    </header>
+    <div class="arch">
+      <div class="layer reveal">
+        <h3>The window <span>React · TypeScript</span></h3>
+        <p>Renders state and collects intent. Holds no privilege, and makes no decision that matters. A buggy or compromised interface cannot delete anything.</p>
+        <div class="tags"><span>React 19</span><span>TypeScript</span><span>Tailwind</span><span>Radix UI</span><span>SVG charts</span></div>
+      </div>
+      <div class="wire" aria-hidden="true"><i></i><span>Tauri IPC, typed both sides</span></div>
+      <div class="layer reveal">
+        <h3>Commands <span>deliberately thin</span></h3>
+        <p>Validate the arguments, call exactly one service, return data. No logic lives here.</p>
+      </div>
+      <div class="wire" aria-hidden="true"><i></i><span>one call each</span></div>
+      <div class="layer dark-layer reveal">
+        <h3>Services <span>Rust</span></h3>
+        <p>Security, storage, cleanup, system, processes, health, battery, applications, startup, AI and the database. All the actual work.</p>
+        <div class="tags"><span>Rust</span><span>rayon</span><span>BLAKE3</span><span>SQLite · WAL</span><span>sysinfo</span><span>WMI · UDisks2</span></div>
+      </div>
+      <div class="wire" aria-hidden="true"><i></i><span>Windows or Linux</span></div>
+      <div class="layer reveal">
+        <h3>Your operating system <span>read, rarely written</span></h3>
+        <p>Win32, WMI, the registry and the file system on Windows; sysfs, D-Bus, UDisks2 and XDG on Linux.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-paper">
+  <div class="wrap">
+    <header class="head">
+      <p class="label reveal">Engineering</p>
+      <h2 class="reveal" style="--d:1">Measured, then <em class="accent">made faster.</em></h2>
+      <p class="prose reveal" style="--d:2">A timing probe found the live monitor blocking the window for 184.6 ms on every tick. It now takes 25.3 ms, and the slow commands moved off the window's thread entirely.</p>
+    </header>
+    <div class="stats">
+      <div class="stat reveal"><span class="stat-num" data-count="25.3" data-from="184.6" data-decimals="1">25.3</span><span class="stat-label">milliseconds per live sample, down from 184.6</span></div>
+      <div class="stat reveal" style="--d:1"><span class="stat-num" data-count="44">44</span><span class="stat-label">commands moved off the window's thread</span></div>
+      <div class="stat reveal" style="--d:2"><span class="stat-num" data-count="3">3</span><span class="stat-label">passes to find a duplicate, each cheaper than the next</span></div>
+      <div class="stat reveal" style="--d:3"><span class="stat-num" data-count="10">10</span><span class="stat-label">minutes of live history, kept in memory only</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <header class="head">
+      <p class="label reveal">Decisions</p>
+      <h2 class="reveal" style="--d:1">Small choices, <em class="accent">made carefully.</em></h2>
+    </header>
+    <div class="cards">
+      <div class="card reveal"><span class="card-num">I</span><h3>A scanner that never stalls</h3><p>Parallel through rayon, cancellable at any moment, and tolerant: a folder it cannot read is counted and skipped, never fatal. Links are recorded, not followed.</p></div>
+      <div class="card reveal" style="--d:1"><span class="card-num">II</span><h3>Unknown, not Healthy</h3><p>When a drive will not report its wear, the verdict is Unknown, with a reason. Windows having no complaint is not the same as the drive being well.</p></div>
+      <div class="card reveal" style="--d:2"><span class="card-num">III</span><h3>Charts drawn by hand</h3><p>Simple SVG shapes that match the palette exactly, rather than a charting library that ships its own theme to fight with.</p></div>
+      <div class="card reveal"><span class="card-num">IV</span><h3>Errors written for people</h3><p>Messages are written to be shown as they are. A screen that fails never takes the window with it.</p></div>
+      <div class="card reveal" style="--d:1"><span class="card-num">V</span><h3>A quiet background monitor</h3><p>It never walks the file system, so its cost stays flat however many files you have. Passing two thresholds at once sends one message, not two.</p></div>
+      <div class="card reveal" style="--d:2"><span class="card-num">VI</span><h3>Tested where it matters</h3><p>Path traversal, protected paths, junction and symlink refusal, the deletion guard, and duplicates that differ only in the middle of the file.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-paper">
+  <div class="wrap">
+    <div class="split">
+      <div class="reveal">
+        <p class="label">Licence</p>
+        <h3>Open, under <em class="accent">MIT.</em></h3>
+        <p>AllInsight is released under the MIT licence. The licences of every third-party component it ships are listed in full, and readable from Settings → About inside the app.</p>
+        <p><a class="link" href="/third-party-licenses.txt">Third-party licences<span class="arrow" aria-hidden="true">→</span></a></p>
+      </div>
+      <div class="reveal" style="--d:1">
+        <p class="label">Contact</p>
+        <h3>Questions, ideas, <em class="accent">or press.</em></h3>
+        <p>Write to <a class="link" href="mailto:hello@allinsight.biz">hello@allinsight.biz</a>. Every message is read.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band dark has-field">
+  <canvas class="field" data-field="dark" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <p class="label reveal">Free for Windows &amp; Linux</p>
+    <h2 class="reveal" style="--d:1">Your device, <em class="accent">understood.</em></h2>
+    <div class="cta reveal" style="--d:2">
+      <a class="btn" href="/download">Download AllInsight</a>
+      <a class="link" href="/features">See every feature<span class="arrow" aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-id">
+        <a class="foot-brand" href="/" aria-label="AllInsight home">
+          <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
+        <path d="M14 82 L50 20 L86 82" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="50" cy="66" r="9" fill="var(--amber)"/>
+      </svg>
+          <span class="wordmark" aria-hidden="true">all<span class="wi">ı</span>ns<span class="wi">ı</span>ght</span><span class="tm">™</span>
+        </a>
+        <p class="foot-tag">Your device, <em class="accent">understood.</em></p>
+      </div>
+      <nav class="foot-links" aria-label="Footer">
+        <a href="/features">Features</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/safety">Safety</a>
+        <a href="/ai">AI</a>
+        <a href="/about">About</a>
+        <a href="/download">Download</a>
+      </nav>
+      <div class="foot-text">
+        <p class="foot-contact">Questions, feedback or press: <a href="mailto:hello@allinsight.biz">hello@allinsight.biz</a></p>
+        <p class="foot-note">This site loads nothing from anywhere else. No fonts, scripts or analytics from third parties, the same rule the application follows.</p>
+      </div>
+    </div>
+    <div class="foot-base">
+      <span>&copy; 2026 AllInsight</span>
+      <span>Windows &amp; Linux &middot; Works offline</span>
+    </div>
+  </div>
+</footer>
+
+<script src="/app.js?v=3" defer></script>
+</body>
+</html>

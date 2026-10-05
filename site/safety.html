@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Safety — AllInsight</title>
+<meta name="description" content="How AllInsight decides what is safe to clean: an interface that cannot name a file, a deletion token only the guard can issue, and eight checks at the moment of deletion.">
+<meta name="theme-color" content="#f4f2ee">
+<link rel="icon" href="/assets/favicon.ico" sizes="any">
+<link rel="icon" href="/assets/allinsight.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="canonical" href="https://allinsight.biz/safety">
+<meta property="og:title" content="Safety — AllInsight">
+<meta property="og:description" content="How AllInsight decides what is safe to clean: an interface that cannot name a file, a deletion token only the guard can issue, and eight checks at the moment of deletion.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://allinsight.biz/safety">
+<meta property="og:site_name" content="AllInsight">
+<meta property="og:image" content="https://allinsight.biz/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="AllInsight: Your device, understood. Storage, drive health and cleanup, measured on your own machine.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" href="/assets/fonts/sora-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/instrument-serif-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/styles.css?v=3">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/" aria-label="AllInsight home">
+      <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
+        <path d="M14 82 L50 20 L86 82" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="50" cy="66" r="9" fill="var(--amber)"/>
+      </svg>
+      <span class="wordmark" aria-hidden="true">all<span class="wi">ı</span>ns<span class="wi">ı</span>ght</span>
+    </a>
+    <nav class="nav-links" aria-label="Pages">
+      <a href="/features">Features</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/safety">Safety</a>
+      <a href="/ai">AI</a>
+      <a href="/about">About</a>
+    </nav>
+    <div class="nav-right">
+      <a class="nav-cta" href="/download">Download</a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="menu">Menu</button>
+    </div>
+  </div>
+  <nav class="menu" id="menu" aria-label="Pages" hidden>
+    <a href="/">Home</a>
+    <a href="/features">Features</a>
+    <a href="/privacy">Privacy</a>
+    <a href="/safety">Safety</a>
+    <a href="/ai">AI</a>
+    <a href="/about">About</a>
+    <a href="/download">Download</a>
+  </nav>
+</header>
+
+<main id="main">
+
+<section class="page-hero has-field">
+  <canvas class="field" data-field="light" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <p class="label rise" style="--d:0">The safety model</p>
+    <h1 class="page-title rise" style="--d:1">Eight checks.<br><em class="accent">In order. Every time.</em></h1>
+    <p class="lede rise" style="--d:2">What stops AllInsight from deleting something it should not, written to be checked against the code rather than believed.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <header class="head">
+      <p class="label reveal">The order of priorities</p>
+      <h2 class="reveal" style="--d:1">When they conflict, <em class="accent">the earlier one wins.</em></h2>
+      <p class="prose reveal" style="--d:2">Several features are narrower than they could be, for exactly this reason.</p>
+    </header>
+    <p class="priority reveal" id="priority">
+      <span>Safety</span><em>then</em><span>privacy</span><em>then</em><span>correctness</span><em>then</em><span>performance</span><em>then</em><span>features</span>
+    </p>
+  </div>
+</section>
+
+<section class="section section-paper">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <p class="label reveal">Rule one</p>
+        <h3 class="reveal" style="--d:1">The interface <em class="accent">cannot name a file.</em></h3>
+        <p class="reveal" style="--d:2">The window you click in never sends a file path to anything that deletes. It sends a cleanup category, or an id the backend itself issued. A whole class of mistake becomes impossible, rather than merely unlikely.</p>
+        <p class="reveal" style="--d:3">An id from an older scan is refused outright, and Large Files and Duplicates only ever move files to the Recycle Bin, never delete them permanently.</p>
+      </div>
+      <div class="reveal" style="--d:1">
+<code class="code"><span class="k">pub struct</span> CleanupRequest {
+    <span class="k">pub</span> scan_id: u64,
+    <span class="k">pub</span> categories: Vec&lt;CleanupCategory&gt;, <span class="c">// an enum variant</span>
+    <span class="k">pub</span> candidate_ids: Vec&lt;String&gt;,       <span class="c">// ids the backend issued</span>
+    <span class="k">pub</span> confirmed: bool,
+}
+<span class="c">// No path anywhere. There is no variant
+// of this type that could carry one.</span></code>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ───────────────────────── Safety ───────────────────────── -->
+<section class="section" id="safety">
+  <div class="wrap">
+    <header class="head">
+      <p class="label reveal">Rule two</p>
+      <h2 class="reveal" style="--d:1">A token that <em class="accent">cannot be forged.</em></h2>
+      <p class="prose reveal" style="--d:2">
+        The interface never sends a file path to a destructive command. Removal
+        needs a token only the deletion guard can issue, and the last five checks
+        run at the moment of deletion, not when the preview was built.
+      </p>
+    </header>
+
+    <div class="gates" id="gates">
+      <div class="gates-rail" aria-hidden="true"><i></i></div>
+      <ol class="gates-list">
+        <li>Collapse <code>..</code> and <code>.</code> so a path cannot sneak past the list</li>
+        <li>Refuse the protected list: the system, your folders, your credentials</li>
+        <li>Refuse anything outside the category's own folders</li>
+        <li>Confirm it still exists, without following links</li>
+        <li>Refuse it if it is itself a link or junction</li>
+        <li>Refuse it if any folder above it is one</li>
+        <li>Resolve the real path, and run checks two and three again</li>
+        <li>Confirm it is still what the scan recorded</li>
+      </ol>
+    </div>
+
+    <div class="never reveal">
+      <p class="label">Never part of a cleanup</p>
+      <p class="never-list">Documents · Desktop · Pictures · Videos · Music · Downloads · Source code · Databases · Browser profiles · Saved passwords · The operating system</p>
+    </div>
+  </div>
+</section>
+
+
+<section class="section section-paper">
+  <div class="wrap">
+    <header class="head">
+      <p class="label reveal">Auto-Clean</p>
+      <h2 class="reveal" style="--d:1">Automatic, inside <em class="accent">firm boundaries.</em></h2>
+    </header>
+    <ol class="steps">
+      <li class="reveal"><div><h3>Only categories built in as eligible</h3><p>And only those you opted into. The intersection, never the union.</p></div></li>
+      <li class="reveal"><div><h3>Only when space is genuinely low</h3><p>Below your own free-space threshold, and only when no scan you started is running.</p></div></li>
+      <li class="reveal"><div><h3>Only when it is worth it</h3><p>At least 256 MB to reclaim, because interrupting you for less is not worth it.</p></div></li>
+      <li class="reveal"><div><h3>Through the same guard</h3><p>Every removal, automatic or not, passes all eight checks at the moment it happens.</p></div></li>
+    </ol>
+  </div>
+</section>
+
+<section class="cta-band dark has-field">
+  <canvas class="field" data-field="dark" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <p class="label reveal">Free for Windows &amp; Linux</p>
+    <h2 class="reveal" style="--d:1">Clean only <em class="accent">what regrows.</em></h2>
+    <div class="cta reveal" style="--d:2">
+      <a class="btn" href="/download">Download AllInsight</a>
+      <a class="link" href="/features">See every feature<span class="arrow" aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-id">
+        <a class="foot-brand" href="/" aria-label="AllInsight home">
+          <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
+        <path d="M14 82 L50 20 L86 82" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="50" cy="66" r="9" fill="var(--amber)"/>
+      </svg>
+          <span class="wordmark" aria-hidden="true">all<span class="wi">ı</span>ns<span class="wi">ı</span>ght</span><span class="tm">™</span>
+        </a>
+        <p class="foot-tag">Your device, <em class="accent">understood.</em></p>
+      </div>
+      <nav class="foot-links" aria-label="Footer">
+        <a href="/features">Features</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/safety">Safety</a>
+        <a href="/ai">AI</a>
+        <a href="/about">About</a>
+        <a href="/download">Download</a>
+      </nav>
+      <div class="foot-text">
+        <p class="foot-contact">Questions, feedback or press: <a href="mailto:hello@allinsight.biz">hello@allinsight.biz</a></p>
+        <p class="foot-note">This site loads nothing from anywhere else. No fonts, scripts or analytics from third parties, the same rule the application follows.</p>
+      </div>
+    </div>
+    <div class="foot-base">
+      <span>&copy; 2026 AllInsight</span>
+      <span>Windows &amp; Linux &middot; Works offline</span>
+    </div>
+  </div>
+</footer>
+
+<script src="/app.js?v=3" defer></script>
+</body>
+</html>

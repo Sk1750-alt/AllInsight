@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://allinsight.biz/</loc>
-    <lastmod>2026-10-05</lastmod>
-  </url>
+  <url><loc>https://allinsight.biz/</loc><lastmod>2026-10-05</lastmod></url>
+  <url><loc>https://allinsight.biz/features</loc><lastmod>2026-10-05</lastmod></url>
+  <url><loc>https://allinsight.biz/privacy</loc><lastmod>2026-10-05</lastmod></url>
+  <url><loc>https://allinsight.biz/safety</loc><lastmod>2026-10-05</lastmod></url>
+  <url><loc>https://allinsight.biz/ai</loc><lastmod>2026-10-05</lastmod></url>
+  <url><loc>https://allinsight.biz/about</loc><lastmod>2026-10-05</lastmod></url>
+  <url><loc>https://allinsight.biz/download</loc><lastmod>2026-10-05</lastmod></url>
 </urlset>

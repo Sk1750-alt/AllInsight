@@ -1,10 +1,10 @@
 /*
-  AllInsight — site behaviour.
+  AllInsight — site behaviour, shared by every page.
 
-  No dependencies, no third-party requests. Motion is slow and sparing: the
-  mark draws itself on load (pure CSS), sections settle into place, a rule
-  fills as the safety checks scroll past, and the app icon builds itself once. prefers-reduced-motion shows everything in
-  its finished state.
+  No dependencies, no third-party requests. Each piece below looks for its
+  own markup and does nothing on pages that do not have it. Everything that
+  moves pauses while off screen or in a background tab, and
+  prefers-reduced-motion shows each piece in its finished state instead.
 */
 
 (() => {
@@ -15,14 +15,15 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   const easeOut = (t) => 1 - Math.pow(1 - t, 4);
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
-  /* Animate a number from 0 to `to` over `ms`, calling `draw` each frame. */
-  const tween = (to, ms, draw) => {
+  /* Animate a number from `from` to `to` over `ms`, calling `draw` each frame. */
+  const tween = (from, to, ms, draw) => {
     if (reduced) { draw(to); return; }
     const start = performance.now();
     const step = (now) => {
       const t = clamp((now - start) / ms, 0, 1);
-      draw(to * easeOut(t));
+      draw(from + (to - from) * easeOut(t));
       if (t < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
@@ -38,15 +39,46 @@
     io.observe(el);
   };
 
+  /* Call `fn(true|false)` as `el` enters and leaves the screen. */
+  const whileVisible = (el, fn) => {
+    if (!('IntersectionObserver' in window)) { fn(true); return; }
+    new IntersectionObserver((entries) => entries.forEach((e) => fn(e.isIntersecting))).observe(el);
+  };
+
   /* ── Reveal on scroll ─────────────────────────────────────────── */
   $$('.reveal').forEach((el) => once(el, () => el.classList.add('in'), '0px 0px -8% 0px'));
 
-  /* ── Nav state, current section and the safety rule ────────────── */
+  /* ── Current page in the navigation ───────────────────────────── */
+  {
+    const here = location.pathname.replace(/\.html$/, '').replace(/\/index$/, '/') || '/';
+    $$('.nav-links a, .menu a, .foot-links a').forEach((a) => {
+      const path = new URL(a.href, location.href).pathname.replace(/\.html$/, '');
+      if (path === here) a.setAttribute('aria-current', 'page');
+    });
+  }
+
+  /* ── Phone menu ───────────────────────────────────────────────── */
+  {
+    const toggle = $('.nav-toggle');
+    const menu = $('#menu');
+    if (toggle && menu) {
+      const set = (open) => {
+        toggle.setAttribute('aria-expanded', String(open));
+        toggle.textContent = open ? 'Close' : 'Menu';
+        menu.hidden = !open;
+        document.documentElement.classList.toggle('menu-open', open);
+      };
+      toggle.addEventListener('click', () => set(menu.hidden));
+      menu.addEventListener('click', (e) => { if (e.target.closest('a')) set(false); });
+      addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menu.hidden) set(false); });
+      matchMedia('(min-width: 861px)').addEventListener('change', (e) => { if (e.matches) set(false); });
+    }
+  }
+
+  /* ── Nav state and the safety rule ────────────────────────────── */
   {
     const nav = $('#nav');
-    const dark = $('#privacy');
-    const links = $$('.nav-links a');
-    const sections = links.map((a) => $(a.getAttribute('href')));
+    const darks = $$('.dark');
     const gatesEl = $('#gates');
     const items = $$('.gates-list li');
     let queued = false;
@@ -55,15 +87,11 @@
       queued = false;
       if (nav) {
         nav.classList.toggle('is-stuck', scrollY > 8);
-        if (dark) {
-          const r = dark.getBoundingClientRect();
-          nav.classList.toggle('is-dark', r.top < 32 && r.bottom > 32);
-        }
+        nav.classList.toggle('is-dark', darks.some((d) => {
+          const r = d.getBoundingClientRect();
+          return r.top < 32 && r.bottom > 32;
+        }));
       }
-      let here = -1;
-      sections.forEach((s, i) => { if (s && s.getBoundingClientRect().top < innerHeight * 0.4) here = i; });
-      links.forEach((a, i) => a.classList.toggle('is-here', i === here));
-
       if (gatesEl) {
         const r = gatesEl.getBoundingClientRect();
         const p = reduced ? 1 : clamp((innerHeight * 0.62 - r.top) / r.height, 0, 1);
@@ -76,7 +104,119 @@
     frame();
   }
 
-  /* ── App icon: builds itself when the download section arrives ── */
+  /* ── Background field ─────────────────────────────────────────────
+     Points drift slowly; near neighbours are joined by hairlines; every few
+     seconds one point sends out an amber scan ring and its lines brighten.
+     The pointer nudges the points away. One canvas per [data-field]. */
+  $$('canvas.field').forEach((canvas) => {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const dark = canvas.dataset.field === 'dark';
+    const ink = dark ? '244,242,238' : '17,19,24';
+    const amber = '245,165,36';
+    let w = 0, h = 0, dpr = 1, points = [], pulses = [], running = false, raf = 0, last = 0, nextPulse = 0;
+    const mouse = { x: -1e4, y: -1e4 };
+
+    const build = () => {
+      const r = canvas.getBoundingClientRect();
+      dpr = Math.min(devicePixelRatio || 1, 2);
+      w = r.width; h = r.height;
+      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const n = clamp(Math.round((w * h) / 16000), 24, 90);
+      points = Array.from({ length: n }, () => ({
+        x: Math.random() * w, y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.12, vy: (Math.random() - 0.5) * 0.12,
+        r: Math.random() * 1.2 + 0.6, glow: 0,
+      }));
+    };
+
+    const draw = (dt) => {
+      ctx.clearRect(0, 0, w, h);
+      const link = Math.min(150, Math.max(110, w / 9));
+      for (const p of points) {
+        p.x += p.vx * dt; p.y += p.vy * dt;
+        const dx = p.x - mouse.x, dy = p.y - mouse.y, d2 = dx * dx + dy * dy;
+        if (d2 < 14400) { const f = (1 - Math.sqrt(d2) / 120) * 0.6; p.x += (dx / 120) * f; p.y += (dy / 120) * f; }
+        if (p.x < -20) p.x = w + 20; else if (p.x > w + 20) p.x = -20;
+        if (p.y < -20) p.y = h + 20; else if (p.y > h + 20) p.y = -20;
+        p.glow = Math.max(0, p.glow - dt * 0.0012);
+      }
+      for (let i = 0; i < points.length; i++) {
+        const a = points[i];
+        for (let j = i + 1; j < points.length; j++) {
+          const b = points[j];
+          const dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy);
+          if (d > link) continue;
+          const g = Math.max(a.glow, b.glow);
+          const alpha = (1 - d / link) * (dark ? 0.16 : 0.12);
+          ctx.strokeStyle = g > 0.02 ? `rgba(${amber},${alpha + g * 0.45})` : `rgba(${ink},${alpha})`;
+          ctx.lineWidth = 0.6 + g;
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        }
+      }
+      for (const p of points) {
+        ctx.fillStyle = p.glow > 0.02 ? `rgba(${amber},${0.5 + p.glow * 0.5})` : `rgba(${ink},${dark ? 0.42 : 0.3})`;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r + p.glow * 1.5, 0, Math.PI * 2); ctx.fill();
+      }
+      pulses = pulses.filter((q) => q.t < 1);
+      for (const q of pulses) {
+        q.t += dt / 2600;
+        const rad = 6 + easeOut(q.t) * 180;
+        ctx.strokeStyle = `rgba(${amber},${(1 - q.t) * 0.5})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(q.x, q.y, rad, 0, Math.PI * 2); ctx.stroke();
+        for (const p of points) if (Math.abs(Math.hypot(p.x - q.x, p.y - q.y) - rad) < 6) p.glow = 1;
+      }
+    };
+
+    const loop = (now) => {
+      const dt = Math.min(48, now - (last || now)); last = now;
+      if (now > nextPulse && points.length) {
+        const p = points[Math.floor(Math.random() * points.length)];
+        pulses.push({ x: p.x, y: p.y, t: 0 }); p.glow = 1;
+        nextPulse = now + 2600 + Math.random() * 2400;
+      }
+      draw(dt);
+      raf = requestAnimationFrame(loop);
+    };
+    const start = () => { if (running || reduced) return; running = true; last = 0; raf = requestAnimationFrame(loop); };
+    const stop = () => { running = false; cancelAnimationFrame(raf); };
+
+    build();
+    if (reduced) { draw(0); return; }
+    let resizeTimer = 0;
+    addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { build(); if (!running) draw(0); }, 150); }, { passive: true });
+    const host = canvas.parentElement;
+    host.addEventListener('pointermove', (e) => {
+      const r = canvas.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
+    }, { passive: true });
+    host.addEventListener('pointerleave', () => { mouse.x = mouse.y = -1e4; });
+    let visible = false;
+    whileVisible(canvas, (v) => { visible = v; (v && !document.hidden) ? start() : stop(); });
+    document.addEventListener('visibilitychange', () => { (visible && !document.hidden) ? start() : stop(); });
+  });
+
+  /* ── Pointer light on cards ───────────────────────────────────── */
+  $$('.card').forEach((card) => {
+    card.addEventListener('pointermove', (e) => {
+      const r = card.getBoundingClientRect();
+      card.style.setProperty('--mx', `${e.clientX - r.left}px`);
+      card.style.setProperty('--my', `${e.clientY - r.top}px`);
+    }, { passive: true });
+  });
+
+  /* ── Counting numbers: <span data-count="14"> ─────────────────── */
+  $$('[data-count]').forEach((el) => {
+    const to = Number(el.dataset.count);
+    const from = Number(el.dataset.from || 0);
+    const dec = Number(el.dataset.decimals || 0);
+    const fmt = (v) => v.toLocaleString('en', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    el.textContent = fmt(from);
+    once(el, () => tween(from, to, 1800, (v) => { el.textContent = fmt(v); }));
+  });
+
+  /* ── App icon: builds itself when it arrives ──────────────────── */
   {
     const icon = $('#appIcon');
     if (icon) once(icon, () => icon.classList.add('built'), '0px 0px -20% 0px');
@@ -85,15 +225,198 @@
   /* ── Privacy horizon: the point of light runs only while visible ── */
   {
     const horizon = $('#horizon');
-    if (horizon && !reduced && 'IntersectionObserver' in window) {
-      new IntersectionObserver((entries) => {
-        entries.forEach((e) => horizon.classList.toggle('is-live', e.isIntersecting));
-      }).observe(horizon);
+    if (horizon && !reduced) whileVisible(horizon, (v) => horizon.classList.toggle('is-live', v));
+  }
+
+  /* ── Priorities light up in order ─────────────────────────────── */
+  {
+    const pr = $('#priority');
+    if (pr) once(pr, () => $$('span', pr).forEach((s, i) => setTimeout(() => s.classList.add('on'), reduced ? 0 : 350 * i)));
+  }
+
+  /* ── Storage Map demo: a squarified treemap that drills down ──── */
+  {
+    const box = $('#treemap');
+    if (box) {
+      const levels = [
+        { path: 'C:\\', items: [['Videos', 96.4], ['Applications', 71.2], ['Games', 54.0], ['Downloads', 38.0], ['Windows', 31.5], ['Pictures', 22.7], ['Documents', 18.2], ['Caches', 11.4, 1], ['Other', 9.8]] },
+        { path: 'C:\\Users\\you\\Videos', items: [['Recordings', 41.3], ['Projects', 28.9], ['Phone backup', 14.6], ['Exports', 8.1], ['Clips', 3.5]] },
+        { path: 'C:\\', items: [['Videos', 96.4], ['Applications', 71.2], ['Games', 54.0], ['Downloads', 38.0], ['Windows', 31.5], ['Pictures', 22.7], ['Documents', 18.2], ['Caches', 11.4, 1], ['Other', 9.8]] },
+        { path: 'C:\\Users\\you\\Downloads', items: [['Installers', 16.2], ['Archives', 9.4], ['ISO images', 7.8], ['PDFs', 2.9], ['Other', 1.7]] },
+      ];
+      const shades = ['#3a4252', '#343b4a', '#2f3542', '#2b303c', '#282c37', '#252933', '#22262f', '#20232b', '#1e2128'];
+      const label = $('#treemapPath');
+      const tiles = new Map();
+
+      /* Squarified layout (Bruls, Huizing, van Wijk), as the app draws it. */
+      const squarify = (items, x, y, w, h) => {
+        const total = items.reduce((s, i) => s + i.v, 0);
+        const scale = (w * h) / total;
+        const rest = items.map((i) => ({ ...i, a: i.v * scale }));
+        const out = [];
+        while (rest.length) {
+          const short = Math.min(w, h);
+          let row = [rest.shift()];
+          const worst = (r) => {
+            const s = r.reduce((t, i) => t + i.a, 0);
+            return Math.max(...r.map((i) => Math.max((short * short * i.a) / (s * s), (s * s) / (short * short * i.a))));
+          };
+          while (rest.length && worst([...row, rest[0]]) <= worst(row)) row.push(rest.shift());
+          const s = row.reduce((t, i) => t + i.a, 0);
+          const thick = s / short;
+          let off = 0;
+          for (const i of row) {
+            const len = i.a / thick;
+            out.push(w >= h ? { ...i, x, y: y + off, w: thick, h: len } : { ...i, x: x + off, y, w: len, h: thick });
+            off += len;
+          }
+          if (w >= h) { x += thick; w -= thick; } else { y += thick; h -= thick; }
+        }
+        return out;
+      };
+
+      const show = (level) => {
+        const W = box.clientWidth, H = box.clientHeight, gap = 4;
+        const items = level.items.map(([n, v, safe], k) => ({ n, v, safe, k }));
+        const total = items.reduce((s, i) => s + i.v, 0);
+        const laid = squarify(items, 0, 0, W, H);
+        const seen = new Set();
+        for (const t of laid) {
+          let el = tiles.get(t.n);
+          if (!el) {
+            el = document.createElement('div');
+            el.className = 'tile';
+            el.innerHTML = '<b></b><i></i>';
+            el.style.cssText = `left:${W / 2}px;top:${H / 2}px;width:0;height:0;opacity:0`;
+            box.appendChild(el); tiles.set(t.n, el);
+            el.getBoundingClientRect();
+          }
+          seen.add(t.n);
+          el.querySelector('b').textContent = t.n;
+          el.querySelector('i').textContent = `${t.v.toFixed(1)} GB · ${Math.round((t.v / total) * 100)}%`;
+          el.classList.toggle('safe', !!t.safe);
+          el.classList.toggle('small', t.w < 96 || t.h < 50);
+          el.classList.toggle('tiny', t.w < 52 || t.h < 26);
+          el.style.setProperty('--tile', t.safe ? '#3a3326' : shades[Math.min(t.k, shades.length - 1)]);
+          Object.assign(el.style, { left: `${t.x + gap / 2}px`, top: `${t.y + gap / 2}px`, width: `${Math.max(0, t.w - gap)}px`, height: `${Math.max(0, t.h - gap)}px`, opacity: '1' });
+        }
+        for (const [n, el] of tiles) if (!seen.has(n)) Object.assign(el.style, { opacity: '0', width: '0px', height: '0px' });
+        if (label) label.textContent = level.path;
+      };
+
+      let i = 0, timer = 0;
+      show(levels[0]);
+      addEventListener('resize', () => show(levels[i]), { passive: true });
+      if (!reduced) whileVisible(box, (v) => {
+        clearInterval(timer);
+        if (v) timer = setInterval(() => { i = (i + 1) % levels.length; show(levels[i]); }, 3600);
+      });
+    }
+  }
+
+  /* ── Health score ring ────────────────────────────────────────── */
+  {
+    const ring = $('#healthRing');
+    if (ring) once(ring, () => {
+      const score = Number(ring.dataset.score);
+      const value = $('.value', ring);
+      const num = $('.ring-num', ring);
+      const wrap = ring.closest('.frame');
+      if (wrap) wrap.classList.add('is-live');
+      value.style.strokeDashoffset = String(327 * (1 - score / 100));
+      tween(0, score, 2200, (v) => { num.textContent = Math.round(v); });
+    });
+  }
+
+  /* ── Live performance chart ───────────────────────────────────── */
+  {
+    const canvas = $('#liveChart');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      const cpuOut = $('#cpuNow'), memOut = $('#memNow');
+      const N = 90;
+      let cpu = Array.from({ length: N }, (_, k) => 22 + 10 * Math.sin(k / 7));
+      let mem = Array.from({ length: N }, () => 61);
+      let running = false, timer = 0;
+      const walk = (v, lo, hi, step) => clamp(v + (Math.random() - 0.5) * step + (Math.random() < 0.04 ? step * 3 : 0), lo, hi);
+      const draw = () => {
+        const r = canvas.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
+        if (canvas.width !== Math.round(r.width * dpr)) { canvas.width = Math.round(r.width * dpr); canvas.height = Math.round(r.height * dpr); }
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const W = r.width, H = r.height;
+        ctx.clearRect(0, 0, W, H);
+        ctx.strokeStyle = 'rgba(244,242,238,0.07)'; ctx.lineWidth = 1;
+        for (let g = 1; g < 4; g++) { const y = (H / 4) * g; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+        const line = (arr, color, fill) => {
+          ctx.beginPath();
+          arr.forEach((v, k) => { const x = (k / (N - 1)) * W, y = H - (v / 100) * H; k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+          ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.stroke();
+          if (fill) { ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, fill); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fill(); }
+        };
+        line(mem, 'rgba(245,165,36,0.9)');
+        line(cpu, 'rgba(244,242,238,0.95)', 'rgba(244,242,238,0.10)');
+        if (cpuOut) cpuOut.textContent = `${Math.round(cpu[N - 1])}%`;
+        if (memOut) memOut.textContent = `${Math.round(mem[N - 1])}%`;
+      };
+      const tick = () => {
+        cpu = [...cpu.slice(1), walk(cpu[N - 1], 4, 96, 14)];
+        mem = [...mem.slice(1), walk(mem[N - 1], 52, 74, 1.6)];
+        draw();
+      };
+      draw();
+      addEventListener('resize', draw, { passive: true });
+      if (!reduced) whileVisible(canvas, (v) => {
+        if (v && !running) { running = true; timer = setInterval(tick, 500); }
+        if (!v && running) { running = false; clearInterval(timer); }
+      });
+    }
+  }
+
+  /* ── Duplicate pipeline ───────────────────────────────────────── */
+  {
+    const pipe = $('#pipeline');
+    if (pipe) once(pipe, () => {
+      const max = Number($$('[data-count]', pipe)[0]?.dataset.count || 1);
+      $$('.bars i', pipe).forEach((bar, k) => {
+        const v = Number(bar.dataset.v);
+        setTimeout(() => { bar.style.width = `${Math.max(1.5, (v / max) * 100)}%`; }, reduced ? 0 : k * 300);
+      });
+    });
+  }
+
+  /* ── Assistant demo: a question, then an answer typed out ─────── */
+  {
+    const chat = $('#chat');
+    if (chat) {
+      const q = chat.dataset.question;
+      const a = chat.dataset.answer;
+      const you = $('.msg.you', chat), ai = $('.msg.ai', chat), text = $('.ai-text', ai), chips = $('.chips', chat), badge = $('.badge', ai);
+      const finish = () => { you.hidden = false; you.textContent = q; text.textContent = a; ai.hidden = false; badge.hidden = false; chips.classList.add('in'); $('.caret', ai)?.remove(); };
+      if (reduced) finish();
+      else once(chat, () => {
+        let k = 0;
+        you.hidden = false;
+        const typeQ = setInterval(() => {
+          you.textContent = q.slice(0, ++k);
+          if (k >= q.length) {
+            clearInterval(typeQ);
+            setTimeout(() => {
+              ai.hidden = false;
+              const words = a.split(' ');
+              let n = 0;
+              const typeA = setInterval(() => {
+                text.textContent = words.slice(0, ++n).join(' ');
+                if (n >= words.length) { clearInterval(typeA); $('.caret', ai)?.remove(); badge.hidden = false; setTimeout(() => chips.classList.add('in'), 300); }
+              }, 70);
+            }, 700);
+          }
+        }, 38);
+      }, '0px 0px -25% 0px');
     }
   }
 
   /* ── Download details from downloads.json ─────────────────────── */
-  {
+  if ($('#dlInstaller')) {
     const size = (n) => {
       if (!Number.isFinite(n)) return null;
       const units = ['B', 'KB', 'MB', 'GB'];
@@ -111,11 +434,10 @@
       set(`#hash${id}`, entry.sha256);
     };
 
-    fetch('downloads.json', { cache: 'no-cache' })
+    fetch('/downloads.json', { cache: 'no-cache' })
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((d) => {
         set('#dlVersion', d.version);
-        set('#heroVersion', d.version && d.version.replace(/\.0$/, ''));
         set('#dlLicence', d.licence);
         fill(d.installer, 'Installer');
         fill(d.portable, 'Portable');

@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AllInsight AI — a local assistant that cannot act</title>
+<meta name="description" content="AllInsight AI explains your storage, drive health and performance in plain language. It runs entirely on your machine, is optional, and has no way to act on anything.">
+<meta name="theme-color" content="#f4f2ee">
+<link rel="icon" href="/assets/favicon.ico" sizes="any">
+<link rel="icon" href="/assets/allinsight.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="canonical" href="https://allinsight.biz/ai">
+<meta property="og:title" content="AllInsight AI — a local assistant that cannot act">
+<meta property="og:description" content="AllInsight AI explains your storage, drive health and performance in plain language. It runs entirely on your machine, is optional, and has no way to act on anything.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://allinsight.biz/ai">
+<meta property="og:site_name" content="AllInsight">
+<meta property="og:image" content="https://allinsight.biz/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="AllInsight: Your device, understood. Storage, drive health and cleanup, measured on your own machine.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" href="/assets/fonts/sora-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/instrument-serif-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/styles.css?v=3">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/" aria-label="AllInsight home">
+      <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
+        <path d="M14 82 L50 20 L86 82" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="50" cy="66" r="9" fill="var(--amber)"/>
+      </svg>
+      <span class="wordmark" aria-hidden="true">all<span class="wi">ı</span>ns<span class="wi">ı</span>ght</span>
+    </a>
+    <nav class="nav-links" aria-label="Pages">
+      <a href="/features">Features</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/safety">Safety</a>
+      <a href="/ai">AI</a>
+      <a href="/about">About</a>
+    </nav>
+    <div class="nav-right">
+      <a class="nav-cta" href="/download">Download</a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="menu">Menu</button>
+    </div>
+  </div>
+  <nav class="menu" id="menu" aria-label="Pages" hidden>
+    <a href="/">Home</a>
+    <a href="/features">Features</a>
+    <a href="/privacy">Privacy</a>
+    <a href="/safety">Safety</a>
+    <a href="/ai">AI</a>
+    <a href="/about">About</a>
+    <a href="/download">Download</a>
+  </nav>
+</header>
+
+<main id="main">
+
+<section class="page-hero has-field">
+  <canvas class="field" data-field="light" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <p class="label rise" style="--d:0">AllInsight AI</p>
+    <h1 class="page-title rise" style="--d:1">Explains everything.<br><em class="accent">Decides nothing.</em></h1>
+    <p class="lede rise" style="--d:2">An optional assistant that runs entirely on your machine, answers questions about it in plain language, and has no way to act on anything.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="demo">
+      <div>
+        <p class="label reveal">Ask it anything about your machine</p>
+        <h3 class="reveal" style="--d:1">Answers built from <em class="accent">measurements.</em></h3>
+        <p class="reveal" style="--d:2">The model is handed the same facts the screens show, and told not to invent numbers. The buttons under an answer are chosen from those measurements, never from what the model wrote.</p>
+        <p class="demo-caption reveal" style="--d:3">Sample conversation</p>
+      </div>
+      <div class="frame reveal" style="--d:1">
+        <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><b>AllInsight AI</b><span>Local · offline</span></div>
+        <div class="chat" id="chat" data-question="Why is my drive almost full?" data-answer="Drive C: is 91% used, with 42.1 GB free. The largest share is Videos at 96.4 GB, then Applications at 71.2 GB. 11.4 GB can be reclaimed from safe categories, mostly application temporary files (4.2 GB) and crash dumps (1.8 GB). Cleaning those would bring the drive to about 89%.">
+          <div class="msg you" hidden></div>
+          <div class="msg ai" hidden><span class="ai-text"></span><span class="caret" aria-hidden="true"></span><br><span class="badge" hidden>Local model · from measurements</span></div>
+          <div class="chips" aria-label="Suggested actions"><span>Review cleanup</span><span>Open Storage Map</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-paper">
+  <div class="wrap">
+    <header class="head">
+      <p class="label reveal">Two layers</p>
+      <h2 class="reveal" style="--d:1">Fully useful <em class="accent">without a model.</em></h2>
+    </header>
+    <div class="split">
+      <div class="reveal">
+        <p class="card-num">I</p>
+        <h3>Deterministic insights</h3>
+        <p>The device score, its reasons, the recommendations and the Overview summary are all filled in from measurements, by rules that can be read and tested. This is what makes "works fully without a model" true rather than aspirational.</p>
+      </div>
+      <div class="reveal" style="--d:1">
+        <p class="card-num">II</p>
+        <h3>The local model, if you want one</h3>
+        <p>Optional and conversational. It runs as a separate llama.cpp process on your machine, so a model that hangs or runs out of memory cannot take the window with it, and AllInsight itself contains no weights.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <header class="head">
+      <p class="label reveal">Transparency</p>
+      <h2 class="reveal" style="--d:1">Exactly what <em class="accent">the model is given.</em></h2>
+      <p class="prose reveal" style="--d:2">One block of text, built from measurements. AllInsight AI shows it to you verbatim. No file names, no file contents, no paths beyond the folders shown. Your question follows an explicit marker, so a question cannot pass itself off as data.</p>
+    </header>
+<pre class="briefing reveal">Drive C:\ (Windows): 476 GB total, 42.1 GB free, 91% used, holds Windows.
+Videos: 96.4 GB.
+Applications: 71.2 GB.
+Downloads: 38.0 GB.
+11.4 GB can be reclaimed from safe categories.
+  Application temporary files: 4.20 GB.
+  Crash dumps: 1.80 GB.
+14 files are larger than 1 GB, totalling 38.2 GB.
+Drive NVMe reports health Healthy, 92% of rated life remaining, 41 degrees Celsius.
+Memory: 15.7 GB installed, 62% in use.
+<span class="end">END OF MEASUREMENTS</span></pre>
+  </div>
+</section>
+
+<section class="dark has-field">
+  <canvas class="field" data-field="dark" aria-hidden="true"></canvas>
+  <div class="wrap narrow">
+    <p class="label reveal">What it cannot do</p>
+    <h2 class="statement reveal" style="--d:1">It returns words.<br><em class="accent">Nothing else happens.</em></h2>
+    <p class="prose reveal" style="--d:2">No part of AllInsight reads the model's answer for commands, paths or file names. Its output is cleaned of hidden control characters and capped in length. The engine is started without a shell and bound to 127.0.0.1. There is simply no code path from what the model says to anything on your disk.</p>
+  </div>
+</section>
+
+<section class="section section-paper">
+  <div class="wrap">
+    <header class="head">
+      <p class="label reveal">Choosing a model</p>
+      <h2 class="reveal" style="--d:1">Sized to your disk <em class="accent">and your memory.</em></h2>
+      <p class="prose reveal" style="--d:2">AllInsight picks the largest model that fits both: at most half your memory, and your free space minus a 6 GB reserve, so installing a model can never be what fills the drive. If nothing fits, it says so.</p>
+    </header>
+    <div class="table-wrap reveal">
+      <table class="table">
+        <thead><tr><th>Size</th><th>On disk</th><th>Memory</th><th>Good for</th></tr></thead>
+        <tbody>
+          <tr><td>0.5B</td><td>~400 MB</td><td>~1 GB</td><td>The smallest useful option. Terse but coherent.</td></tr>
+          <tr><td>1B</td><td>~810 MB</td><td>~2 GB</td><td>A good balance when storage is tight.</td></tr>
+          <tr><td>1.5B</td><td>~1.1 GB</td><td>~3 GB</td><td>Noticeably better prose for a small extra cost.</td></tr>
+          <tr><td>3B</td><td>~2 GB</td><td>~4 GB</td><td>Comfortable when there is room to spare.</td></tr>
+          <tr><td>7B–8B</td><td>~4.7 GB</td><td>~6 GB</td><td>The best answers, if disk and memory allow.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose reveal">All sizes at Q4_K_M, the usual sweet spot. Setup takes four steps, described on the <a class="link" href="/download#model">download page</a>.</p>
+  </div>
+</section>
+
+<section class="cta-band dark has-field">
+  <canvas class="field" data-field="dark" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <p class="label reveal">Free for Windows &amp; Linux</p>
+    <h2 class="reveal" style="--d:1">Ask your machine. <em class="accent">Privately.</em></h2>
+    <div class="cta reveal" style="--d:2">
+      <a class="btn" href="/download">Download AllInsight</a>
+      <a class="link" href="/features">See every feature<span class="arrow" aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-id">
+        <a class="foot-brand" href="/" aria-label="AllInsight home">
+          <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
+        <path d="M14 82 L50 20 L86 82" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="50" cy="66" r="9" fill="var(--amber)"/>
+      </svg>
+          <span class="wordmark" aria-hidden="true">all<span class="wi">ı</span>ns<span class="wi">ı</span>ght</span><span class="tm">™</span>
+        </a>
+        <p class="foot-tag">Your device, <em class="accent">understood.</em></p>
+      </div>
+      <nav class="foot-links" aria-label="Footer">
+        <a href="/features">Features</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/safety">Safety</a>
+        <a href="/ai">AI</a>
+        <a href="/about">About</a>
+        <a href="/download">Download</a>
+      </nav>
+      <div class="foot-text">
+        <p class="foot-contact">Questions, feedback or press: <a href="mailto:hello@allinsight.biz">hello@allinsight.biz</a></p>
+        <p class="foot-note">This site loads nothing from anywhere else. No fonts, scripts or analytics from third parties, the same rule the application follows.</p>
+      </div>
+    </div>
+    <div class="foot-base">
+      <span>&copy; 2026 AllInsight</span>
+      <span>Windows &amp; Linux &middot; Works offline</span>
+    </div>
+  </div>
+</footer>
+
+<script src="/app.js?v=3" defer></script>
+</body>
+</html>

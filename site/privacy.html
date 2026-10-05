@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Privacy — AllInsight</title>
+<meta name="description" content="AllInsight has no account, no telemetry, no update checker and no cloud service. Every feature works offline, and nothing about your files leaves your computer.">
+<meta name="theme-color" content="#f4f2ee">
+<link rel="icon" href="/assets/favicon.ico" sizes="any">
+<link rel="icon" href="/assets/allinsight.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="canonical" href="https://allinsight.biz/privacy">
+<meta property="og:title" content="Privacy — AllInsight">
+<meta property="og:description" content="AllInsight has no account, no telemetry, no update checker and no cloud service. Every feature works offline, and nothing about your files leaves your computer.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://allinsight.biz/privacy">
+<meta property="og:site_name" content="AllInsight">
+<meta property="og:image" content="https://allinsight.biz/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="AllInsight: Your device, understood. Storage, drive health and cleanup, measured on your own machine.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" href="/assets/fonts/sora-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/instrument-serif-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/styles.css?v=3">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/" aria-label="AllInsight home">
+      <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
+        <path d="M14 82 L50 20 L86 82" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="50" cy="66" r="9" fill="var(--amber)"/>
+      </svg>
+      <span class="wordmark" aria-hidden="true">all<span class="wi">ı</span>ns<span class="wi">ı</span>ght</span>
+    </a>
+    <nav class="nav-links" aria-label="Pages">
+      <a href="/features">Features</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/safety">Safety</a>
+      <a href="/ai">AI</a>
+      <a href="/about">About</a>
+    </nav>
+    <div class="nav-right">
+      <a class="nav-cta" href="/download">Download</a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="menu">Menu</button>
+    </div>
+  </div>
+  <nav class="menu" id="menu" aria-label="Pages" hidden>
+    <a href="/">Home</a>
+    <a href="/features">Features</a>
+    <a href="/privacy">Privacy</a>
+    <a href="/safety">Safety</a>
+    <a href="/ai">AI</a>
+    <a href="/about">About</a>
+    <a href="/download">Download</a>
+  </nav>
+</header>
+
+<main id="main">
+
+<section class="page-hero has-field">
+  <canvas class="field" data-field="light" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <p class="label rise" style="--d:0">Private by design</p>
+    <h1 class="page-title rise" style="--d:1">Nothing leaves<br><em class="accent">your computer.</em></h1>
+    <p class="lede rise" style="--d:2">Not as a setting. As an absence of code. AllInsight has no account, no update checker, no analytics and no cloud service.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <header class="head">
+      <p class="label reveal">How it is kept private</p>
+      <h2 class="reveal" style="--d:1">Three properties, <em class="accent">built in.</em></h2>
+    </header>
+    <div class="cards">
+      <div class="card reveal">
+        <span class="card-num">I</span>
+        <h3>No route out</h3>
+        <p>There is no HTTP client in the application capable of reaching a remote host. The one that exists is compiled without TLS and only ever pointed at a loopback port.</p>
+      </div>
+      <div class="card reveal" style="--d:1">
+        <span class="card-num">II</span>
+        <h3>No update checker</h3>
+        <p>AllInsight never phones home, not even to ask whether a new version exists. You decide when to update, from this site.</p>
+      </div>
+      <div class="card reveal" style="--d:2">
+        <span class="card-num">III</span>
+        <h3>The model stays local</h3>
+        <p>The optional AI runs as a separate process bound to 127.0.0.1. AllInsight never downloads a model; there is no download code in the binary.</p>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ───────────────────────── Privacy (dark) ───────────────────────── -->
+<section class="dark has-field" id="privacy">
+  <canvas class="field" data-field="dark" aria-hidden="true"></canvas>
+  <div class="wrap narrow">
+    <p class="label reveal">The proof</p>
+    <h2 class="statement reveal" style="--d:1">Pull the cable.<br><em class="accent">Nothing changes.</em></h2>
+    <p class="prose reveal" style="--d:2">
+      Disconnect the machine and every screen behaves identically. AllInsight
+      shows "Offline mode - all local features available" rather than an
+      error, because offline is not an error. It is the design.
+    </p>
+    <div class="horizon reveal" style="--d:3" id="horizon" aria-hidden="true">
+      <span class="horizon-end">This device</span>
+      <span class="horizon-line"><i></i></span>
+      <span class="horizon-end horizon-far">The internet</span>
+    </div>
+    <p class="figure reveal" style="--d:4"><span class="figure-num">0</span><span class="figure-text">bytes sent. Ever.</span></p>
+  </div>
+</section>
+
+
+<section class="section section-paper">
+  <div class="wrap">
+    <header class="head">
+      <p class="label reveal">What is kept</p>
+      <h2 class="reveal" style="--d:1">Totals, <em class="accent">never contents.</em></h2>
+      <p class="prose reveal" style="--d:2">AllInsight keeps one small database on your own disk, so it can show trends and history. This is everything it holds, and everything it refuses to.</p>
+    </header>
+    <div class="table-wrap reveal">
+      <table class="table">
+        <thead><tr><th>Stored on your machine</th><th>Never stored</th></tr></thead>
+        <tbody>
+          <tr><td>Settings</td><td>File names</td></tr>
+          <tr><td>Cleanup history, as totals and category names</td><td>File contents</td></tr>
+          <tr><td>Scan history: folder, bytes, file count, duration</td><td>File hashes</td></tr>
+          <tr><td>Drive capacity over time, about 400 samples per drive</td><td>Questions you ask the assistant, or its answers</td></tr>
+          <tr><td>An event log of what AllInsight did</td><td>Anything from another machine</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="split">
+      <div class="reveal">
+        <p class="label">Permissions</p>
+        <h3>An ordinary user, <em class="accent">by default.</em></h3>
+        <p>AllInsight never asks for administrator rights at launch. All user-scoped cleanup, the storage map, duplicate detection, process management and per-user startup entries work without elevation.</p>
+        <p>On Linux it never runs as root at all: everything it cleans belongs to you, and drive health comes from UDisks2 without privilege.</p>
+      </div>
+      <div class="reveal" style="--d:1">
+        <p class="label">On Windows, three exceptions</p>
+        <div class="table-wrap">
+          <table class="table" style="min-width:0">
+            <tbody>
+              <tr><td>Drive wear on SATA drives</td><td>Windows only lets an elevated process read those counters. NVMe drives report without it.</td></tr>
+              <tr><td>Windows Update cleanup</td><td>Those folders belong to the system.</td></tr>
+              <tr><td>Machine-wide startup entries</td><td>They live in the machine's part of the registry.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top:18px">Each one says so where it matters. Without elevation, drive health reads Unknown, with an explanation. Never a guess.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band dark has-field">
+  <canvas class="field" data-field="dark" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <p class="label reveal">Free for Windows &amp; Linux</p>
+    <h2 class="reveal" style="--d:1">Your device, <em class="accent">understood.</em></h2>
+    <div class="cta reveal" style="--d:2">
+      <a class="btn" href="/download">Download AllInsight</a>
+      <a class="link" href="/features">See every feature<span class="arrow" aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-id">
+        <a class="foot-brand" href="/" aria-label="AllInsight home">
+          <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
+        <path d="M14 82 L50 20 L86 82" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="50" cy="66" r="9" fill="var(--amber)"/>
+      </svg>
+          <span class="wordmark" aria-hidden="true">all<span class="wi">ı</span>ns<span class="wi">ı</span>ght</span><span class="tm">™</span>
+        </a>
+        <p class="foot-tag">Your device, <em class="accent">understood.</em></p>
+      </div>
+      <nav class="foot-links" aria-label="Footer">
+        <a href="/features">Features</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/safety">Safety</a>
+        <a href="/ai">AI</a>
+        <a href="/about">About</a>
+        <a href="/download">Download</a>
+      </nav>
+      <div class="foot-text">
+        <p class="foot-contact">Questions, feedback or press: <a href="mailto:hello@allinsight.biz">hello@allinsight.biz</a></p>
+        <p class="foot-note">This site loads nothing from anywhere else. No fonts, scripts or analytics from third parties, the same rule the application follows.</p>
+      </div>
+    </div>
+    <div class="foot-base">
+      <span>&copy; 2026 AllInsight</span>
+      <span>Windows &amp; Linux &middot; Works offline</span>
+    </div>
+  </div>
+</footer>
+
+<script src="/app.js?v=3" defer></script>
+</body>
+</html>

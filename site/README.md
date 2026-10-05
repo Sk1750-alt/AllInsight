@@ -7,13 +7,36 @@ directory as-is.
 
 ```
 site/
-  index.html            the page
+  index.html            home
+  features.html         the fourteen screens, with four live demos
+  privacy.html          what is kept, what never is, offline
+  safety.html           the deletion guard and its eight checks
+  ai.html               the local assistant and what it is given
+  about.html            architecture, engineering, licence, contact
+  download.html         downloads, requirements, adding a local model
+  404.html              not found
+  robots.txt, sitemap.xml, <key>.txt (IndexNow)
   styles.css            all styling, tokens lifted from src/index.css
-  app.js                animation and behaviour, no dependencies
+  app.js                animation and behaviour for every page, no dependencies
   downloads.json        version, file sizes and checksums (generated)
   update-downloads.ps1  regenerates downloads.json from dist-release
   assets/               app icon, favicons and the bundled font
 ```
+
+## Pages
+
+Every page carries the same header, phone menu and footer, written out in
+full in each file, so a change to the navigation is a change to all eight.
+Links use clean paths (`/features`, not `/features.html`); nginx maps them
+with `try_files $uri $uri.html $uri/ =404` and serves `404.html` through
+`error_page 404 /404.html`.
+
+The moving parts in `app.js` each look for their own markup and do nothing
+where it is absent: the background field (`canvas.field`, light or dark),
+counting numbers (`data-count`), the treemap, health ring, live chart,
+duplicate pipeline and assistant demos on Features and AI, and the safety
+rail. All of them pause off screen and in background tabs, and
+`prefers-reduced-motion` shows each in its finished state.
 
 ## Local preview
 
@@ -22,7 +45,9 @@ cd site
 python -m http.server 8787 --bind 127.0.0.1
 ```
 
-Then open <http://127.0.0.1:8787/>.
+Then open <http://127.0.0.1:8787/>. Python's server does not know the
+clean paths, so add `.html` by hand (`/features.html`) when previewing this
+way; nginx needs no such help.
 
 ## Visuals
 
