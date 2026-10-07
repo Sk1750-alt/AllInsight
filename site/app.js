@@ -2,8 +2,8 @@
   AllInsight — site behaviour, shared by every page.
 
   No dependencies, no third-party requests. Each piece below looks for its
-  own markup and does nothing on pages that do not have it. Everything that
-  moves pauses while off screen or in a background tab, and
+  own markup and does nothing on pages that do not have it. Scroll effects
+  share one throttled handler, live demos pause while off screen, and
   prefers-reduced-motion shows each piece in its finished state instead.
 */
 
@@ -64,7 +64,7 @@
     if (toggle && menu) {
       const set = (open) => {
         toggle.setAttribute('aria-expanded', String(open));
-        toggle.textContent = open ? 'Close' : 'Menu';
+        toggle.setAttribute('aria-label', open ? 'Close menu' : 'Menu');
         menu.hidden = !open;
         document.documentElement.classList.toggle('menu-open', open);
       };
@@ -78,7 +78,7 @@
   /* ── Nav state and the safety rule ────────────────────────────── */
   {
     const nav = $('#nav');
-    const darks = $$('.dark');
+    const darks = $$('.hero, .s-black, .blackout');
     const gatesEl = $('#gates');
     const items = $$('.gates-list li');
     let queued = false;
@@ -89,7 +89,8 @@
         nav.classList.toggle('is-stuck', scrollY > 8);
         nav.classList.toggle('is-dark', darks.some((d) => {
           const r = d.getBoundingClientRect();
-          return r.top < 32 && r.bottom > 32;
+          if (!(r.top < 60 && r.bottom > 26)) return false;
+          return !d.classList.contains('blackout') || d.classList.contains('on-dark');
         }));
       }
       if (gatesEl) {
@@ -104,107 +105,45 @@
     frame();
   }
 
-  /* ── Background field ─────────────────────────────────────────────
-     Points drift slowly; near neighbours are joined by hairlines; every few
-     seconds one point sends out an amber scan ring and its lines brighten.
-     The pointer nudges the points away. One canvas per [data-field]. */
-  $$('canvas.field').forEach((canvas) => {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const dark = canvas.dataset.field === 'dark';
-    const ink = dark ? '244,242,238' : '17,19,24';
-    const amber = '245,165,36';
-    let w = 0, h = 0, dpr = 1, points = [], pulses = [], running = false, raf = 0, last = 0, nextPulse = 0;
-    const mouse = { x: -1e4, y: -1e4 };
-
-    const build = () => {
-      const r = canvas.getBoundingClientRect();
-      dpr = Math.min(devicePixelRatio || 1, 2);
-      w = r.width; h = r.height;
-      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const n = clamp(Math.round((w * h) / 16000), 24, 90);
-      points = Array.from({ length: n }, () => ({
-        x: Math.random() * w, y: Math.random() * h,
-        vx: (Math.random() - 0.5) * 0.12, vy: (Math.random() - 0.5) * 0.12,
-        r: Math.random() * 1.2 + 0.6, glow: 0,
-      }));
-    };
-
-    const draw = (dt) => {
-      ctx.clearRect(0, 0, w, h);
-      const link = Math.min(150, Math.max(110, w / 9));
-      for (const p of points) {
-        p.x += p.vx * dt; p.y += p.vy * dt;
-        const dx = p.x - mouse.x, dy = p.y - mouse.y, d2 = dx * dx + dy * dy;
-        if (d2 < 14400) { const f = (1 - Math.sqrt(d2) / 120) * 0.6; p.x += (dx / 120) * f; p.y += (dy / 120) * f; }
-        if (p.x < -20) p.x = w + 20; else if (p.x > w + 20) p.x = -20;
-        if (p.y < -20) p.y = h + 20; else if (p.y > h + 20) p.y = -20;
-        p.glow = Math.max(0, p.glow - dt * 0.0012);
+  /* ── Scroll-linked effects ─────────────────────────────────────
+     The hero window straightens as it is scrolled to, long sentences light
+     up word by word, and the privacy section darkens the page on the way in.
+     All read from one rAF-throttled scroll handler. */
+  {
+    const device = $('.stage');
+    const highlights = $$('.highlight').map((el) => ({ el, words: $$('.w', el) }));
+    const blackouts = $$('.blackout');
+    const app = $('.device .app');
+    if (app) setTimeout(() => app.classList.add('is-on'), reduced ? 0 : 900);
+    let queued = false;
+    const frame = () => {
+      queued = false;
+      const vh = innerHeight;
+      if (device && !reduced) {
+        const r = device.getBoundingClientRect();
+        const p = clamp((vh - r.top) / (vh * 0.9), 0, 1);
+        device.style.setProperty('--p', p.toFixed(3));
       }
-      for (let i = 0; i < points.length; i++) {
-        const a = points[i];
-        for (let j = i + 1; j < points.length; j++) {
-          const b = points[j];
-          const dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy);
-          if (d > link) continue;
-          const g = Math.max(a.glow, b.glow);
-          const alpha = (1 - d / link) * (dark ? 0.16 : 0.12);
-          ctx.strokeStyle = g > 0.02 ? `rgba(${amber},${alpha + g * 0.45})` : `rgba(${ink},${alpha})`;
-          ctx.lineWidth = 0.6 + g;
-          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
-        }
+      for (const { el, words } of highlights) {
+        const r = el.getBoundingClientRect();
+        const p = reduced ? 1 : clamp((vh * 0.85 - r.top) / (r.height + vh * 0.35), 0, 1);
+        const n = Math.round(p * words.length);
+        words.forEach((w, i) => w.classList.toggle('lit', i < n));
       }
-      for (const p of points) {
-        ctx.fillStyle = p.glow > 0.02 ? `rgba(${amber},${0.5 + p.glow * 0.5})` : `rgba(${ink},${dark ? 0.42 : 0.3})`;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r + p.glow * 1.5, 0, Math.PI * 2); ctx.fill();
-      }
-      pulses = pulses.filter((q) => q.t < 1);
-      for (const q of pulses) {
-        q.t += dt / 2600;
-        const rad = 6 + easeOut(q.t) * 180;
-        ctx.strokeStyle = `rgba(${amber},${(1 - q.t) * 0.5})`;
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.arc(q.x, q.y, rad, 0, Math.PI * 2); ctx.stroke();
-        for (const p of points) if (Math.abs(Math.hypot(p.x - q.x, p.y - q.y) - rad) < 6) p.glow = 1;
+      for (const el of blackouts) {
+        const r = el.getBoundingClientRect();
+        const d = reduced ? 1 : clamp((vh * 0.9 - r.top) / (vh * 0.55), 0, 1);
+        el.style.setProperty('--d', d.toFixed(3));
+        el.classList.toggle('on-dark', d > 0.5);
       }
     };
+    addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(frame); } }, { passive: true });
+    addEventListener('resize', frame, { passive: true });
+    frame();
+  }
 
-    const loop = (now) => {
-      const dt = Math.min(48, now - (last || now)); last = now;
-      if (now > nextPulse && points.length) {
-        const p = points[Math.floor(Math.random() * points.length)];
-        pulses.push({ x: p.x, y: p.y, t: 0 }); p.glow = 1;
-        nextPulse = now + 2600 + Math.random() * 2400;
-      }
-      draw(dt);
-      raf = requestAnimationFrame(loop);
-    };
-    const start = () => { if (running || reduced) return; running = true; last = 0; raf = requestAnimationFrame(loop); };
-    const stop = () => { running = false; cancelAnimationFrame(raf); };
-
-    build();
-    if (reduced) { draw(0); return; }
-    let resizeTimer = 0;
-    addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { build(); if (!running) draw(0); }, 150); }, { passive: true });
-    const host = canvas.parentElement;
-    host.addEventListener('pointermove', (e) => {
-      const r = canvas.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
-    }, { passive: true });
-    host.addEventListener('pointerleave', () => { mouse.x = mouse.y = -1e4; });
-    let visible = false;
-    whileVisible(canvas, (v) => { visible = v; (v && !document.hidden) ? start() : stop(); });
-    document.addEventListener('visibilitychange', () => { (visible && !document.hidden) ? start() : stop(); });
-  });
-
-  /* ── Pointer light on cards ───────────────────────────────────── */
-  $$('.card').forEach((card) => {
-    card.addEventListener('pointermove', (e) => {
-      const r = card.getBoundingClientRect();
-      card.style.setProperty('--mx', `${e.clientX - r.left}px`);
-      card.style.setProperty('--my', `${e.clientY - r.top}px`);
-    }, { passive: true });
-  });
+  /* ── Lock closes when it arrives ──────────────────────────────── */
+  $$('.lock').forEach((lock) => once(lock, () => lock.classList.add('in')));
 
   /* ── Counting numbers: <span data-count="14"> ─────────────────── */
   $$('[data-count]').forEach((el) => {
@@ -244,7 +183,7 @@
         { path: 'C:\\', items: [['Videos', 96.4], ['Applications', 71.2], ['Games', 54.0], ['Downloads', 38.0], ['Windows', 31.5], ['Pictures', 22.7], ['Documents', 18.2], ['Caches', 11.4, 1], ['Other', 9.8]] },
         { path: 'C:\\Users\\you\\Downloads', items: [['Installers', 16.2], ['Archives', 9.4], ['ISO images', 7.8], ['PDFs', 2.9], ['Other', 1.7]] },
       ];
-      const shades = ['#3a4252', '#343b4a', '#2f3542', '#2b303c', '#282c37', '#252933', '#22262f', '#20232b', '#1e2128'];
+      const shades = ['#3a3a3c', '#353537', '#303032', '#2c2c2e', '#29292b', '#262628', '#232325', '#212123', '#1f1f21'];
       const label = $('#treemapPath');
       const tiles = new Map();
 
@@ -285,7 +224,7 @@
           let el = tiles.get(t.n);
           if (!el) {
             el = document.createElement('div');
-            el.className = 'tile';
+            el.className = 'tm-tile';
             el.innerHTML = '<b></b><i></i>';
             el.style.cssText = `left:${W / 2}px;top:${H / 2}px;width:0;height:0;opacity:0`;
             box.appendChild(el); tiles.set(t.n, el);
@@ -297,7 +236,7 @@
           el.classList.toggle('safe', !!t.safe);
           el.classList.toggle('small', t.w < 96 || t.h < 50);
           el.classList.toggle('tiny', t.w < 52 || t.h < 26);
-          el.style.setProperty('--tile', t.safe ? '#3a3326' : shades[Math.min(t.k, shades.length - 1)]);
+          el.style.setProperty('--tile', t.safe ? '#3b3221' : shades[Math.min(t.k, shades.length - 1)]);
           Object.assign(el.style, { left: `${t.x + gap / 2}px`, top: `${t.y + gap / 2}px`, width: `${Math.max(0, t.w - gap)}px`, height: `${Math.max(0, t.h - gap)}px`, opacity: '1' });
         }
         for (const [n, el] of tiles) if (!seen.has(n)) Object.assign(el.style, { opacity: '0', width: '0px', height: '0px' });
@@ -321,7 +260,7 @@
       const score = Number(ring.dataset.score);
       const value = $('.value', ring);
       const num = $('.ring-num', ring);
-      const wrap = ring.closest('.frame');
+      const wrap = ring.closest('.window');
       if (wrap) wrap.classList.add('is-live');
       value.style.strokeDashoffset = String(327 * (1 - score / 100));
       tween(0, score, 2200, (v) => { num.textContent = Math.round(v); });
@@ -345,7 +284,7 @@
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         const W = r.width, H = r.height;
         ctx.clearRect(0, 0, W, H);
-        ctx.strokeStyle = 'rgba(244,242,238,0.07)'; ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(245,245,247,0.08)'; ctx.lineWidth = 1;
         for (let g = 1; g < 4; g++) { const y = (H / 4) * g; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
         const line = (arr, color, fill) => {
           ctx.beginPath();
@@ -353,7 +292,7 @@
           ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.stroke();
           if (fill) { ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, fill); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fill(); }
         };
-        line(mem, 'rgba(245,165,36,0.9)');
+        line(mem, 'rgba(79,193,212,0.95)');
         line(cpu, 'rgba(244,242,238,0.95)', 'rgba(244,242,238,0.10)');
         if (cpuOut) cpuOut.textContent = `${Math.round(cpu[N - 1])}%`;
         if (memOut) memOut.textContent = `${Math.round(mem[N - 1])}%`;

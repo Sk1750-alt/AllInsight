@@ -1,9 +1,10 @@
 # AllInsight landing site
 
 Static HTML, CSS and JavaScript. No build step, no framework, no external
-requests. The two webfonts, Sora and Instrument Serif Italic (both SIL OFL,
-licences beside them), are served from `assets/fonts/`. Nginx serves this
-directory as-is.
+requests. The one webfont, Instrument Sans (SIL OFL, licence beside it), is
+the application's own display face and is served from `assets/fonts/`; body
+text uses the platform's system face, as the application does. Nginx serves
+this directory as-is.
 
 ```
 site/
@@ -51,27 +52,30 @@ way; nginx needs no such help.
 
 ## Visuals
 
-The page follows the brand kit: Paper ground with a faint drawn grain, Ink
-text, Graphite for the privacy section, Sora Light headlines, hairline rules
-instead of cards, and Insight Amber only for the dot in the mark and small
-status marks. Instrument Serif Italic is the single accent: a few words per
-headline, the method numerals and the zero, never body text.
+The site wears the application's clothes rather than a separate brand
+treatment: Instrument Sans headlines, the system face for reading (San
+Francisco on Apple devices, Segoe on Windows), and the app's palette. Sections
+alternate white, a soft grey (#f5f5f7) and black. Teal, the app's accent,
+marks links and section titles; amber is kept for the dot in the mark.
+
+The home page opens on a rebuilt Overview screen from the app, drawn in HTML
+in the app's own colours, which straightens from a tilt as it is scrolled to.
+
+Motion, all in `app.js` and `styles.css`:
+
+- headlines settle out of a soft blur, word by word, on load
+- long sentences (`.highlight`) light up word by word as they are read
+- `.blackout` sections darken the page from grey to black on the way in
+- bento tiles, stats and lists rise into place; counters count
+- the Features and AI demos: treemap, health ring, live chart, duplicate
+  pipeline, assistant conversation
+- the navigation bar turns dark over black sections
+
+`prefers-reduced-motion` shows every piece in its finished state.
+`assets/og-image.png` is rendered from `../assets/social/og-image.svg`.
 
 `styles.css` and `app.js` are linked with a `?v=` query. Bump it when either
 changes, because nginx lets browsers cache them for an hour.
-
-The logo is the A·i mark (an A with a lowercase i inside it) and the
-lowercase wordmark, whose two i's are dotless with an amber dot set in CSS.
-Both are inline SVG and HTML, so nothing extra loads. Three animations, all
-CSS: the mark draws itself on load (the A, then the i, then the dot drops and
-sends out two scan rings, in the order of the promo kit's logo reveal); the
-app icon builds itself when the download section arrives; and one amber point
-of light stops at the wall in the privacy section. `prefers-reduced-motion`
-shows each in its finished state.
-
-`assets/allinsight.svg`, `favicon.ico` and `apple-touch-icon.png` are the
-brand kit's app icon: Slate tile, full mark above 32 px, the heavier small
-mark at 16 and 32 px.
 
 ## Before every deploy
 
