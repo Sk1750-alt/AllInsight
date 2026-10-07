@@ -54,10 +54,12 @@ Dark, quiet and precise: a near-black ground (#08090a), hairline borders,
 and one teal light. Geist for everything, Geist Mono for small technical
 labels. Amber is kept for the dot in the mark and for "safe to clean".
 
-Every page header sits on the same light: a slow teal aurora, a dot grid
-that fades at the edges, and thin beams that run along the grid's rows and
-columns (`LIGHT` in the page generator; dots sit at 50% ± 32n across and
-16 + 32n down, so the beams are placed on them).
+Every page header sits on the same background: a disk drawn the way the
+Storage Map draws it, nested rectangles in hairlines (`canvas.mosaic`, drawn
+by `app.js`). A scan walks through the folders in order, lighting each as it
+is measured; large folders light at their outline, small ones fill, and a few
+light amber for "safe to clean". Every third pass the drive is mapped afresh.
+It is different on every visit and pauses when off screen.
 
 The home page opens on the app's Overview screen in its dark theme, drawn in
 HTML with a glowing edge, which straightens from a tilt as it is scrolled to.

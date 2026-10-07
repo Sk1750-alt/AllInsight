@@ -4,10 +4,10 @@
   Dark, quiet and precise. Near-black ground, hairline borders, one teal
   light. Geist for everything, Geist Mono for the small technical labels.
 
-  The light is the motion: a slow teal aurora above each page, a faint dot
-  grid that fades at the edges with thin beams running along it, a glowing
-  edge on the product window, and a light that follows the pointer around
-  the border of each card. Headlines settle out of a blur, sentences light up
+  Behind each page header is a disk, drawn the way the Storage Map draws
+  it: nested rectangles in hairlines, with a scan walking through them and
+  lighting each folder as it is measured. The product window has a glowing
+  edge, and a light follows the pointer around the border of each card. Headlines settle out of a blur, sentences light up
   as they are read, and the privacy statement brightens out of the dark.
 
   No third-party requests: Geist and Geist Mono are served from assets/fonts.
@@ -252,47 +252,20 @@ section { position: relative; }
 @media (max-width: 860px) { .nav-links { display: none; } .nav-toggle { display: block; } }
 @media (min-width: 861px) { .menu { display: none; } }
 
-/* ── Light: aurora, dot grid, beams ───────────────────────────────── */
+/* ── The disk mosaic behind each page header ─────────────────────── */
 
 .glow { position: relative; isolation: isolate; overflow: hidden; }
-.aurora {
-  position: absolute;
-  z-index: -2;
-  left: 50%;
-  top: -260px;
-  width: min(1200px, 140vw);
-  height: 620px;
-  transform: translateX(-50%);
-  background:
-    radial-gradient(40% 50% at 50% 50%, rgba(79, 193, 212, 0.28), transparent 70%),
-    radial-gradient(30% 40% at 30% 60%, rgba(56, 120, 255, 0.14), transparent 70%),
-    radial-gradient(25% 35% at 72% 55%, rgba(245, 165, 36, 0.08), transparent 70%);
-  filter: blur(60px);
-  animation: drift 18s ease-in-out infinite alternate;
-  pointer-events: none;
-}
-@keyframes drift {
-  0% { transform: translateX(-50%) translateY(0) scale(1); }
-  50% { transform: translateX(-46%) translateY(20px) scale(1.08); }
-  100% { transform: translateX(-54%) translateY(-10px) scale(0.98); }
-}
-.grid {
+.mosaic {
   position: absolute;
   z-index: -1;
   inset: 0;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.13) 1px, transparent 1.2px);
-  background-size: 32px 32px;
-  background-position: center top;
-  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 25%, transparent 75%);
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 25%, transparent 75%);
+  width: 100%;
+  height: 100%;
   pointer-events: none;
+  /* Quiet behind the words, clearest in a ring around them, gone at the edges. */
+  -webkit-mask-image: radial-gradient(ellipse 72% 78% at 50% 38%, rgba(0, 0, 0, 0.3) 0%, #000 52%, transparent 92%);
+  mask-image: radial-gradient(ellipse 72% 78% at 50% 38%, rgba(0, 0, 0, 0.3) 0%, #000 52%, transparent 92%);
 }
-/* Thin beams of light that run along grid rows and columns. */
-.beam { position: absolute; z-index: -1; pointer-events: none; opacity: 0; }
-.beam.h { height: 1px; width: 180px; background: linear-gradient(90deg, transparent, var(--teal), transparent); animation: beamH 7s linear infinite; }
-.beam.v { width: 1px; height: 160px; background: linear-gradient(180deg, transparent, var(--teal), transparent); animation: beamV 9s linear infinite; }
-@keyframes beamH { 0% { transform: translateX(-200px); opacity: 0; } 8% { opacity: 0.8; } 40% { opacity: 0.8; } 50% { transform: translateX(100vw); opacity: 0; } 100% { transform: translateX(100vw); opacity: 0; } }
-@keyframes beamV { 0% { transform: translateY(-200px); opacity: 0; } 8% { opacity: 0.7; } 35% { opacity: 0.7; } 45% { transform: translateY(700px); opacity: 0; } 100% { transform: translateY(700px); opacity: 0; } }
 
 /* ── Home hero ────────────────────────────────────────────────────── */
 
@@ -889,5 +862,5 @@ a.tile:hover { transform: translateY(-2px); }
   .app-icon .tile-bg, .app-icon .mark-stem, .app-icon .mark-dot { opacity: 1; transform: none; }
   .app-icon .mark-a { stroke-dashoffset: 0; }
   .lock .shackle { transform: none; }
-  .beam, .wire i { display: none; }
+  .wire i { display: none; }
 }

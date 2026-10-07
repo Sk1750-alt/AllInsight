@@ -142,6 +142,93 @@
     frame();
   }
 
+  /* ── Disk mosaic: the background of every page header ──────────
+     A drive drawn the way the Storage Map draws it: nested rectangles
+     split along their longer side, in hairlines. A scan walks through the
+     folders in order, lighting each one briefly as it is measured; a few
+     light amber, the colour of "safe to clean". After a few passes the
+     drive is mapped afresh. One canvas per .mosaic. */
+  $$('canvas.mosaic').forEach((canvas) => {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    let w = 0, h = 0, cells = [], at = 0, passes = 0, fade = 1, fading = 0;
+    let running = false, raf = 0, last = 0, step = 0;
+
+    const split = (x, y, cw, ch, depth) => {
+      const area = cw * ch;
+      if (depth >= 5 || area < 7000 || (depth >= 2 && Math.random() < 0.22)) {
+        cells.push({ x, y, w: cw, h: ch, glow: 0, amber: Math.random() < 0.05 });
+        return;
+      }
+      const n = 2 + Math.floor(Math.random() * 3);
+      const weights = Array.from({ length: n }, () => 0.35 + Math.random());
+      const total = weights.reduce((a, b) => a + b, 0);
+      let off = 0;
+      for (const wt of weights) {
+        const f = wt / total;
+        if (cw >= ch) { split(x + off, y, cw * f, ch, depth + 1); off += cw * f; }
+        else { split(x, y + off, cw, ch * f, depth + 1); off += ch * f; }
+      }
+    };
+    const build = () => {
+      const r = canvas.getBoundingClientRect();
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      w = r.width; h = r.height;
+      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cells = []; at = 0;
+      split(0, 0, w, h, 0);
+    };
+    const draw = () => {
+      ctx.clearRect(0, 0, w, h);
+      ctx.globalAlpha = fade;
+      ctx.lineWidth = 1;
+      for (const c of cells) {
+        const x = Math.round(c.x) + 2.5, y = Math.round(c.y) + 2.5;
+        const cw = Math.max(0, Math.round(c.w) - 5), ch = Math.max(0, Math.round(c.h) - 5);
+        if (c.glow > 0.01) {
+          // Big folders light at their outline; small ones fill.
+          const k = Math.min(1, 26000 / (c.w * c.h));
+          ctx.fillStyle = c.amber ? `rgba(245,165,36,${c.glow * 0.16 * k})` : `rgba(79,193,212,${c.glow * 0.12 * k})`;
+          ctx.fillRect(x, y, cw, ch);
+          ctx.strokeStyle = c.amber ? `rgba(245,165,36,${0.07 + c.glow * 0.5})` : `rgba(79,193,212,${0.07 + c.glow * 0.4})`;
+        } else {
+          ctx.strokeStyle = 'rgba(255,255,255,0.065)';
+        }
+        ctx.strokeRect(x, y, cw, ch);
+      }
+      ctx.globalAlpha = 1;
+    };
+    const loop = (now) => {
+      const dt = Math.min(50, now - (last || now)); last = now;
+      for (const c of cells) if (c.glow > 0) c.glow = Math.max(0, c.glow - dt * 0.00045);
+      step += dt;
+      while (step > 70 && !fading) {
+        step -= 70;
+        if (at < cells.length) { cells[at].glow = 1; at++; }
+        else if (++passes % 3 === 0) { fading = -1; }
+        else { at = 0; step = -1800; }
+      }
+      if (fading) {
+        fade += fading * dt * 0.0015;
+        if (fade <= 0) { fade = 0; build(); fading = 1; step = 0; }
+        if (fade >= 1 && fading > 0) { fade = 1; fading = 0; }
+      }
+      draw();
+      raf = requestAnimationFrame(loop);
+    };
+    const start = () => { if (running || reduced) return; running = true; last = 0; raf = requestAnimationFrame(loop); };
+    const stop = () => { running = false; cancelAnimationFrame(raf); };
+
+    build(); draw();
+    if (reduced) return;
+    let timer = 0;
+    addEventListener('resize', () => { clearTimeout(timer); timer = setTimeout(() => { build(); draw(); }, 200); }, { passive: true });
+    let visible = false;
+    whileVisible(canvas, (v) => { visible = v; (v && !document.hidden) ? start() : stop(); });
+    document.addEventListener('visibilitychange', () => { (visible && !document.hidden) ? start() : stop(); });
+  });
+
   /* ── Lock closes when it arrives ──────────────────────────────── */
   $$('.lock').forEach((lock) => once(lock, () => lock.classList.add('in')));
 
