@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>AllInsight — Your device, understood.</title>
 <meta name="description" content="AllInsight measures your computer's storage, drive health and performance, finds what is genuinely safe to clean, and explains what it finds. For Windows and Linux. No account, no server, no telemetry.">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#08090a">
 <link rel="icon" href="/assets/favicon.ico" sizes="any">
 <link rel="icon" href="/assets/allinsight.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
@@ -42,10 +42,11 @@
   ]
 }
 </script>
-<link rel="preload" href="/assets/fonts/instrument-sans-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/styles.css?v=4">
+<link rel="preload" href="/assets/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/geist-mono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/styles.css?v=5">
 </head>
-<body class="dark-top">
+<body>
 
 <a class="skip" href="#main">Skip to content</a>
 
@@ -83,14 +84,15 @@
 
 <main id="main">
 
-<section class="hero">
+<section class="hero glow">
+  <div class="aurora" aria-hidden="true"></div><div class="grid" aria-hidden="true"></div><span class="beam h" aria-hidden="true" style="top:112px;animation-delay:1s"></span><span class="beam h" aria-hidden="true" style="top:304px;animation-delay:4.5s"></span><span class="beam v" aria-hidden="true" style="left:calc(50% - 320px);animation-delay:2.5s"></span><span class="beam v" aria-hidden="true" style="left:calc(50% + 352px);animation-delay:6s"></span>
   <div class="wrap">
-    <p class="eyebrow fade-up" style="--delay:0.05s">AllInsight 1.0 for Windows and Linux</p>
-    <h1 class="blur-in"><span class="shine"><span class="w" style="--i:0">Your</span> <span class="w" style="--i:1">device,</span><br><span class="w" style="--i:2">understood.</span></span></h1>
-    <p class="lede fade-up" style="--delay:0.75s">Storage, drive health and performance, measured on the machine itself. It finds what is genuinely safe to clean, and explains why.</p>
-    <div class="actions center fade-up" style="--delay:0.9s">
+    <a class="chip fade-up" style="--delay:0.05s" href="/download"><b>New</b>AllInsight 1.0 for Windows and Linux <span aria-hidden="true">→</span></a>
+    <h1 class="blur-in"><span class="w" style="--i:0">Your</span> <span class="w" style="--i:1">device,</span><br><span class="w" style="--i:2">understood.</span></h1>
+    <p class="lede fade-up" style="--delay:0.7s">Storage, drive health and performance, measured on the machine itself. It finds what is safe to clean, and explains why.</p>
+    <div class="actions center fade-up" style="--delay:0.85s">
       <a class="btn" href="/download">Download for free</a>
-      <a class="more" href="/features">Explore the features</a>
+      <a class="btn btn-ghost" href="/features">Explore features</a>
     </div>
   </div>
   <div class="stage">
@@ -145,7 +147,14 @@
           </div>
         </div>
       </div>
-      <div class="device-shadow" aria-hidden="true"></div>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="features-row">
+      <div class="reveal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3 L5 13 H11 L10 21 L19 10 H13 Z"/></svg><b>Fast</b><span>Parallel scans that never freeze the window.</span></div>
+      <div class="reveal" style="--d:1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 L19 6 V12 C19 16.5 16 19.5 12 21 C8 19.5 5 16.5 5 12 V6 Z"/></svg><b>Private</b><span>No account, no cloud, works offline.</span></div>
+      <div class="reveal" style="--d:2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12 L10 17 L19 7"/></svg><b>Safe</b><span>Eight checks before anything is removed.</span></div>
+      <div class="reveal" style="--d:3"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6 H20 V16 H11 L7 20 V16 H4 Z"/></svg><b>Explained</b><span>Every number in plain language.</span></div>
     </div>
   </div>
 </section>
@@ -226,13 +235,14 @@
   </div>
 </section>
 
-<section class="s-black center">
+<section class="s-black center glow">
+  <div class="aurora" aria-hidden="true" style="top:auto;bottom:-300px"></div><div class="grid" aria-hidden="true" style="mask-image:radial-gradient(ellipse 60% 70% at 50% 70%,#000 20%,transparent 70%);-webkit-mask-image:radial-gradient(ellipse 60% 70% at 50% 70%,#000 20%,transparent 70%)"></div>
   <div class="wrap">
-    <h2 class="reveal"><span class="shine">Your device, understood.</span></h2>
+    <h2 class="reveal">Your device, understood.</h2>
     <p class="lede reveal" style="--d:1">Free for Windows and Linux. No account, ever.</p>
     <div class="actions reveal" style="--d:2">
       <a class="btn" href="/download">Download AllInsight</a>
-      <a class="more" href="/features">See every feature</a>
+      <a class="btn btn-ghost" href="/features">See every feature</a>
     </div>
   </div>
 </section>
@@ -278,6 +288,6 @@
   </div>
 </footer>
 
-<script src="/app.js?v=4" defer></script>
+<script src="/app.js?v=5" defer></script>
 </body>
 </html>

@@ -1,10 +1,8 @@
 # AllInsight landing site
 
 Static HTML, CSS and JavaScript. No build step, no framework, no external
-requests. The one webfont, Instrument Sans (SIL OFL, licence beside it), is
-the application's own display face and is served from `assets/fonts/`; body
-text uses the platform's system face, as the application does. Nginx serves
-this directory as-is.
+requests. Geist and Geist Mono (SIL OFL, licence beside them) are served
+from `assets/fonts/`. Nginx serves this directory as-is.
 
 ```
 site/
@@ -52,24 +50,29 @@ way; nginx needs no such help.
 
 ## Visuals
 
-The site wears the application's clothes rather than a separate brand
-treatment: Instrument Sans headlines, the system face for reading (San
-Francisco on Apple devices, Segoe on Windows), and the app's palette. Sections
-alternate white, a soft grey (#f5f5f7) and black. Teal, the app's accent,
-marks links and section titles; amber is kept for the dot in the mark.
+Dark, quiet and precise: a near-black ground (#08090a), hairline borders,
+and one teal light. Geist for everything, Geist Mono for small technical
+labels. Amber is kept for the dot in the mark and for "safe to clean".
 
-The home page opens on a rebuilt Overview screen from the app, drawn in HTML
-in the app's own colours, which straightens from a tilt as it is scrolled to.
+Every page header sits on the same light: a slow teal aurora, a dot grid
+that fades at the edges, and thin beams that run along the grid's rows and
+columns (`LIGHT` in the page generator; dots sit at 50% ± 32n across and
+16 + 32n down, so the beams are placed on them).
+
+The home page opens on the app's Overview screen in its dark theme, drawn in
+HTML with a glowing edge, which straightens from a tilt as it is scrolled to.
 
 Motion, all in `app.js` and `styles.css`:
 
 - headlines settle out of a soft blur, word by word, on load
+- the announcement pill has a light turning around its border
+- cards (`.tile`, `.screen`, `.layer`, `.platform`, `.window`, steps) carry
+  a light that follows the pointer around their border, on hover devices
 - long sentences (`.highlight`) light up word by word as they are read
-- `.blackout` sections darken the page from grey to black on the way in
-- bento tiles, stats and lists rise into place; counters count
+- `.blackout` statements brighten and sharpen out of the dark on scroll
+- tiles, stats and lists rise out of a slight blur; counters count
 - the Features and AI demos: treemap, health ring, live chart, duplicate
   pipeline, assistant conversation
-- the navigation bar turns dark over black sections
 
 `prefers-reduced-motion` shows every piece in its finished state.
 `assets/og-image.png` is rendered from `../assets/social/og-image.svg`.

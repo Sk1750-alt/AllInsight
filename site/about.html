@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>About — AllInsight</title>
 <meta name="description" content="How AllInsight is built: Rust services behind a thin Tauri command layer and a React interface that holds no privilege. Architecture, engineering decisions and licence.">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#08090a">
 <link rel="icon" href="/assets/favicon.ico" sizes="any">
 <link rel="icon" href="/assets/allinsight.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
@@ -20,10 +20,11 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="AllInsight: Your device, understood. Storage, drive health and cleanup, measured on your own machine.">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="preload" href="/assets/fonts/instrument-sans-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/styles.css?v=4">
+<link rel="preload" href="/assets/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/geist-mono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/styles.css?v=5">
 </head>
-<body class="dark-top">
+<body>
 
 <a class="skip" href="#main">Skip to content</a>
 
@@ -61,10 +62,11 @@
 
 <main id="main">
 
-<section class="page-hero s-black">
+<section class="page-hero glow">
+  <div class="aurora" aria-hidden="true"></div><div class="grid" aria-hidden="true"></div><span class="beam h" aria-hidden="true" style="top:112px;animation-delay:1s"></span><span class="beam h" aria-hidden="true" style="top:304px;animation-delay:4.5s"></span><span class="beam v" aria-hidden="true" style="left:calc(50% - 320px);animation-delay:2.5s"></span><span class="beam v" aria-hidden="true" style="left:calc(50% + 352px);animation-delay:6s"></span>
   <div class="wrap">
     <p class="eyebrow fade-up" style="--delay:0.05s">About</p>
-    <h1 class="blur-in"><span class="shine"><span class="w" style="--i:0">Built</span> <span class="w" style="--i:1">to</span> <span class="w" style="--i:2">be</span> <span class="w" style="--i:3">fast.</span><br><span class="w" style="--i:4">And</span> <span class="w" style="--i:5">honest.</span></span></h1>
+    <h1 class="blur-in"><span class="w" style="--i:0">Built</span> <span class="w" style="--i:1">to</span> <span class="w" style="--i:2">be</span> <span class="w" style="--i:3">fast.</span><br><span class="w" style="--i:4">And</span> <span class="w" style="--i:5">honest.</span></h1>
     <p class="lede fade-up" style="--delay:0.7s">AllInsight is a desktop application written in Rust and TypeScript on Tauri 2. These are the decisions behind it.</p>
   </div>
 </section>
@@ -150,13 +152,14 @@
   </div>
 </section>
 
-<section class="s-black center">
+<section class="s-black center glow">
+  <div class="aurora" aria-hidden="true" style="top:auto;bottom:-300px"></div><div class="grid" aria-hidden="true" style="mask-image:radial-gradient(ellipse 60% 70% at 50% 70%,#000 20%,transparent 70%);-webkit-mask-image:radial-gradient(ellipse 60% 70% at 50% 70%,#000 20%,transparent 70%)"></div>
   <div class="wrap">
-    <h2 class="reveal"><span class="shine">Your device, understood.</span></h2>
+    <h2 class="reveal">Your device, understood.</h2>
     <p class="lede reveal" style="--d:1">Free for Windows and Linux. No account, ever.</p>
     <div class="actions reveal" style="--d:2">
       <a class="btn" href="/download">Download AllInsight</a>
-      <a class="more" href="/features">See every feature</a>
+      <a class="btn btn-ghost" href="/features">See every feature</a>
     </div>
   </div>
 </section>
@@ -202,6 +205,6 @@
   </div>
 </footer>
 
-<script src="/app.js?v=4" defer></script>
+<script src="/app.js?v=5" defer></script>
 </body>
 </html>

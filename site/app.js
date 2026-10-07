@@ -145,6 +145,18 @@
   /* ── Lock closes when it arrives ──────────────────────────────── */
   $$('.lock').forEach((lock) => once(lock, () => lock.classList.add('in')));
 
+  /* ── A light that follows the pointer around each card's border ── */
+  if (matchMedia('(hover: hover)').matches) {
+    $$('.tile, .screen, .layer, .platform, .window, .steps li').forEach((card) => {
+      card.classList.add('spot');
+      card.addEventListener('pointermove', (e) => {
+        const r = card.getBoundingClientRect();
+        card.style.setProperty('--mx', `${e.clientX - r.left}px`);
+        card.style.setProperty('--my', `${e.clientY - r.top}px`);
+      }, { passive: true });
+    });
+  }
+
   /* ── Counting numbers: <span data-count="14"> ─────────────────── */
   $$('[data-count]').forEach((el) => {
     const to = Number(el.dataset.count);
@@ -183,7 +195,7 @@
         { path: 'C:\\', items: [['Videos', 96.4], ['Applications', 71.2], ['Games', 54.0], ['Downloads', 38.0], ['Windows', 31.5], ['Pictures', 22.7], ['Documents', 18.2], ['Caches', 11.4, 1], ['Other', 9.8]] },
         { path: 'C:\\Users\\you\\Downloads', items: [['Installers', 16.2], ['Archives', 9.4], ['ISO images', 7.8], ['PDFs', 2.9], ['Other', 1.7]] },
       ];
-      const shades = ['#3a3a3c', '#353537', '#303032', '#2c2c2e', '#29292b', '#262628', '#232325', '#212123', '#1f1f21'];
+      const shades = ['#16343b', '#152f35', '#14292f', '#13252a', '#132126', '#121e22', '#121b1f', '#11191c', '#11171a'];
       const label = $('#treemapPath');
       const tiles = new Map();
 
@@ -236,7 +248,7 @@
           el.classList.toggle('safe', !!t.safe);
           el.classList.toggle('small', t.w < 96 || t.h < 50);
           el.classList.toggle('tiny', t.w < 52 || t.h < 26);
-          el.style.setProperty('--tile', t.safe ? '#3b3221' : shades[Math.min(t.k, shades.length - 1)]);
+          el.style.setProperty('--tile', t.safe ? '#2a2112' : shades[Math.min(t.k, shades.length - 1)]);
           Object.assign(el.style, { left: `${t.x + gap / 2}px`, top: `${t.y + gap / 2}px`, width: `${Math.max(0, t.w - gap)}px`, height: `${Math.max(0, t.h - gap)}px`, opacity: '1' });
         }
         for (const [n, el] of tiles) if (!seen.has(n)) Object.assign(el.style, { opacity: '0', width: '0px', height: '0px' });
@@ -293,7 +305,7 @@
           if (fill) { ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, fill); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fill(); }
         };
         line(mem, 'rgba(79,193,212,0.95)');
-        line(cpu, 'rgba(244,242,238,0.95)', 'rgba(244,242,238,0.10)');
+        line(cpu, 'rgba(247,248,248,0.95)', 'rgba(79,193,212,0.10)');
         if (cpuOut) cpuOut.textContent = `${Math.round(cpu[N - 1])}%`;
         if (memOut) memOut.textContent = `${Math.round(mem[N - 1])}%`;
       };

@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
   <!-- Link-preview card (Open Graph / Twitter), rendered to
        site/assets/og-image.png with: rsvg-convert og-image.svg -o ...
-       Black ground, Instrument Sans, teal glow, amber only for the dot. -->
+       Black ground, Geist, teal glow, amber only for the dot. -->
   <defs>
     <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0.25" stop-color="#ffffff"/>
@@ -18,14 +18,14 @@
   <g transform="translate(486 92)">
     <path d="M4 34 L19 8 L34 34" fill="none" stroke="#f5f5f7" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
     <circle cx="19" cy="26" r="3.4" fill="#f5a524"/>
-    <text x="48" y="32" font-family="Instrument Sans" font-size="32" font-weight="600" font-stretch="95%" letter-spacing="-1" fill="#f5f5f7">AllInsight</text>
+    <text x="48" y="32" font-family="Geist" font-size="32" font-weight="600" letter-spacing="-1" fill="#f5f5f7">AllInsight</text>
   </g>
 
-  <text text-anchor="middle" font-family="Instrument Sans" font-weight="600" font-stretch="88%" font-size="112" letter-spacing="-5" fill="url(#shine)">
+  <text text-anchor="middle" font-family="Geist" font-weight="600" font-size="112" letter-spacing="-5" fill="url(#shine)">
     <tspan x="600" y="290">Your device,</tspan>
     <tspan x="600" y="400">understood.</tspan>
   </text>
 
-  <text x="600" y="480" text-anchor="middle" font-family="Instrument Sans" font-size="28" fill="#a1a1a6">Storage, drive health and cleanup, measured on your own machine.</text>
-  <text x="600" y="546" text-anchor="middle" font-family="Instrument Sans" font-size="22" font-weight="500" fill="#4fc1d4">Free for Windows and Linux · No account · Works offline</text>
+  <text x="600" y="480" text-anchor="middle" font-family="Geist" font-size="28" fill="#a1a1a6">Storage, drive health and cleanup, measured on your own machine.</text>
+  <text x="600" y="546" text-anchor="middle" font-family="Geist" font-size="22" font-weight="500" fill="#4fc1d4">Free for Windows and Linux · No account · Works offline</text>
 </svg>
