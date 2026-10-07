@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Features — AllInsight</title>
 <meta name="description" content="Fourteen screens: storage map, duplicates, cleanup, drive health, live performance, processes, startup, battery and a local AI assistant. For Windows and Linux.">
-<meta name="theme-color" content="#08090a">
+<meta name="theme-color" content="#f4f2ee">
 <link rel="icon" href="/assets/favicon.ico" sizes="any">
 <link rel="icon" href="/assets/allinsight.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
@@ -20,9 +20,9 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="AllInsight: Your device, understood. Storage, drive health and cleanup, measured on your own machine.">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="preload" href="/assets/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/assets/fonts/geist-mono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/styles.css?v=6">
+<link rel="preload" href="/assets/fonts/sora-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/instrument-serif-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/styles.css?v=7">
 </head>
 <body>
 
@@ -35,7 +35,7 @@
         <path d="M14 82 L50 20 L86 82" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
         <circle cx="50" cy="66" r="9" fill="var(--amber)"/>
       </svg>
-      <span class="wordmark">AllInsight</span>
+      <span class="wordmark" aria-hidden="true">all<span class="wi">ı</span>ns<span class="wi">ı</span>ght</span>
     </a>
     <nav class="nav-links" aria-label="Pages">
       <a href="/features">Features</a>
@@ -46,65 +46,65 @@
     </nav>
     <div class="nav-right">
       <a class="nav-cta" href="/download">Download</a>
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="menu" aria-label="Menu"><span></span><span></span></button>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="menu">Menu</button>
     </div>
   </div>
   <nav class="menu" id="menu" aria-label="Pages" hidden>
-    <a href="/" style="--i:0">Home</a>
-    <a href="/features" style="--i:1">Features</a>
-    <a href="/privacy" style="--i:2">Privacy</a>
-    <a href="/safety" style="--i:3">Safety</a>
-    <a href="/ai" style="--i:4">AI</a>
-    <a href="/about" style="--i:5">About</a>
-    <a href="/download" style="--i:6">Download</a>
+    <a href="/">Home</a>
+    <a href="/features">Features</a>
+    <a href="/privacy">Privacy</a>
+    <a href="/safety">Safety</a>
+    <a href="/ai">AI</a>
+    <a href="/about">About</a>
+    <a href="/download">Download</a>
   </nav>
 </header>
 
 <main id="main">
 
-<section class="page-hero glow">
-  <canvas class="mosaic" aria-hidden="true"></canvas>
+<section class="page-hero">
   <div class="wrap">
-    <p class="eyebrow fade-up" style="--delay:0.05s">Features</p>
-    <h1 class="blur-in"><span class="w" style="--i:0">Fourteen</span> <span class="w" style="--i:1">screens.</span><br><span class="w" style="--i:2">Every</span> <span class="w" style="--i:3">one</span> <span class="w" style="--i:4">an</span> <span class="w" style="--i:5">instrument.</span></h1>
-    <p class="lede fade-up" style="--delay:0.7s">Every number on every screen comes from the hardware or the file system, measured on your machine. Where the hardware is silent, AllInsight says Unknown instead of guessing.</p>
+    <p class="label rise" style="--d:0">Features</p>
+    <h1 class="page-title rise" style="--d:1">Fourteen screens.<br><em class="accent">Every one an instrument.</em></h1>
+    <p class="lede rise" style="--d:2">Each number on every screen comes from the hardware or the file system, measured on your machine. Where the hardware is silent, AllInsight says Unknown instead of guessing.</p>
   </div>
 </section>
 
-<section class="s-white">
+<section class="section section-paper">
   <div class="wrap">
-    <div class="section-head reveal">
-      <h2>Four screens, live.</h2>
-      <p class="lede">Illustrations of the real screens, running on sample data from a typical laptop.</p>
-    </div>
+    <header class="head">
+      <p class="label reveal">See it working</p>
+      <h2 class="reveal" style="--d:1">Four screens, <em class="accent">live.</em></h2>
+      <p class="prose reveal" style="--d:2">Illustrations of the real screens, running on sample data from a typical laptop.</p>
+    </header>
 
     <div class="demo">
-      <div class="reveal">
-        <span class="eyebrow">Storage Map</span>
-        <h3>See where your space went, one level at a time.</h3>
-        <p>A parallel scan rolls every folder up into a squarified treemap, the layout that keeps tiles close to square so they are easy to compare by eye. Drilling in asks for exactly one level, which keeps it fast on a drive with millions of files.</p>
-        <p class="demo-note">Amber outline: safe to clean.</p>
+      <div>
+        <p class="label reveal">Storage Map</p>
+        <h3 class="reveal" style="--d:1">See where your space went, <em class="accent">one level at a time.</em></h3>
+        <p class="reveal" style="--d:2">A parallel scan rolls every folder up into a squarified treemap, the layout that keeps tiles close to square so they are easy to compare by eye. Drilling in asks for exactly one level, which keeps it fast on a drive with millions of files.</p>
+        <p class="demo-caption reveal" style="--d:3">Amber outline: safe to clean</p>
       </div>
-      <div class="window reveal" style="--d:1">
-        <div class="window-bar"><span class="dots"><i></i><i></i><i></i></span><b id="treemapPath">C:\</b><span class="spacer"></span></div>
+      <div class="frame reveal" style="--d:1">
+        <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><b id="treemapPath">C:\</b><span>Storage Map</span></div>
         <div class="treemap" id="treemap" role="img" aria-label="An animated treemap of a drive: Videos 96 GB, Applications 71 GB, Games 54 GB, Downloads 38 GB and smaller folders, drilling into Videos and Downloads."></div>
       </div>
     </div>
 
     <div class="demo flip">
-      <div class="reveal">
-        <span class="eyebrow">Overview</span>
-        <h3>A health score that shows its working.</h3>
-        <p>Every point on the score has a reason you can read, built from measurements by rules that can be tested. No model is needed for any of it.</p>
+      <div>
+        <p class="label reveal">Overview</p>
+        <h3 class="reveal" style="--d:1">A health score that <em class="accent">shows its working.</em></h3>
+        <p class="reveal" style="--d:2">Every point on the score has a reason you can read, built from measurements by rules that can be tested. No model is needed for any of it.</p>
       </div>
-      <div class="window reveal" style="--d:1">
-        <div class="window-bar"><span class="dots"><i></i><i></i><i></i></span><b>Device health</b><span class="spacer"></span></div>
+      <div class="frame reveal" style="--d:1">
+        <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><b>Device health</b><span>Overview</span></div>
         <div class="ring-wrap">
           <svg class="ring" id="healthRing" data-score="86" viewBox="0 0 120 120" role="img" aria-label="Device health score 86 out of 100">
             <circle class="track" cx="60" cy="60" r="52"/>
             <circle class="value" cx="60" cy="60" r="52"/>
             <text x="60" y="66" class="ring-num">0</text>
-            <text x="60" y="84" class="ring-sub">out of 100</text>
+            <text x="60" y="84" class="ring-sub">OF 100</text>
           </svg>
           <ul class="reasons">
             <li><b>Drive healthy</b> · 92% of rated life left</li>
@@ -117,128 +117,113 @@
     </div>
 
     <div class="demo">
-      <div class="reveal">
-        <span class="eyebrow">Performance</span>
-        <h3>Live, and counted the honest way.</h3>
-        <p>Processor, memory, GPU, disk and network, with ten minutes of history held in memory only. Rates come from cumulative counters, so a process exiting yields zero, never a false spike.</p>
+      <div>
+        <p class="label reveal">Performance</p>
+        <h3 class="reveal" style="--d:1">Live, and counted <em class="accent">the honest way.</em></h3>
+        <p class="reveal" style="--d:2">Processor, memory, GPU, disk and network, with ten minutes of history held in memory only. Rates come from cumulative counters, so a process exiting yields zero, never a false spike.</p>
       </div>
-      <div class="window reveal" style="--d:1">
-        <div class="window-bar"><span class="dots"><i></i><i></i><i></i></span><b>Processor and memory</b><span class="spacer"></span></div>
+      <div class="frame reveal" style="--d:1">
+        <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><b>Processor and memory</b><span>Performance</span></div>
         <canvas class="chart" id="liveChart" role="img" aria-label="A live line chart of processor and memory use."></canvas>
         <div class="legend"><span><i></i>Processor <b id="cpuNow">22%</b></span><span class="mem"><i></i>Memory <b id="memNow">61%</b></span></div>
       </div>
     </div>
 
     <div class="demo flip">
-      <div class="reveal">
-        <span class="eyebrow">Duplicates</span>
-        <h3>Matched by content. Never by name.</h3>
-        <p>Three passes, each cheaper than the next is expensive: group by exact size without opening a file, hash the first and last 64 KB, then hash in full only what survives. Two files match only when every byte does.</p>
-        <p class="demo-note">Example scan of a home folder.</p>
+      <div>
+        <p class="label reveal">Duplicates</p>
+        <h3 class="reveal" style="--d:1">Matched by content. <em class="accent">Never by name.</em></h3>
+        <p class="reveal" style="--d:2">Three passes, each cheaper than the next is expensive: group by exact size without opening a file, hash the first and last 64 KB, then hash in full only what survives. Two files match only when every byte does.</p>
+        <p class="demo-caption reveal" style="--d:3">Example scan of a home folder</p>
       </div>
-      <div class="window reveal" style="--d:1">
-        <div class="window-bar"><span class="dots"><i></i><i></i><i></i></span><b>Finding duplicates</b><span class="spacer"></span></div>
-        <div id="pipeline">
-          <div class="pipeline">
-            <div class="stage-box"><b data-count="48210">48,210</b><span>files scanned</span></div>
-            <div class="stage-box"><b data-count="3904">3,904</b><span>share a size with another file</span></div>
-            <div class="stage-box"><b data-count="212">212</b><span>survive the partial hash</span></div>
-            <div class="stage-box"><b data-count="167">167</b><span>identical, by full BLAKE3</span></div>
-          </div>
-          <div class="bars"><i data-v="48210"></i><i data-v="3904"></i><i data-v="212"></i><i data-v="167"></i></div>
+      <div class="frame reveal" style="--d:1" id="pipeline">
+        <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><b>Finding duplicates</b><span>Duplicates</span></div>
+        <div class="pipeline">
+          <div class="stage"><b data-count="48210">48,210</b><span>files scanned</span></div>
+          <div class="stage"><b data-count="3904">3,904</b><span>share a size with another file</span></div>
+          <div class="stage"><b data-count="212">212</b><span>survive the partial hash</span></div>
+          <div class="stage"><b data-count="167">167</b><span>identical, by full BLAKE3</span></div>
         </div>
+        <div class="bars"><i data-v="48210"></i><i data-v="3904"></i><i data-v="212"></i><i data-v="167"></i></div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="s-gray">
+<section class="section">
   <div class="wrap">
-    <div class="section-head reveal">
-      <h2>The full set of instruments.</h2>
-    </div>
+    <header class="head">
+      <p class="label reveal">Every screen</p>
+      <h2 class="reveal" style="--d:1">The full set of <em class="accent">instruments.</em></h2>
+    </header>
     <div class="screens">
       <div class="screen reveal" style="--d:0">
-        <span class="screen-num">01</span>
-        <h3>Overview</h3>
+        <h3><span>01</span>Overview</h3>
         <p>A device health score with its reasons, four vital signs, ranked recommendations, and a plain-language summary.</p>
       </div>
       <div class="screen reveal" style="--d:1">
-        <span class="screen-num">02</span>
-        <h3>Storage Map</h3>
+        <h3><span>02</span>Storage Map</h3>
         <p>A squarified treemap of one folder level at a time, plus a category breakdown of everything scanned.</p>
       </div>
       <div class="screen reveal" style="--d:2">
-        <span class="screen-num">03</span>
-        <h3>Large Files</h3>
+        <h3><span>03</span>Large Files</h3>
         <p>The biggest files on the device, with a risk classification and a route to the Recycle Bin.</p>
       </div>
       <div class="screen reveal" style="--d:0">
-        <span class="screen-num">04</span>
-        <h3>Duplicates</h3>
+        <h3><span>04</span>Duplicates</h3>
         <p>Files with identical contents, found by size, then partial hash, then full BLAKE3. Never by name.</p>
       </div>
       <div class="screen reveal" style="--d:1">
-        <span class="screen-num">05</span>
-        <h3>Cleanup</h3>
+        <h3><span>05</span>Cleanup</h3>
         <p>Thirteen typed cleanup categories, a dry run, and a confirmation that states what will and will not be touched.</p>
       </div>
       <div class="screen reveal" style="--d:2">
-        <span class="screen-num">06</span>
-        <h3>Performance</h3>
+        <h3><span>06</span>Performance</h3>
         <p>Live processor, memory, GPU, disk and network, with ten minutes of history.</p>
       </div>
       <div class="screen reveal" style="--d:0">
-        <span class="screen-num">07</span>
-        <h3>Processes</h3>
+        <h3><span>07</span>Processes</h3>
         <p>Publisher and resource use for every process, and an End button that refuses on the ones the system needs.</p>
       </div>
       <div class="screen reveal" style="--d:1">
-        <span class="screen-num">08</span>
-        <h3>Startup</h3>
+        <h3><span>08</span>Startup</h3>
         <p>Startup entries from the Run keys, Startup folders and XDG autostart, enabled and disabled the native way.</p>
       </div>
       <div class="screen reveal" style="--d:2">
-        <span class="screen-num">09</span>
-        <h3>Applications</h3>
+        <h3><span>09</span>Applications</h3>
         <p>Installed applications with measured sizes, removed through the vendor's own uninstaller.</p>
       </div>
       <div class="screen reveal" style="--d:0">
-        <span class="screen-num">10</span>
-        <h3>Battery</h3>
+        <h3><span>10</span>Battery</h3>
         <p>Charge, design capacity, cycle count and health, shown only where the hardware actually reports them.</p>
       </div>
       <div class="screen reveal" style="--d:1">
-        <span class="screen-num">11</span>
-        <h3>Drive Health</h3>
+        <h3><span>11</span>Drive Health</h3>
         <p>Model, bus, wear, temperature, power-on hours and error counts, with Unknown where the drive is silent.</p>
       </div>
       <div class="screen reveal" style="--d:2">
-        <span class="screen-num">12</span>
-        <h3>AllInsight AI</h3>
+        <h3><span>12</span>AllInsight AI</h3>
         <p>A local assistant, optional, that explains measurements and cannot act on anything.</p>
       </div>
       <div class="screen reveal" style="--d:0">
-        <span class="screen-num">13</span>
-        <h3>Activity</h3>
+        <h3><span>13</span>Activity</h3>
         <p>Cleanup history and an event log, recorded as totals rather than file lists.</p>
       </div>
       <div class="screen reveal" style="--d:1">
-        <span class="screen-num">14</span>
-        <h3>Settings</h3>
+        <h3><span>14</span>Settings</h3>
         <p>Eleven sections, including the real protected-path list read back from the backend. Every switch does something.</p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="s-white">
+<section class="section section-paper">
   <div class="wrap">
-    <div class="section-head reveal">
-      <span class="eyebrow">On Linux</span>
-      <h2>Native on Linux. Never as root.</h2>
-      <p class="lede">Everything AllInsight cleans belongs to you, and drive health comes from UDisks2 without privilege.</p>
-    </div>
+    <header class="head">
+      <p class="label reveal">On Linux</p>
+      <h2 class="reveal" style="--d:1">Native on Linux, <em class="accent">never as root.</em></h2>
+      <p class="prose reveal" style="--d:2">Everything AllInsight cleans belongs to you, and drive health comes from UDisks2 without privilege.</p>
+    </header>
     <div class="table-wrap reveal">
       <table class="table stack">
         <thead><tr><th>Screen</th><th>Where it reads from on Linux</th></tr></thead>
@@ -256,14 +241,13 @@
   </div>
 </section>
 
-<section class="s-black center glow">
-  <canvas class="mosaic" aria-hidden="true"></canvas>
+<section class="cta-band dark">
   <div class="wrap">
-    <h2 class="reveal">Measure everything.<br>Keep what matters.</h2>
-    <p class="lede reveal" style="--d:1">Free for Windows and Linux. No account, ever.</p>
-    <div class="actions reveal" style="--d:2">
+    <p class="label reveal">Free for Windows &amp; Linux</p>
+    <h2 class="reveal" style="--d:1">Measure everything. <em class="accent">Keep what matters.</em></h2>
+    <div class="cta reveal" style="--d:2">
       <a class="btn" href="/download">Download AllInsight</a>
-      <a class="btn btn-ghost" href="/features">See every feature</a>
+      <a class="link" href="/features">See every feature<span class="arrow" aria-hidden="true">→</span></a>
     </div>
   </div>
 </section>
@@ -273,42 +257,36 @@
 <footer class="foot">
   <div class="wrap">
     <div class="foot-top">
-      <div class="foot-col">
+      <div class="foot-id">
         <a class="foot-brand" href="/" aria-label="AllInsight home">
           <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
         <path d="M14 82 L50 20 L86 82" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
         <circle cx="50" cy="66" r="9" fill="var(--amber)"/>
       </svg>
-          <span class="wordmark">AllInsight</span><span class="tm">™</span>
+          <span class="wordmark" aria-hidden="true">all<span class="wi">ı</span>ns<span class="wi">ı</span>ght</span><span class="tm">™</span>
         </a>
-        <p class="foot-tag">Your device, understood.</p>
+        <p class="foot-tag">Your device, <em class="accent">understood.</em></p>
       </div>
-      <nav class="foot-col" aria-label="Explore">
-        <h4>Explore</h4>
+      <nav class="foot-links" aria-label="Footer">
         <a href="/features">Features</a>
         <a href="/privacy">Privacy</a>
         <a href="/safety">Safety</a>
-        <a href="/ai">AllInsight AI</a>
-      </nav>
-      <nav class="foot-col" aria-label="AllInsight">
-        <h4>AllInsight</h4>
+        <a href="/ai">AI</a>
         <a href="/about">About</a>
         <a href="/download">Download</a>
-        <a href="/third-party-licenses.txt">Licences</a>
       </nav>
-      <div class="foot-col">
-        <h4>Contact</h4>
-        <p><a class="mail" href="mailto:hello@allinsight.biz">hello@allinsight.biz</a></p>
-        <p>This site loads nothing from anywhere else: no fonts, scripts or analytics from third parties, the same rule the application follows.</p>
+      <div class="foot-text">
+        <p class="foot-contact">Questions, feedback or press: <a href="mailto:hello@allinsight.biz">hello@allinsight.biz</a></p>
+        <p class="foot-note">This site loads nothing from anywhere else. No fonts, scripts or analytics from third parties, the same rule the application follows.</p>
       </div>
     </div>
     <div class="foot-base">
-      <span>Copyright &copy; 2026 AllInsight. Released under the MIT licence.</span>
+      <span>&copy; 2026 AllInsight</span>
       <span>Windows &amp; Linux &middot; Works offline</span>
     </div>
   </div>
 </footer>
 
-<script src="/app.js?v=6" defer></script>
+<script src="/app.js?v=7" defer></script>
 </body>
 </html>

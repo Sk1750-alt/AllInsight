@@ -2,8 +2,8 @@
   AllInsight — site behaviour, shared by every page.
 
   No dependencies, no third-party requests. Each piece below looks for its
-  own markup and does nothing on pages that do not have it. Scroll effects
-  share one throttled handler, live demos pause while off screen, and
+  own markup and does nothing on pages that do not have it. Everything that
+  moves pauses while off screen or in a background tab, and
   prefers-reduced-motion shows each piece in its finished state instead.
 */
 
@@ -64,7 +64,7 @@
     if (toggle && menu) {
       const set = (open) => {
         toggle.setAttribute('aria-expanded', String(open));
-        toggle.setAttribute('aria-label', open ? 'Close menu' : 'Menu');
+        toggle.textContent = open ? 'Close' : 'Menu';
         menu.hidden = !open;
         document.documentElement.classList.toggle('menu-open', open);
       };
@@ -78,7 +78,7 @@
   /* ── Nav state and the safety rule ────────────────────────────── */
   {
     const nav = $('#nav');
-    const darks = $$('.hero, .s-black, .blackout');
+    const darks = $$('.dark');
     const gatesEl = $('#gates');
     const items = $$('.gates-list li');
     let queued = false;
@@ -89,8 +89,7 @@
         nav.classList.toggle('is-stuck', scrollY > 8);
         nav.classList.toggle('is-dark', darks.some((d) => {
           const r = d.getBoundingClientRect();
-          if (!(r.top < 60 && r.bottom > 26)) return false;
-          return !d.classList.contains('blackout') || d.classList.contains('on-dark');
+          return r.top < 32 && r.bottom > 32;
         }));
       }
       if (gatesEl) {
@@ -103,145 +102,6 @@
     addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(frame); } }, { passive: true });
     addEventListener('resize', frame, { passive: true });
     frame();
-  }
-
-  /* ── Scroll-linked effects ─────────────────────────────────────
-     The hero window straightens as it is scrolled to, long sentences light
-     up word by word, and the privacy section darkens the page on the way in.
-     All read from one rAF-throttled scroll handler. */
-  {
-    const device = $('.stage');
-    const highlights = $$('.highlight').map((el) => ({ el, words: $$('.w', el) }));
-    const blackouts = $$('.blackout');
-    const app = $('.device .app');
-    if (app) setTimeout(() => app.classList.add('is-on'), reduced ? 0 : 900);
-    let queued = false;
-    const frame = () => {
-      queued = false;
-      const vh = innerHeight;
-      if (device && !reduced) {
-        const r = device.getBoundingClientRect();
-        const p = clamp((vh - r.top) / (vh * 0.9), 0, 1);
-        device.style.setProperty('--p', p.toFixed(3));
-      }
-      for (const { el, words } of highlights) {
-        const r = el.getBoundingClientRect();
-        const p = reduced ? 1 : clamp((vh * 0.85 - r.top) / (r.height + vh * 0.35), 0, 1);
-        const n = Math.round(p * words.length);
-        words.forEach((w, i) => w.classList.toggle('lit', i < n));
-      }
-      for (const el of blackouts) {
-        const r = el.getBoundingClientRect();
-        const d = reduced ? 1 : clamp((vh * 0.9 - r.top) / (vh * 0.55), 0, 1);
-        el.style.setProperty('--d', d.toFixed(3));
-        el.classList.toggle('on-dark', d > 0.5);
-      }
-    };
-    addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(frame); } }, { passive: true });
-    addEventListener('resize', frame, { passive: true });
-    frame();
-  }
-
-  /* ── Disk mosaic: the background of every page header ──────────
-     A drive drawn the way the Storage Map draws it: nested rectangles
-     split along their longer side, in hairlines. A scan walks through the
-     folders in order, lighting each one briefly as it is measured; a few
-     light amber, the colour of "safe to clean". After a few passes the
-     drive is mapped afresh. One canvas per .mosaic. */
-  $$('canvas.mosaic').forEach((canvas) => {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    let w = 0, h = 0, cells = [], at = 0, passes = 0, fade = 1, fading = 0;
-    let running = false, raf = 0, last = 0, step = 0;
-
-    const split = (x, y, cw, ch, depth) => {
-      const area = cw * ch;
-      if (depth >= 5 || area < 7000 || (depth >= 2 && Math.random() < 0.22)) {
-        cells.push({ x, y, w: cw, h: ch, glow: 0, amber: Math.random() < 0.05 });
-        return;
-      }
-      const n = 2 + Math.floor(Math.random() * 3);
-      const weights = Array.from({ length: n }, () => 0.35 + Math.random());
-      const total = weights.reduce((a, b) => a + b, 0);
-      let off = 0;
-      for (const wt of weights) {
-        const f = wt / total;
-        if (cw >= ch) { split(x + off, y, cw * f, ch, depth + 1); off += cw * f; }
-        else { split(x, y + off, cw, ch * f, depth + 1); off += ch * f; }
-      }
-    };
-    const build = () => {
-      const r = canvas.getBoundingClientRect();
-      const dpr = Math.min(devicePixelRatio || 1, 2);
-      w = r.width; h = r.height;
-      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      cells = []; at = 0;
-      split(0, 0, w, h, 0);
-    };
-    const draw = () => {
-      ctx.clearRect(0, 0, w, h);
-      ctx.globalAlpha = fade;
-      ctx.lineWidth = 1;
-      for (const c of cells) {
-        const x = Math.round(c.x) + 2.5, y = Math.round(c.y) + 2.5;
-        const cw = Math.max(0, Math.round(c.w) - 5), ch = Math.max(0, Math.round(c.h) - 5);
-        if (c.glow > 0.01) {
-          // Big folders light at their outline; small ones fill.
-          const k = Math.min(1, 26000 / (c.w * c.h));
-          ctx.fillStyle = c.amber ? `rgba(245,165,36,${c.glow * 0.16 * k})` : `rgba(79,193,212,${c.glow * 0.12 * k})`;
-          ctx.fillRect(x, y, cw, ch);
-          ctx.strokeStyle = c.amber ? `rgba(245,165,36,${0.07 + c.glow * 0.5})` : `rgba(79,193,212,${0.07 + c.glow * 0.4})`;
-        } else {
-          ctx.strokeStyle = 'rgba(255,255,255,0.065)';
-        }
-        ctx.strokeRect(x, y, cw, ch);
-      }
-      ctx.globalAlpha = 1;
-    };
-    const loop = (now) => {
-      const dt = Math.min(50, now - (last || now)); last = now;
-      for (const c of cells) if (c.glow > 0) c.glow = Math.max(0, c.glow - dt * 0.00045);
-      step += dt;
-      while (step > 70 && !fading) {
-        step -= 70;
-        if (at < cells.length) { cells[at].glow = 1; at++; }
-        else if (++passes % 3 === 0) { fading = -1; }
-        else { at = 0; step = -1800; }
-      }
-      if (fading) {
-        fade += fading * dt * 0.0015;
-        if (fade <= 0) { fade = 0; build(); fading = 1; step = 0; }
-        if (fade >= 1 && fading > 0) { fade = 1; fading = 0; }
-      }
-      draw();
-      raf = requestAnimationFrame(loop);
-    };
-    const start = () => { if (running || reduced) return; running = true; last = 0; raf = requestAnimationFrame(loop); };
-    const stop = () => { running = false; cancelAnimationFrame(raf); };
-
-    build(); draw();
-    if (reduced) return;
-    let timer = 0;
-    addEventListener('resize', () => { clearTimeout(timer); timer = setTimeout(() => { build(); draw(); }, 200); }, { passive: true });
-    let visible = false;
-    whileVisible(canvas, (v) => { visible = v; (v && !document.hidden) ? start() : stop(); });
-    document.addEventListener('visibilitychange', () => { (visible && !document.hidden) ? start() : stop(); });
-  });
-
-  /* ── Lock closes when it arrives ──────────────────────────────── */
-  $$('.lock').forEach((lock) => once(lock, () => lock.classList.add('in')));
-
-  /* ── A light that follows the pointer around each card's border ── */
-  if (matchMedia('(hover: hover)').matches) {
-    $$('.tile, .screen, .layer, .platform, .window, .steps li').forEach((card) => {
-      card.classList.add('spot');
-      card.addEventListener('pointermove', (e) => {
-        const r = card.getBoundingClientRect();
-        card.style.setProperty('--mx', `${e.clientX - r.left}px`);
-        card.style.setProperty('--my', `${e.clientY - r.top}px`);
-      }, { passive: true });
-    });
   }
 
   /* ── Counting numbers: <span data-count="14"> ─────────────────── */
@@ -282,7 +142,7 @@
         { path: 'C:\\', items: [['Videos', 96.4], ['Applications', 71.2], ['Games', 54.0], ['Downloads', 38.0], ['Windows', 31.5], ['Pictures', 22.7], ['Documents', 18.2], ['Caches', 11.4, 1], ['Other', 9.8]] },
         { path: 'C:\\Users\\you\\Downloads', items: [['Installers', 16.2], ['Archives', 9.4], ['ISO images', 7.8], ['PDFs', 2.9], ['Other', 1.7]] },
       ];
-      const shades = ['#16343b', '#152f35', '#14292f', '#13252a', '#132126', '#121e22', '#121b1f', '#11191c', '#11171a'];
+      const shades = ['#3a4252', '#343b4a', '#2f3542', '#2b303c', '#282c37', '#252933', '#22262f', '#20232b', '#1e2128'];
       const label = $('#treemapPath');
       const tiles = new Map();
 
@@ -323,7 +183,7 @@
           let el = tiles.get(t.n);
           if (!el) {
             el = document.createElement('div');
-            el.className = 'tm-tile';
+            el.className = 'tile';
             el.innerHTML = '<b></b><i></i>';
             el.style.cssText = `left:${W / 2}px;top:${H / 2}px;width:0;height:0;opacity:0`;
             box.appendChild(el); tiles.set(t.n, el);
@@ -335,7 +195,7 @@
           el.classList.toggle('safe', !!t.safe);
           el.classList.toggle('small', t.w < 96 || t.h < 50);
           el.classList.toggle('tiny', t.w < 52 || t.h < 26);
-          el.style.setProperty('--tile', t.safe ? '#2a2112' : shades[Math.min(t.k, shades.length - 1)]);
+          el.style.setProperty('--tile', t.safe ? '#3a3326' : shades[Math.min(t.k, shades.length - 1)]);
           Object.assign(el.style, { left: `${t.x + gap / 2}px`, top: `${t.y + gap / 2}px`, width: `${Math.max(0, t.w - gap)}px`, height: `${Math.max(0, t.h - gap)}px`, opacity: '1' });
         }
         for (const [n, el] of tiles) if (!seen.has(n)) Object.assign(el.style, { opacity: '0', width: '0px', height: '0px' });
@@ -359,7 +219,7 @@
       const score = Number(ring.dataset.score);
       const value = $('.value', ring);
       const num = $('.ring-num', ring);
-      const wrap = ring.closest('.window');
+      const wrap = ring.closest('.frame');
       if (wrap) wrap.classList.add('is-live');
       value.style.strokeDashoffset = String(327 * (1 - score / 100));
       tween(0, score, 2200, (v) => { num.textContent = Math.round(v); });
@@ -383,7 +243,7 @@
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         const W = r.width, H = r.height;
         ctx.clearRect(0, 0, W, H);
-        ctx.strokeStyle = 'rgba(245,245,247,0.08)'; ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(244,242,238,0.07)'; ctx.lineWidth = 1;
         for (let g = 1; g < 4; g++) { const y = (H / 4) * g; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
         const line = (arr, color, fill) => {
           ctx.beginPath();
@@ -391,8 +251,8 @@
           ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.stroke();
           if (fill) { ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, fill); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fill(); }
         };
-        line(mem, 'rgba(79,193,212,0.95)');
-        line(cpu, 'rgba(247,248,248,0.95)', 'rgba(79,193,212,0.10)');
+        line(mem, 'rgba(245,165,36,0.9)');
+        line(cpu, 'rgba(244,242,238,0.95)', 'rgba(244,242,238,0.10)');
         if (cpuOut) cpuOut.textContent = `${Math.round(cpu[N - 1])}%`;
         if (memOut) memOut.textContent = `${Math.round(mem[N - 1])}%`;
       };

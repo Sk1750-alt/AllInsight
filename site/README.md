@@ -1,8 +1,9 @@
 # AllInsight landing site
 
 Static HTML, CSS and JavaScript. No build step, no framework, no external
-requests. Geist and Geist Mono (SIL OFL, licence beside them) are served
-from `assets/fonts/`. Nginx serves this directory as-is.
+requests. The two webfonts, Sora and Instrument Serif Italic (both SIL OFL,
+licences beside them), are served from `assets/fonts/`. Nginx serves this
+directory as-is.
 
 ```
 site/
@@ -30,9 +31,9 @@ Links use clean paths (`/features`, not `/features.html`); nginx maps them
 with `try_files $uri $uri.html $uri/ =404` and serves `404.html` through
 `error_page 404 /404.html`.
 
-The moving parts in `app.js` each look for their own markup and do nothing
-where it is absent: the background field (`canvas.field`, light or dark),
-counting numbers (`data-count`), the treemap, health ring, live chart,
+The home page lists the other pages as an editorial index (`.index`)
+rather than cards. The moving parts in `app.js` each look for their own
+markup and do nothing where it is absent: counting numbers (`data-count`), the treemap, health ring, live chart,
 duplicate pipeline and assistant demos on Features and AI, and the safety
 rail. All of them pause off screen and in background tabs, and
 `prefers-reduced-motion` shows each in its finished state.
@@ -50,37 +51,27 @@ way; nginx needs no such help.
 
 ## Visuals
 
-Dark, quiet and precise: a near-black ground (#08090a), hairline borders,
-and one teal light. Geist for everything, Geist Mono for small technical
-labels. Amber is kept for the dot in the mark and for "safe to clean".
-
-Every page header sits on the same background: a disk drawn the way the
-Storage Map draws it, nested rectangles in hairlines (`canvas.mosaic`, drawn
-by `app.js`). A scan walks through the folders in order, lighting each as it
-is measured; large folders light at their outline, small ones fill, and a few
-light amber for "safe to clean". Every third pass the drive is mapped afresh.
-It is different on every visit and pauses when off screen.
-
-The home page opens on the app's Overview screen in its dark theme, drawn in
-HTML with a glowing edge, which straightens from a tilt as it is scrolled to.
-
-Motion, all in `app.js` and `styles.css`:
-
-- headlines settle out of a soft blur, word by word, on load
-- the announcement pill has a light turning around its border
-- cards (`.tile`, `.screen`, `.layer`, `.platform`, `.window`, steps) carry
-  a light that follows the pointer around their border, on hover devices
-- long sentences (`.highlight`) light up word by word as they are read
-- `.blackout` statements brighten and sharpen out of the dark on scroll
-- tiles, stats and lists rise out of a slight blur; counters count
-- the Features and AI demos: treemap, health ring, live chart, duplicate
-  pipeline, assistant conversation
-
-`prefers-reduced-motion` shows every piece in its finished state.
-`assets/og-image.png` is rendered from `../assets/social/og-image.svg`.
+The page follows the brand kit: Paper ground with a faint drawn grain, Ink
+text, Graphite for the privacy section, Sora Light headlines, hairline rules
+instead of cards, and Insight Amber only for the dot in the mark and small
+status marks. Instrument Serif Italic is the single accent: a few words per
+headline, the method numerals and the zero, never body text.
 
 `styles.css` and `app.js` are linked with a `?v=` query. Bump it when either
 changes, because nginx lets browsers cache them for an hour.
+
+The logo is the A·i mark (an A with a lowercase i inside it) and the
+lowercase wordmark, whose two i's are dotless with an amber dot set in CSS.
+Both are inline SVG and HTML, so nothing extra loads. Three animations, all
+CSS: the mark draws itself on load (the A, then the i, then the dot drops and
+sends out two scan rings, in the order of the promo kit's logo reveal); the
+app icon builds itself when the download section arrives; and one amber point
+of light stops at the wall in the privacy section. `prefers-reduced-motion`
+shows each in its finished state.
+
+`assets/allinsight.svg`, `favicon.ico` and `apple-touch-icon.png` are the
+brand kit's app icon: Slate tile, full mark above 32 px, the heavier small
+mark at 16 and 32 px.
 
 ## Before every deploy
 

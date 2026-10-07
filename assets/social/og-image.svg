@@ -1,31 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
   <!-- Link-preview card (Open Graph / Twitter), rendered to
        site/assets/og-image.png with: rsvg-convert og-image.svg -o ...
-       Black ground, Geist, teal glow, amber only for the dot. -->
-  <defs>
-    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0.25" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#9a9aa0"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="0.5" cy="1" r="0.6">
-      <stop offset="0" stop-color="#4fc1d4" stop-opacity="0.35"/>
-      <stop offset="1" stop-color="#4fc1d4" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <rect width="1200" height="630" fill="#000"/>
-  <rect width="1200" height="630" fill="url(#glow)"/>
+       Paper ground, Ink text, Sora, Amber only for the dot and status marks. -->
+  <rect width="1200" height="630" fill="#F4F2EE"/>
 
-  <g transform="translate(486 92)">
-    <path d="M4 34 L19 8 L34 34" fill="none" stroke="#f5f5f7" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="19" cy="26" r="3.4" fill="#f5a524"/>
-    <text x="48" y="32" font-family="Geist" font-size="32" font-weight="600" letter-spacing="-1" fill="#f5f5f7">AllInsight</text>
+  <!-- Wordmark: the A·i mark and lowercase name, as on the launch poster. -->
+  <g transform="translate(80 70)">
+    <path d="M4 34 L19 8 L34 34" fill="none" stroke="#111318" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="19" y1="29" x2="19" y2="34" stroke="#111318" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="19" cy="21" r="3" fill="#F5A524"/>
+    <text x="50" y="33" font-family="Sora" font-size="34" font-weight="600" fill="#111318">allinsight</text>
   </g>
 
-  <text text-anchor="middle" font-family="Geist" font-weight="600" font-size="112" letter-spacing="-5" fill="url(#shine)">
-    <tspan x="600" y="290">Your device,</tspan>
-    <tspan x="600" y="400">understood.</tspan>
+  <text font-family="Sora" font-weight="600" font-size="84" fill="#111318" letter-spacing="-2">
+    <tspan x="76" y="262">Your device,</tspan>
+    <tspan x="76" y="360">understood.</tspan>
   </text>
 
-  <text x="600" y="480" text-anchor="middle" font-family="Geist" font-size="28" fill="#a1a1a6">Storage, drive health and cleanup, measured on your own machine.</text>
-  <text x="600" y="546" text-anchor="middle" font-family="Geist" font-size="22" font-weight="500" fill="#4fc1d4">Free for Windows and Linux · No account · Works offline</text>
+  <text font-family="Sora" font-weight="400" font-size="28" fill="#5A606B">
+    <tspan x="80" y="430">Storage, drive health and cleanup,</tspan>
+    <tspan x="80" y="470">measured on your own machine.</tspan>
+  </text>
+
+  <line x1="80" y1="530" x2="1120" y2="530" stroke="#DAD6CE" stroke-width="2"/>
+  <g font-family="Sora" font-size="24" fill="#111318">
+    <circle cx="88" cy="570" r="6" fill="#F5A524"/><text x="104" y="578">Windows &amp; Linux</text>
+    <circle cx="356" cy="570" r="6" fill="#F5A524"/><text x="372" y="578">Works offline</text>
+    <circle cx="590" cy="570" r="6" fill="#F5A524"/><text x="606" y="578">No account</text>
+    <circle cx="804" cy="570" r="6" fill="#F5A524"/><text x="820" y="578">No telemetry</text>
+  </g>
+
+  <!-- App icon tile, from assets/logo/allinsight-app-icon.svg. -->
+  <g transform="translate(830 150) scale(2.9)">
+    <rect x="0.5" y="0.5" width="99" height="99" rx="22" fill="#1B1F27" stroke="#2A2F38" stroke-width="1"/>
+    <g transform="translate(19 19) scale(0.62)">
+      <path d="M12 84 L50 18 L88 84" fill="none" stroke="#F4F2EE" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="50" y1="72" x2="50" y2="84" stroke="#F4F2EE" stroke-width="12" stroke-linecap="round"/>
+      <circle cx="50" cy="54" r="7" fill="#F5A524"/>
+    </g>
+  </g>
 </svg>

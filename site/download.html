@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Download — AllInsight for Windows and Linux</title>
 <meta name="description" content="Download AllInsight 1.0, free, for Windows 10 and 11 and Linux (.deb, .rpm, AppImage). No account, works offline from the first launch.">
-<meta name="theme-color" content="#08090a">
+<meta name="theme-color" content="#f4f2ee">
 <link rel="icon" href="/assets/favicon.ico" sizes="any">
 <link rel="icon" href="/assets/allinsight.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
@@ -20,9 +20,9 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="AllInsight: Your device, understood. Storage, drive health and cleanup, measured on your own machine.">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="preload" href="/assets/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/assets/fonts/geist-mono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/styles.css?v=6">
+<link rel="preload" href="/assets/fonts/sora-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/instrument-serif-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/styles.css?v=7">
 </head>
 <body>
 
@@ -35,7 +35,7 @@
         <path d="M14 82 L50 20 L86 82" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
         <circle cx="50" cy="66" r="9" fill="var(--amber)"/>
       </svg>
-      <span class="wordmark">AllInsight</span>
+      <span class="wordmark" aria-hidden="true">all<span class="wi">ı</span>ns<span class="wi">ı</span>ght</span>
     </a>
     <nav class="nav-links" aria-label="Pages">
       <a href="/features">Features</a>
@@ -46,41 +46,46 @@
     </nav>
     <div class="nav-right">
       <a class="nav-cta" href="/download">Download</a>
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="menu" aria-label="Menu"><span></span><span></span></button>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="menu">Menu</button>
     </div>
   </div>
   <nav class="menu" id="menu" aria-label="Pages" hidden>
-    <a href="/" style="--i:0">Home</a>
-    <a href="/features" style="--i:1">Features</a>
-    <a href="/privacy" style="--i:2">Privacy</a>
-    <a href="/safety" style="--i:3">Safety</a>
-    <a href="/ai" style="--i:4">AI</a>
-    <a href="/about" style="--i:5">About</a>
-    <a href="/download" style="--i:6">Download</a>
+    <a href="/">Home</a>
+    <a href="/features">Features</a>
+    <a href="/privacy">Privacy</a>
+    <a href="/safety">Safety</a>
+    <a href="/ai">AI</a>
+    <a href="/about">About</a>
+    <a href="/download">Download</a>
   </nav>
 </header>
 
 <main id="main">
 
-<section class="page-hero glow">
-  <canvas class="mosaic" aria-hidden="true"></canvas>
+<section class="page-hero">
   <div class="wrap">
-    <svg class="app-icon" id="appIcon" viewBox="0 0 100 100" role="img" aria-label="The AllInsight app icon">
-      <rect class="tile-bg" x="0.5" y="0.5" width="99" height="99" rx="22"/>
-      <g transform="translate(19 19) scale(0.62)">
-        <path class="mark-a" d="M12 84 L50 18 L88 84" pathLength="1"/>
-        <line class="mark-stem" x1="50" y1="72" x2="50" y2="84"/>
-        <circle class="mark-dot" cx="50" cy="54" r="7"/>
-      </g>
-    </svg>
-    <p class="eyebrow fade-up" style="--delay:0.05s">Download</p>
-    <h1 class="blur-in"><span class="w" style="--i:0">AllInsight</span> <span id="dlVersion"><span class="w" style="--i:1">1.0.0</span></span></h1>
-    <p class="lede fade-up" style="--delay:0.7s">Free. Runs as an ordinary user. Works offline from the first launch. No account, ever.</p>
+    <p class="label rise" style="--d:0">Download</p>
+    <h1 class="page-title rise" style="--d:1">Free. <em class="accent">Yours to keep.</em></h1>
+    <p class="lede rise" style="--d:2">Runs as an ordinary user. Works offline from the first launch. No account, ever.</p>
   </div>
 </section>
-
-<section class="s-white" id="download" style="padding-top:clamp(56px,7vw,88px)">
+<!-- ───────────────────────── Download ───────────────────────── -->
+<section class="section section-paper" id="download">
   <div class="wrap">
+    <header class="head head-center">
+      <svg class="app-icon" id="appIcon" viewBox="0 0 100 100" role="img" aria-label="The AllInsight app icon">
+        <rect class="tile" x="0.5" y="0.5" width="99" height="99" rx="22"/>
+        <g transform="translate(19 19) scale(0.62)">
+          <path class="mark-a" d="M12 84 L50 18 L88 84" pathLength="1"/>
+          <line class="mark-stem" x1="50" y1="72" x2="50" y2="84"/>
+          <circle class="mark-dot" cx="50" cy="54" r="7"/>
+        </g>
+      </svg>
+      <p class="label reveal">Version</p>
+      <h2 class="reveal" style="--d:1">AllInsight <span id="dlVersion">1.0.0</span></h2>
+      <p class="prose reveal" style="--d:2">Free. Runs as an ordinary user. Works offline from the first launch.</p>
+    </header>
+
     <div class="platforms">
       <article class="platform reveal">
         <header>
@@ -105,6 +110,7 @@
           </dl>
         </details>
       </article>
+
       <article class="platform reveal" style="--d:1">
         <header>
           <h3>Linux</h3>
@@ -133,39 +139,43 @@
         </details>
       </article>
     </div>
-    <p class="fine">Licence <span id="dlLicence">MIT</span> &middot; <a href="/third-party-licenses.txt">Third-party licences</a></p>
+
+    <p class="fine reveal">
+      Licence <span id="dlLicence">MIT</span> &nbsp;·&nbsp; <a href="third-party-licenses.txt">Third-party licences</a>
+    </p>
   </div>
 </section>
 
-<section class="s-gray">
+
+<section class="section">
   <div class="wrap">
     <div class="split">
       <div class="reveal">
-        <span class="eyebrow">Windows requirements</span>
-        <h3>Windows 10 or 11, x64.</h3>
+        <p class="label">Windows requirements</p>
+        <h3>Windows 10 or 11, <em class="accent">x64.</em></h3>
         <p>Windows 10 version 1809 or later, or Windows 11. The installer adds the Microsoft Edge WebView2 runtime if it is missing; Windows 11 already has it. That one step needs a connection. The application itself never does.</p>
       </div>
       <div class="reveal" style="--d:1">
-        <span class="eyebrow">Linux requirements</span>
-        <h3>Any modern distribution.</h3>
+        <p class="label">Linux requirements</p>
+        <h3>Any modern <em class="accent">distribution.</em></h3>
         <p>x64 with WebKitGTK 4.1, preinstalled on GNOME and KDE desktops; the .deb and .rpm pull it in. Optional: <code>udisks2</code> for drive health, and <code>libayatana-appindicator3</code> for the tray icon.</p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="s-white" id="model">
+<section class="section section-paper" id="model">
   <div class="wrap">
-    <div class="section-head reveal">
-      <span class="eyebrow">Optional</span>
-      <h2>Add a local model in four steps.</h2>
-      <p class="lede">AllInsight works fully without one. A model only adds conversation, and you do this once, deliberately.</p>
-    </div>
+    <header class="head">
+      <p class="label reveal">Optional</p>
+      <h2 class="reveal" style="--d:1">Add a local model <em class="accent">in four steps.</em></h2>
+      <p class="prose reveal" style="--d:2">AllInsight works fully without one. A model only adds conversation, and you do this once, deliberately.</p>
+    </header>
     <ol class="steps">
-      <li class="reveal"><h3>Get the engine</h3><p>Download a llama.cpp release and put <code>llama-server</code> in <code>%LOCALAPPDATA%\AllInsight\engine\</code> on Windows or <code>~/.local/share/AllInsight/engine/</code> on Linux.</p></li>
-      <li class="reveal" style="--d:1"><h3>Get a model</h3><p>Any instruction-tuned GGUF. AllInsight AI suggests a size that fits your memory and disk.</p></li>
-      <li class="reveal" style="--d:2"><h3>Import it</h3><p>Open AllInsight AI and choose Import a GGUF model. It checks the file really is a GGUF before copying it.</p></li>
-      <li class="reveal" style="--d:3"><h3>Load it</h3><p>Press Load. The engine starts as a separate process, so a model that misbehaves cannot take the interface with it.</p></li>
+      <li class="reveal"><div><h3>Get the engine</h3><p>Download a llama.cpp release and put <code>llama-server</code> in <code>%LOCALAPPDATA%\AllInsight\engine\</code> on Windows or <code>~/.local/share/AllInsight/engine/</code> on Linux.</p></div></li>
+      <li class="reveal"><div><h3>Get a model</h3><p>Any instruction-tuned GGUF. AllInsight AI suggests a size that fits your memory and disk; see the <a class="link" href="/ai">AI page</a>.</p></div></li>
+      <li class="reveal"><div><h3>Import it</h3><p>Open AllInsight AI and choose Import a GGUF model. AllInsight checks the file really is a GGUF before copying it.</p></div></li>
+      <li class="reveal"><div><h3>Load it</h3><p>Press Load. The engine starts as a separate process, so a model that misbehaves cannot take the interface with it.</p></div></li>
     </ol>
   </div>
 </section>
@@ -175,42 +185,36 @@
 <footer class="foot">
   <div class="wrap">
     <div class="foot-top">
-      <div class="foot-col">
+      <div class="foot-id">
         <a class="foot-brand" href="/" aria-label="AllInsight home">
           <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
         <path d="M14 82 L50 20 L86 82" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
         <circle cx="50" cy="66" r="9" fill="var(--amber)"/>
       </svg>
-          <span class="wordmark">AllInsight</span><span class="tm">™</span>
+          <span class="wordmark" aria-hidden="true">all<span class="wi">ı</span>ns<span class="wi">ı</span>ght</span><span class="tm">™</span>
         </a>
-        <p class="foot-tag">Your device, understood.</p>
+        <p class="foot-tag">Your device, <em class="accent">understood.</em></p>
       </div>
-      <nav class="foot-col" aria-label="Explore">
-        <h4>Explore</h4>
+      <nav class="foot-links" aria-label="Footer">
         <a href="/features">Features</a>
         <a href="/privacy">Privacy</a>
         <a href="/safety">Safety</a>
-        <a href="/ai">AllInsight AI</a>
-      </nav>
-      <nav class="foot-col" aria-label="AllInsight">
-        <h4>AllInsight</h4>
+        <a href="/ai">AI</a>
         <a href="/about">About</a>
         <a href="/download">Download</a>
-        <a href="/third-party-licenses.txt">Licences</a>
       </nav>
-      <div class="foot-col">
-        <h4>Contact</h4>
-        <p><a class="mail" href="mailto:hello@allinsight.biz">hello@allinsight.biz</a></p>
-        <p>This site loads nothing from anywhere else: no fonts, scripts or analytics from third parties, the same rule the application follows.</p>
+      <div class="foot-text">
+        <p class="foot-contact">Questions, feedback or press: <a href="mailto:hello@allinsight.biz">hello@allinsight.biz</a></p>
+        <p class="foot-note">This site loads nothing from anywhere else. No fonts, scripts or analytics from third parties, the same rule the application follows.</p>
       </div>
     </div>
     <div class="foot-base">
-      <span>Copyright &copy; 2026 AllInsight. Released under the MIT licence.</span>
+      <span>&copy; 2026 AllInsight</span>
       <span>Windows &amp; Linux &middot; Works offline</span>
     </div>
   </div>
 </footer>
 
-<script src="/app.js?v=6" defer></script>
+<script src="/app.js?v=7" defer></script>
 </body>
 </html>
