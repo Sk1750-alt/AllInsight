@@ -313,6 +313,193 @@
     }
   }
 
+  /* ── Hero instrument ──────────────────────────────────────────────
+     A dial behind the headline: a slowly turning bezel of 120 hairline
+     ticks, a ring, and an amber hand that sweeps to the device-health
+     reading. Readouts sit at the rim. Built here so the markup stays small. */
+  {
+    const host = $('.dial');
+    const svg = host && $('svg', host);
+    if (svg) {
+      const NS = 'http://www.w3.org/2000/svg';
+      const el = (name, attrs, parent) => {
+        const n = document.createElementNS(NS, name);
+        for (const k in attrs) n.setAttribute(k, attrs[k]);
+        (parent || svg).appendChild(n);
+        return n;
+      };
+      const score = 86;
+      const bezel = el('g', { class: 'bezel' });
+      for (let i = 0; i < 120; i++) {
+        const a = (i / 120) * Math.PI * 2;
+        const major = i % 10 === 0;
+        const r1 = 292, r2 = major ? 274 : 284;
+        el('line', { class: major ? 'tick major' : 'tick', x1: Math.sin(a) * r1, y1: -Math.cos(a) * r1, x2: Math.sin(a) * r2, y2: -Math.cos(a) * r2 }, bezel);
+      }
+      el('circle', { class: 'ring', r: 262 });
+      el('circle', { class: 'ring', r: 206 });
+      const arc = el('circle', { class: 'arc', r: 248, pathLength: 100 });
+      const glow = el('circle', { class: 'hand-glow', r: 9 });
+      const dot = el('circle', { class: 'hand-dot', r: 3.5 });
+      const place = (pct) => {
+        const a = (pct / 100) * Math.PI * 2;
+        const x = Math.sin(a) * 248, y = -Math.cos(a) * 248;
+        dot.setAttribute('cx', x); dot.setAttribute('cy', y);
+        glow.setAttribute('cx', x); glow.setAttribute('cy', y);
+        arc.style.strokeDashoffset = String(100 - pct);
+      };
+      const readouts = [
+        { deg: 232, label: 'Drive C:', value: '91%' },
+        { deg: 128, label: 'Drive health', value: '92%' },
+        { deg: 300, label: 'Memory', value: '62%' },
+      ];
+      for (const r of readouts) {
+        const a = (r.deg / 360) * Math.PI * 2;
+        const g = el('g', { class: 'readout-g' });
+        const x1 = Math.sin(a) * 296, y1 = -Math.cos(a) * 296;
+        const x2 = Math.sin(a) * 322, y2 = -Math.cos(a) * 322;
+        el('line', { class: 'readout-line', x1, y1, x2, y2 }, g);
+        const right = x2 >= 0;
+        const anchor = right ? 'start' : 'end';
+        const tx = x2 + (right ? 8 : -8);
+        el('text', { class: 'readout', x: tx, y: y2 - 4, 'text-anchor': anchor }, g).textContent = r.label;
+        el('text', { class: 'readout-num', x: tx, y: y2 + 14, 'text-anchor': anchor }, g).textContent = r.value;
+      }
+      place(0);
+      const go = () => {
+        host.classList.add('live');
+        tween(0, score, 2600, place);
+      };
+      if (reduced) { place(score); host.classList.add('live'); }
+      else setTimeout(go, 1500);
+      if (!reduced && matchMedia('(hover: hover)').matches) {
+        const hero = host.parentElement;
+        hero.addEventListener('pointermove', (e) => {
+          const r = hero.getBoundingClientRect();
+          const nx = (e.clientX - r.left) / r.width - 0.5, ny = (e.clientY - r.top) / r.height - 0.5;
+          svg.style.setProperty('--rx', `${(nx * 6).toFixed(2)}deg`);
+          svg.style.setProperty('--ry', `${(-ny * 6).toFixed(2)}deg`);
+        }, { passive: true });
+        hero.addEventListener('pointerleave', () => { svg.style.setProperty('--rx', '0deg'); svg.style.setProperty('--ry', '0deg'); });
+      }
+    }
+  }
+
+  /* ── Scroll story: Measure, Explain, Clean ─────────────────────────
+     The section pins while it is scrolled through. A board of files is
+     laid out three ways: scattered and scanned, grouped by category, and
+     with the caches lifted away. */
+  {
+    const story = $('#story');
+    const board = story && $('.story-board', story);
+    if (board) {
+      const steps = $$('.story-step', story);
+      const reclaimed = $('#reclaimed', story);
+      const CATS = [
+        { key: 'video', name: 'Videos', n: 6 },
+        { key: 'apps', name: 'Apps', n: 8 },
+        { key: 'docs', name: 'Docs', n: 7 },
+        { key: 'cache', name: 'Caches', n: 7 },
+        { key: 'other', name: 'Other', n: 4 },
+      ];
+      const sizes = { video: [9.8, 14.2, 6.1, 21.4, 11.7, 33.2], apps: [4.1, 7.9, 12.6, 3.3, 18.4, 9.2, 5.5, 10.2], docs: [0.4, 1.2, 0.8, 2.6, 0.3, 1.9, 0.6], cache: [2.1, 0.9, 1.4, 3.2, 0.7, 1.8, 1.3], other: [2.2, 3.6, 1.1, 2.9] };
+      const files = [];
+      for (const c of CATS) sizes[c.key].forEach((gb) => files.push({ cat: c.key, gb }));
+      // A fixed shuffle so the scattered board looks the same on every visit.
+      const order = files.map((f, i) => ({ f, s: Math.sin(i * 12.9898) * 43758.5453 % 1 })).sort((a, b) => a.s - b.s).map((x) => x.f);
+      const blocks = order.map((f, k) => {
+        const b = document.createElement('div');
+        b.className = `blk ${f.cat}`;
+        b.style.setProperty('--k', k);
+        b.innerHTML = `<span>${f.gb.toFixed(1)} GB</span>`;
+        board.appendChild(b);
+        f.el = b;
+        return f;
+      });
+      const labels = CATS.map((c) => {
+        const l = document.createElement('span');
+        l.className = 'cat-label';
+        l.textContent = c.name;
+        board.appendChild(l);
+        return l;
+      });
+
+      const layout = (phase) => {
+        const W = board.clientWidth, H = board.clientHeight, pad = 18;
+        if (phase === 0) {
+          // Scattered: a loose grid, each file sized by its weight.
+          const cols = 7, rows = Math.ceil(blocks.length / cols);
+          const cw = (W - pad * 2) / cols, ch = (H - pad * 2) / rows;
+          blocks.forEach((f, i) => {
+            const s = Math.min(1, 0.42 + Math.sqrt(f.gb) / 7);
+            const w = cw * s - 6, h = ch * s - 6;
+            const x = pad + (i % cols) * cw + (cw - w) / 2, y = pad + Math.floor(i / cols) * ch + (ch - h) / 2;
+            Object.assign(f.el.style, { width: `${w}px`, height: `${h}px`, transform: `translate(${x}px, ${y}px)` });
+            f.el.classList.remove('gone');
+            f.el.classList.toggle('tiny', w < 46 || h < 26);
+          });
+          labels.forEach((l) => { l.style.left = '-200px'; });
+          return;
+        }
+        // Grouped: one column per category, files stacked by size.
+        const colW = (W - pad * 2) / CATS.length;
+        const base = H - 44;
+        CATS.forEach((c, ci) => {
+          const items = blocks.filter((f) => f.cat === c.key).sort((a, b) => b.gb - a.gb);
+          const total = items.reduce((s, f) => s + f.gb, 0);
+          const scale = (base - pad - items.length * 3) / 120;
+          let y = base;
+          items.forEach((f) => {
+            const h = Math.max(4, f.gb * scale);
+            y -= h + 3;
+            const x = pad + ci * colW + 6;
+            Object.assign(f.el.style, { width: `${colW - 12}px`, height: `${h}px`, transform: `translate(${x}px, ${phase === 2 && c.key === 'cache' ? y - 60 : y}px)` });
+            f.el.classList.toggle('gone', phase === 2 && c.key === 'cache');
+          });
+          labels[ci].style.left = `${pad + ci * colW + 6}px`;
+          labels[ci].dataset.total = total.toFixed(1);
+        });
+      };
+
+      let phase = -1, counted = false;
+      const setPhase = (p) => {
+        if (p === phase) return;
+        phase = p;
+        story.dataset.phase = String(p);
+        steps.forEach((s, i) => s.classList.toggle('on', i === p));
+        layout(p);
+        if (p === 2 && reclaimed && !counted) {
+          counted = true;
+          tween(0, 11.4, 1600, (v) => { reclaimed.textContent = `${v.toFixed(1)} GB`; });
+        }
+      };
+      let queued = false;
+      const frame = () => {
+        queued = false;
+        const r = story.getBoundingClientRect();
+        const total = r.height - innerHeight;
+        const p = reduced ? 1 : clamp(-r.top / (total || 1), 0, 1);
+        story.style.setProperty('--sp', p.toFixed(3));
+        setPhase(reduced ? 2 : p < 0.34 ? 0 : p < 0.68 ? 1 : 2);
+      };
+      addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(frame); } }, { passive: true });
+      addEventListener('resize', () => { const p = phase; phase = -1; setPhase(p < 0 ? 0 : p); }, { passive: true });
+      frame();
+    }
+  }
+
+  /* ── Buttons lean toward the pointer ─────────────────────────────── */
+  if (!reduced && matchMedia('(hover: hover)').matches) {
+    $$('.btn').forEach((btn) => {
+      btn.addEventListener('pointermove', (e) => {
+        const r = btn.getBoundingClientRect();
+        btn.style.setProperty('--bx', `${((e.clientX - r.left) / r.width - 0.5) * 8}px`);
+        btn.style.setProperty('--by', `${((e.clientY - r.top) / r.height - 0.5) * 6}px`);
+      }, { passive: true });
+      btn.addEventListener('pointerleave', () => { btn.style.setProperty('--bx', '0px'); btn.style.setProperty('--by', '0px'); });
+    });
+  }
+
   /* ── Download details from downloads.json ─────────────────────── */
   if ($('#dlInstaller')) {
     const size = (n) => {

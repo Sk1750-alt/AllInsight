@@ -31,6 +31,15 @@ Links use clean paths (`/features`, not `/features.html`); nginx maps them
 with `try_files $uri $uri.html $uri/ =404` and serves `404.html` through
 `error_page 404 /404.html`.
 
+The home page has two set pieces. Behind the hero headline is an
+instrument dial (`.dial`, built by `app.js`): a slowly turning bezel of 120
+ticks, an amber hand that sweeps to the device-health reading, and readouts
+at the rim; it tilts slightly with the pointer. The method section is a
+scroll story (`#story`): it pins while scrolled through, and a board of files
+is first scattered and scanned, then grouped by category, then has its
+caches lifted away while "reclaimed" counts up. Primary buttons lean toward
+the pointer.
+
 The home page lists the other pages as an editorial index (`.index`)
 rather than cards. The moving parts in `app.js` each look for their own
 markup and do nothing where it is absent: counting numbers (`data-count`), the treemap, health ring, live chart,

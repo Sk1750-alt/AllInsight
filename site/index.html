@@ -44,7 +44,7 @@
 </script>
 <link rel="preload" href="/assets/fonts/sora-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/instrument-serif-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/styles.css?v=8">
+<link rel="stylesheet" href="/styles.css?v=9">
 </head>
 <body>
 
@@ -84,6 +84,7 @@
 
 <main id="main">
 <section class="hero" id="top">
+  <div class="dial" aria-hidden="true"><svg viewBox="-420 -420 840 840"></svg></div>
   <svg class="hero-mark" id="heroMark" viewBox="0 0 100 100" role="img" aria-label="The AllInsight mark: an A with a lowercase i inside it.">
     <circle class="pulse" cx="50" cy="54" r="7"/>
     <circle class="pulse pulse-2" cx="50" cy="54" r="7"/>
@@ -174,34 +175,36 @@
   </div>
 </section>
 
-<!-- ───────────────────────── Method ───────────────────────── -->
-<section class="section" id="how">
-  <div class="wrap">
-    <header class="head">
-      <p class="label reveal">The method</p>
-      <h2 class="reveal" style="--d:1">Measure. Explain.<br>Then, and only then, <em class="accent">clean.</em></h2>
-    </header>
-
-    <ol class="method">
-      <li class="reveal">
-        <span class="numeral">I</span>
+<!-- ───────────────────────── Method, told by scrolling ───────────────────────── -->
+<section class="story" id="story" data-phase="0" aria-label="The method: measure, explain, then clean">
+  <div class="story-pin">
+    <div class="story-steps">
+      <p class="label">The method</p>
+      <div class="story-step on">
+        <p class="numeral">I</p>
         <h3>Measure everything.</h3>
         <p>A parallel scan maps every folder on the drive, and every file lands in a category you recognise. Links are never followed, so nothing is counted twice.</p>
-      </li>
-      <li class="reveal" style="--d:1">
-        <span class="numeral">II</span>
+      </div>
+      <div class="story-step">
+        <p class="numeral">II</p>
         <h3>Explain it plainly.</h3>
         <p>Every recommendation comes with the measurement behind it. Where the hardware is silent, AllInsight says Unknown instead of guessing.</p>
-      </li>
-      <li class="reveal" style="--d:2">
-        <span class="numeral">III</span>
+      </div>
+      <div class="story-step">
+        <p class="numeral">III</p>
         <h3>Clean only what regrows.</h3>
         <p>Caches and temporary files, after a dry run and a confirmation that lists exactly what will and will not be touched. Your documents are never candidates.</p>
-      </li>
-    </ol>
+      </div>
+    </div>
+    <div class="story-stage" aria-hidden="true">
+      <div class="story-board">
+        <i class="scanline"></i>
+        <div class="reclaimed"><b id="reclaimed">0.0 GB</b><span>Reclaimed, safely</span></div>
+      </div>
+      <div class="story-meter"><i></i></div>
+    </div>
   </div>
 </section>
-
 
 <section class="cta-band dark">
   <div class="wrap">
@@ -249,6 +252,6 @@
   </div>
 </footer>
 
-<script src="/app.js?v=8" defer></script>
+<script src="/app.js?v=9" defer></script>
 </body>
 </html>
