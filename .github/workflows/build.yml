@@ -61,7 +61,7 @@ jobs:
 
       - name: Keep release artefacts
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: allinsight-${{ github.ref_name }}-windows-x64
           path: |
@@ -116,7 +116,7 @@ jobs:
 
       - name: Keep release artefacts
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: allinsight-${{ github.ref_name }}-linux-x64
           path: |
