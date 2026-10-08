@@ -40,3 +40,15 @@ desktop.ini
 .env
 .env.local
 .env.*.local
+
+# ---- Release credentials & secrets (NEVER commit private keys) ----
+*.key
+*.pem
+*.pfx
+*.p12
+launch-credentials/**/allinsight.key
+launch-credentials/**/passphrase.txt
+
+
+# Private launch notes, application drafts and signing material. Never public.
+launch-credentials/

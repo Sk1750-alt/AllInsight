@@ -110,11 +110,18 @@ fn record_panic(directory: &Path, location: &str, message: &str) {
     let _ = std::fs::create_dir_all(directory);
     let path = directory.join(CRASH_FILE);
 
-    if std::fs::metadata(&path).map(|m| m.len() > CRASH_FILE_LIMIT).unwrap_or(false) {
+    if std::fs::metadata(&path)
+        .map(|m| m.len() > CRASH_FILE_LIMIT)
+        .unwrap_or(false)
+    {
         let _ = std::fs::rename(&path, directory.join(format!("{CRASH_FILE}.1")));
     }
 
-    if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
+    if let Ok(mut file) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+    {
         let _ = writeln!(
             file,
             "{} AllInsight {} panicked at {location}: {message}",
@@ -176,14 +183,20 @@ mod tests {
     #[test]
     fn the_home_folder_is_redacted_from_a_crash_message() {
         let home = Path::new("C:\\Users\\someone");
-        let redacted = redact_home("could not open C:\\Users\\someone\\Documents\\a.txt", Some(home));
+        let redacted = redact_home(
+            "could not open C:\\Users\\someone\\Documents\\a.txt",
+            Some(home),
+        );
         assert_eq!(redacted, "could not open %USERPROFILE%\\Documents\\a.txt");
         assert!(!redacted.contains("someone"));
     }
 
     #[test]
     fn a_message_without_the_home_folder_is_left_alone() {
-        let redacted = redact_home("attempt to divide by zero", Some(Path::new("C:\\Users\\someone")));
+        let redacted = redact_home(
+            "attempt to divide by zero",
+            Some(Path::new("C:\\Users\\someone")),
+        );
         assert_eq!(redacted, "attempt to divide by zero");
         assert_eq!(redact_home("anything", None), "anything");
     }

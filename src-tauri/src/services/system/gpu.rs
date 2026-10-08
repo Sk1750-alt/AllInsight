@@ -70,9 +70,17 @@ fn task_manager_utilization<'a>(rows: impl Iterator<Item = (&'a str, u64)>) -> f
 fn real_adapters_first(mut adapters: Vec<GpuAdapter>) -> Vec<GpuAdapter> {
     let is_virtual = |a: &GpuAdapter| {
         let n = a.name.to_lowercase();
-        ["virtual", "parsec", "remote", "basic display", "citrix", "mirror", "idd"]
-            .iter()
-            .any(|w| n.contains(w))
+        [
+            "virtual",
+            "parsec",
+            "remote",
+            "basic display",
+            "citrix",
+            "mirror",
+            "idd",
+        ]
+        .iter()
+        .any(|w| n.contains(w))
     };
     adapters.sort_by_key(|a| is_virtual(a));
     adapters
@@ -197,8 +205,15 @@ mod tm_tests {
 
     #[test]
     fn virtual_adapters_go_last() {
-        let a = |n: &str| GpuAdapter { name: n.into(), driver_version: None, video_memory_bytes: None };
-        let sorted = real_adapters_first(vec![a("Parsec Virtual Display Adapter"), a("Intel(R) Iris(R) Xe Graphics")]);
+        let a = |n: &str| GpuAdapter {
+            name: n.into(),
+            driver_version: None,
+            video_memory_bytes: None,
+        };
+        let sorted = real_adapters_first(vec![
+            a("Parsec Virtual Display Adapter"),
+            a("Intel(R) Iris(R) Xe Graphics"),
+        ]);
         assert_eq!(sorted[0].name, "Intel(R) Iris(R) Xe Graphics");
     }
 }

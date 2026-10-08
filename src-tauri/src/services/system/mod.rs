@@ -4,9 +4,9 @@
 //! refreshed on a timer. Rebuilding it per request would be both slower and
 //! wrong: CPU percentages are computed from the delta between two refreshes.
 
-pub mod gpu;
 #[cfg(windows)]
 mod cpu_windows;
+pub mod gpu;
 
 use std::collections::VecDeque;
 use std::time::Duration;
@@ -210,9 +210,14 @@ impl SystemMonitor {
                 .first()
                 .map(|c| c.brand().trim().to_string())
                 .unwrap_or_else(|| "Unknown processor".into()),
-            frequency_mhz: reading
-                .and_then(|(_, mhz)| mhz)
-                .unwrap_or_else(|| inner.system.cpus().first().map(|c| c.frequency()).unwrap_or(0)),
+            frequency_mhz: reading.and_then(|(_, mhz)| mhz).unwrap_or_else(|| {
+                inner
+                    .system
+                    .cpus()
+                    .first()
+                    .map(|c| c.frequency())
+                    .unwrap_or(0)
+            }),
         };
 
         let total = inner.system.total_memory();
@@ -231,12 +236,8 @@ impl SystemMonitor {
         };
 
         // Network counters are cumulative, so rates come from the delta.
-        let rx: u64 = inner.networks.iter().map(|(_, d)| d.total_received()).sum();
-        let tx: u64 = inner
-            .networks
-            .iter()
-            .map(|(_, d)| d.total_transmitted())
-            .sum();
+        let rx: u64 = inner.networks.values().map(|d| d.total_received()).sum();
+        let tx: u64 = inner.networks.values().map(|d| d.total_transmitted()).sum();
         let network = NetworkStatus {
             download_bytes_per_sec: rate(rx, inner.last_net_rx, elapsed),
             upload_bytes_per_sec: rate(tx, inner.last_net_tx, elapsed),

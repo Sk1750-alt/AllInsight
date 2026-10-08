@@ -15,16 +15,12 @@ use crate::state::AppState;
 
 #[tauri::command]
 pub async fn get_system_summary(state: State<'_, AppState>) -> Result<SystemSnapshot> {
-    Ok({
-    state.monitor.sample()
-})
+    Ok(state.monitor.sample())
 }
 
 #[tauri::command]
 pub async fn get_metrics_history(state: State<'_, AppState>) -> Result<MetricsHistory> {
-    Ok({
-    state.monitor.history()
-})
+    Ok(state.monitor.history())
 }
 
 #[tauri::command]
@@ -34,12 +30,12 @@ pub async fn get_processes(
     resolve_publishers: Option<bool>,
 ) -> Result<ProcessList> {
     Ok({
-    process::list(
-        &state.monitor,
-        limit.unwrap_or(80).min(500),
-        resolve_publishers.unwrap_or(true),
-    )
-})
+        process::list(
+            &state.monitor,
+            limit.unwrap_or(80).min(500),
+            resolve_publishers.unwrap_or(true),
+        )
+    })
 }
 
 #[tauri::command]
@@ -60,10 +56,7 @@ pub async fn end_process(state: State<'_, AppState>, pid: u32, confirmed: bool) 
 }
 
 #[tauri::command]
-pub async fn get_process_location(
-    state: State<'_, AppState>,
-    pid: u32,
-) -> Result<Option<String>> {
+pub async fn get_process_location(state: State<'_, AppState>, pid: u32) -> Result<Option<String>> {
     Ok(process::location_of(&state.monitor, pid).map(|p| p.to_string_lossy().into_owned()))
 }
 
@@ -99,7 +92,11 @@ pub async fn get_startup_items() -> StartupList {
 }
 
 #[tauri::command]
-pub async fn set_startup_enabled(state: State<'_, AppState>, id: String, enabled: bool) -> Result<()> {
+pub async fn set_startup_enabled(
+    state: State<'_, AppState>,
+    id: String,
+    enabled: bool,
+) -> Result<()> {
     startup::set_enabled(&id, enabled)?;
     let _ = state.db.log_activity(
         "startup",
@@ -137,20 +134,20 @@ pub struct DashboardSnapshot {
 #[tauri::command]
 pub async fn get_dashboard(state: State<'_, AppState>) -> Result<DashboardSnapshot> {
     Ok({
-    let inputs = state.dashboard_inputs();
-    DashboardSnapshot {
-        storage: crate::services::storage::overview(),
-        score: crate::services::ai::device_score(&inputs.facts),
-        insights: crate::services::ai::insights::generate(&inputs.facts),
-        summary: crate::services::ai::overview_insight(&state.engine, &inputs.facts),
-        reclaimable_bytes: inputs.facts.reclaimable_bytes,
-        scanned: inputs.facts.storage_scanned,
-        elevated: crate::services::security::is_elevated(),
-        system: inputs.system,
-        drives: inputs.drives,
-        battery: inputs.battery,
-    }
-})
+        let inputs = state.dashboard_inputs();
+        DashboardSnapshot {
+            storage: crate::services::storage::overview(),
+            score: crate::services::ai::device_score(&inputs.facts),
+            insights: crate::services::ai::insights::generate(&inputs.facts),
+            summary: crate::services::ai::overview_insight(&state.engine, &inputs.facts),
+            reclaimable_bytes: inputs.facts.reclaimable_bytes,
+            scanned: inputs.facts.storage_scanned,
+            elevated: crate::services::security::is_elevated(),
+            system: inputs.system,
+            drives: inputs.drives,
+            battery: inputs.battery,
+        }
+    })
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -172,8 +169,8 @@ pub struct EnvironmentInfo {
 
 #[tauri::command]
 pub async fn get_environment() -> EnvironmentInfo {
-    let snapshot_os = sysinfo::System::long_os_version()
-        .unwrap_or_else(|| crate::platform::os_name().into());
+    let snapshot_os =
+        sysinfo::System::long_os_version().unwrap_or_else(|| crate::platform::os_name().into());
     EnvironmentInfo {
         platform: crate::platform::current(),
         desktop: crate::platform::desktop(),
@@ -181,7 +178,9 @@ pub async fn get_environment() -> EnvironmentInfo {
         os_name: snapshot_os,
         host_name: sysinfo::System::host_name().unwrap_or_default(),
         app_version: env!("CARGO_PKG_VERSION").to_string(),
-        data_directory: crate::state::data_directory().to_string_lossy().into_owned(),
+        data_directory: crate::state::data_directory()
+            .to_string_lossy()
+            .into_owned(),
         log_directory: crate::state::data_directory()
             .join("logs")
             .to_string_lossy()

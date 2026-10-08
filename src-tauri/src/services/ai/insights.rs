@@ -258,7 +258,13 @@ pub fn generate(facts: &DeviceFacts) -> Vec<Insight> {
             .cleanup
             .iter()
             .max_by_key(|c| c.bytes)
-            .map(|c| format!(" The largest single contributor is {} at {}.", c.category, format_bytes(c.bytes)))
+            .map(|c| {
+                format!(
+                    " The largest single contributor is {} at {}.",
+                    c.category,
+                    format_bytes(c.bytes)
+                )
+            })
             .unwrap_or_default();
         out.push(Insight {
             id: "cleanup-available".into(),
@@ -571,7 +577,8 @@ pub fn summary(facts: &DeviceFacts) -> String {
     }
 
     if parts.is_empty() {
-        "AllInsight has not gathered enough information yet. Run a storage scan to get started.".into()
+        "AllInsight has not gathered enough information yet. Run a storage scan to get started."
+            .into()
     } else {
         parts.join(" ")
     }

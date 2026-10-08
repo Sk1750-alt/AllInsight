@@ -50,9 +50,16 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
 
-# Talks to the local llama.cpp server over loopback only. TLS is disabled
-# because AllInsight never makes an outbound request.
-ureq = { version = "2", default-features = false, features = ["json"] }
+# Two separate uses, two separate agents. The local llama.cpp server is
+# reached over loopback only. The updater (services::update) makes HTTPS
+# requests to the release server, and only when the user asks for a check
+# or has turned automatic checks on.
+ureq = { version = "2", default-features = false, features = ["json", "tls"] }
+semver = "1"
+sha2 = "0.10"
+minisign-verify = "0.2"
+base64 = "0.22"
+getrandom = "0.3"
 
 # Windows platform access.
 [target.'cfg(windows)'.dependencies]
@@ -71,6 +78,10 @@ version = "0.59"
 features = [
   "Win32_Foundation",
   "Win32_Security",
+  "Win32_Security_Cryptography",
+  "Win32_Security_Cryptography_Catalog",
+  "Win32_Security_Cryptography_Sip",
+  "Win32_Security_WinTrust",
   "Win32_Storage_FileSystem",
   "Win32_System_Threading",
   "Win32_System_IO",

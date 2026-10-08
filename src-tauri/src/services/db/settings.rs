@@ -119,6 +119,14 @@ pub struct Settings {
     // --- Security ---
     pub protected_paths: Vec<PathBuf>,
     pub require_confirmation_for_processes: bool,
+
+    // --- Updates ---
+    /// Off by default: AllInsight makes no network request until the user
+    /// either clicks "Check for updates" or turns this on.
+    pub update_auto_check: bool,
+    /// Hours between automatic checks, 24 to 720. Only consulted when
+    /// `update_auto_check` is on.
+    pub update_check_interval_hours: u32,
 }
 
 impl Default for Settings {
@@ -164,6 +172,9 @@ impl Default for Settings {
 
             protected_paths: Vec::new(),
             require_confirmation_for_processes: true,
+
+            update_auto_check: false,
+            update_check_interval_hours: 24,
         }
     }
 }
@@ -185,6 +196,7 @@ impl Settings {
         self.notification_quiet_minutes = self.notification_quiet_minutes.clamp(0, 1440);
         self.large_file_threshold_bytes = self.large_file_threshold_bytes.max(1024 * 1024);
         self.duplicate_min_bytes = self.duplicate_min_bytes.max(4096);
+        self.update_check_interval_hours = self.update_check_interval_hours.clamp(24, 720);
 
         self.alert_at_percent.retain(|p| (*p >= 50) && (*p <= 99));
         self.alert_at_percent.sort_unstable();
@@ -234,6 +246,8 @@ impl Settings {
 }
 
 #[cfg(test)]
+// Tests start from the defaults and change the one field under test.
+#[allow(clippy::field_reassign_with_default)]
 mod tests {
     use super::*;
     use crate::services::cleanup::CleanupCategory;
@@ -269,6 +283,8 @@ mod tests {
         assert!(!s.auto_clean_enabled);
         assert!(!s.launch_at_startup);
         assert!(!s.ai_keep_loaded);
+        assert!(!s.update_auto_check, "update checks must be opt-in");
+        assert_eq!(s.update_check_interval_hours, 24);
     }
 
     #[test]
@@ -302,7 +318,11 @@ mod tests {
     #[test]
     fn relative_protected_paths_are_dropped() {
         let mut s = Settings::default();
-        let keep = PathBuf::from(if cfg!(windows) { "D:\\Keep" } else { "/srv/keep" });
+        let keep = PathBuf::from(if cfg!(windows) {
+            "D:\\Keep"
+        } else {
+            "/srv/keep"
+        });
         s.protected_paths = vec![PathBuf::from("relative\\thing"), keep.clone()];
         s.sanitise();
         assert_eq!(s.protected_paths, vec![keep]);

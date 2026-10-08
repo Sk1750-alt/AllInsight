@@ -231,7 +231,9 @@ fn decide(drive: &mut DriveHealth) {
             notes.push("This drive has used most of its rated write endurance.".to_string());
         } else if wear >= 75 {
             state = HealthState::Warning;
-            notes.push("This drive has used a large share of its rated write endurance.".to_string());
+            notes.push(
+                "This drive has used a large share of its rated write endurance.".to_string(),
+            );
         }
     }
 
@@ -242,7 +244,9 @@ fn decide(drive: &mut DriveHealth) {
             } else {
                 HealthState::Warning
             };
-            notes.push(format!("The drive is running hot at {temp} degrees Celsius."));
+            notes.push(format!(
+                "The drive is running hot at {temp} degrees Celsius."
+            ));
         }
     }
 
@@ -259,7 +263,10 @@ fn decide(drive: &mut DriveHealth) {
             format!("This drive does not report detailed health data to {}.", crate::platform::os_name())
         });
         if let Some(w) = windows_says {
-            notes.push(format!("{} reports the drive status as {w}.", crate::platform::os_name()));
+            notes.push(format!(
+                "{} reports the drive status as {w}.",
+                crate::platform::os_name()
+            ));
         }
     }
 
@@ -326,7 +333,11 @@ mod imp {
         let query = format!(
             "ASSOCIATORS OF {{{disk_path}}} WHERE ResultClass = MSFT_StorageReliabilityCounter"
         );
-        storage.raw_query::<ReliabilityCounter>(query).ok()?.into_iter().next()
+        storage
+            .raw_query::<ReliabilityCounter>(query)
+            .ok()?
+            .into_iter()
+            .next()
     }
 
     #[derive(De, Debug)]
@@ -346,25 +357,25 @@ mod imp {
                 return Ok(DriveHealthReport {
                     drives: Vec::new(),
                     elevated,
-                    error: Some(format!("Windows storage services could not be reached: {e}")),
-                })
-            }
-        };
-        let storage = match WMIConnection::with_namespace_path(
-            "root\\Microsoft\\Windows\\Storage",
-            com,
-        ) {
-            Ok(c) => c,
-            Err(e) => {
-                return Ok(DriveHealthReport {
-                    drives: Vec::new(),
-                    elevated,
                     error: Some(format!(
-                        "The Windows storage management provider is unavailable: {e}"
+                        "Windows storage services could not be reached: {e}"
                     )),
                 })
             }
         };
+        let storage =
+            match WMIConnection::with_namespace_path("root\\Microsoft\\Windows\\Storage", com) {
+                Ok(c) => c,
+                Err(e) => {
+                    return Ok(DriveHealthReport {
+                        drives: Vec::new(),
+                        elevated,
+                        error: Some(format!(
+                            "The Windows storage management provider is unavailable: {e}"
+                        )),
+                    })
+                }
+            };
 
         let disks: Vec<PhysicalDisk> = match storage.query() {
             Ok(rows) => rows,
@@ -383,7 +394,10 @@ mod imp {
             if let (Some(number), Some(letter)) = (partition.disk_number, partition.drive_letter) {
                 let letter = letter.trim_matches('\0').trim().to_string();
                 if !letter.is_empty() {
-                    letters.entry(number).or_default().push(format!("{letter}:"));
+                    letters
+                        .entry(number)
+                        .or_default()
+                        .push(format!("{letter}:"));
                 }
             }
         }
@@ -437,7 +451,9 @@ mod imp {
                 read_errors_uncorrected: counter.and_then(|c| c.read_errors_uncorrected),
                 write_errors_total: counter.and_then(|c| c.write_errors_total),
                 write_errors_uncorrected: counter.and_then(|c| c.write_errors_uncorrected),
-                start_stop_cycles: counter.and_then(|c| c.start_stop_cycle_count).map(u64::from),
+                start_stop_cycles: counter
+                    .and_then(|c| c.start_stop_cycle_count)
+                    .map(u64::from),
                 volumes: device_id
                     .parse::<u32>()
                     .ok()

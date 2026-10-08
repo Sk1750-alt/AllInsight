@@ -213,7 +213,10 @@ mod tests {
         assert_eq!(h.percentage_used, 7);
         assert_eq!(h.power_on_hours, 4321);
         assert_eq!(h.unsafe_shutdowns, 12);
-        assert_eq!(warning_labels(h.critical_warning), vec!["Predictive failure"]);
+        assert_eq!(
+            warning_labels(h.critical_warning),
+            vec!["Predictive failure"]
+        );
         assert!(parse_health_log(&log[..100]).is_none());
     }
 }

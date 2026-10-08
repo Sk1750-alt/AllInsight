@@ -27,16 +27,51 @@ pub struct Fence {
 #[cfg(target_os = "linux")]
 const FENCED_TYPES: &[&str] = &[
     // Kernel and memory-backed.
-    "proc", "sysfs", "devtmpfs", "devpts", "tmpfs", "ramfs", "cgroup", "cgroup2", "securityfs",
-    "debugfs", "tracefs", "pstore", "bpf", "fusectl", "configfs", "mqueue", "hugetlbfs", "autofs",
-    "binfmt_misc", "efivarfs", "nsfs", "rpc_pipefs", "selinuxfs",
+    "proc",
+    "sysfs",
+    "devtmpfs",
+    "devpts",
+    "tmpfs",
+    "ramfs",
+    "cgroup",
+    "cgroup2",
+    "securityfs",
+    "debugfs",
+    "tracefs",
+    "pstore",
+    "bpf",
+    "fusectl",
+    "configfs",
+    "mqueue",
+    "hugetlbfs",
+    "autofs",
+    "binfmt_misc",
+    "efivarfs",
+    "nsfs",
+    "rpc_pipefs",
+    "selinuxfs",
     // Read-only images and container layers that duplicate other storage.
-    "squashfs", "overlay", "fuse.snapfuse", "iso9660",
+    "squashfs",
+    "overlay",
+    "fuse.snapfuse",
+    "iso9660",
     // Desktop portals and virtual file systems.
-    "fuse.portal", "fuse.gvfsd-fuse", "fuse.xdg-document-portal",
+    "fuse.portal",
+    "fuse.gvfsd-fuse",
+    "fuse.xdg-document-portal",
     // Other machines, including the Windows drives WSL exposes.
-    "9p", "drvfs", "nfs", "nfs4", "cifs", "smb3", "smbfs", "fuse.sshfs", "fuse.rclone", "afs",
-    "ceph", "glusterfs",
+    "9p",
+    "drvfs",
+    "nfs",
+    "nfs4",
+    "cifs",
+    "smb3",
+    "smbfs",
+    "fuse.sshfs",
+    "fuse.rclone",
+    "afs",
+    "ceph",
+    "glusterfs",
 ];
 
 /// Decode the octal escapes `/proc/self/mounts` uses for spaces and tabs.
@@ -49,7 +84,9 @@ fn unescape_mount_path(raw: &str) -> String {
         if bytes[i] == b'\\' && i + 3 < bytes.len() {
             let digits = &bytes[i + 1..i + 4];
             if digits.iter().all(|b| (b'0'..=b'7').contains(b)) {
-                let value = digits.iter().fold(0u32, |acc, d| acc * 8 + u32::from(d - b'0'));
+                let value = digits
+                    .iter()
+                    .fold(0u32, |acc, d| acc * 8 + u32::from(d - b'0'));
                 if let Ok(v) = u8::try_from(value) {
                     out.push(v);
                     i += 4;
@@ -143,7 +180,10 @@ C:\\134 /mnt/c 9p rw 0 0
 
     #[test]
     fn octal_escapes_are_decoded() {
-        assert_eq!(unescape_mount_path("/media/me/My\\040Disk"), "/media/me/My Disk");
+        assert_eq!(
+            unescape_mount_path("/media/me/My\\040Disk"),
+            "/media/me/My Disk"
+        );
         assert_eq!(unescape_mount_path("/plain"), "/plain");
         assert_eq!(unescape_mount_path("/trailing\\"), "/trailing\\");
     }

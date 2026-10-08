@@ -16,7 +16,8 @@
 ; tool gets to do by accident.
 ;
 ; Keep the names here in step with state.rs (allinsight.db), logging.rs (logs),
-; and services/ai/models.rs (models, engine).
+; services/ai/models.rs (models, engine), services/config.rs (backups) and
+; services/update (updates).
 
 !macro NSIS_HOOK_POSTUNINSTALL
   ; Same two conditions as the surrounding Tauri block: only when the user
@@ -32,6 +33,12 @@
     RMDir /r "$LOCALAPPDATA\AllInsight\logs"
     RMDir /r "$LOCALAPPDATA\AllInsight\models"
     RMDir /r "$LOCALAPPDATA\AllInsight\engine"
+    ; Settings backups, and the database copies taken before migrations and
+    ; updates (services/db, commands/update.rs). Copies of the database are
+    ; the user's data as much as the database itself.
+    RMDir /r "$LOCALAPPDATA\AllInsight\backups"
+    ; Verified update packages waiting to be installed (services/update).
+    RMDir /r "$LOCALAPPDATA\AllInsight\updates"
 
     ; Non-recursive: only succeeds if nothing else is left in the folder.
     RMDir "$LOCALAPPDATA\AllInsight"

@@ -72,22 +72,71 @@ const CONFIRM_BEFORE_TERMINATING: &[&str] = &[
 /// compositor, the session bus) can, and ending them logs the user out.
 #[cfg(not(windows))]
 const NEVER_TERMINATE: &[&str] = &[
-    "systemd", "init", "kthreadd", "systemd-journald", "systemd-logind", "systemd-udevd",
-    "dbus-daemon", "dbus-broker", "dbus-broker-launch", "xorg", "xwayland", "gnome-shell",
-    "gnome-session-binary", "plasmashell", "kwin_wayland", "kwin_x11", "ksmserver", "mutter",
-    "xfce4-session", "xfwm4", "cinnamon", "cinnamon-session", "mate-session", "sway", "hyprland",
-    "gdm", "gdm3", "sddm", "lightdm", "login", "agetty", "polkitd", "launchd", "windowserver",
-    "loginwindow", "kernel_task",
+    "systemd",
+    "init",
+    "kthreadd",
+    "systemd-journald",
+    "systemd-logind",
+    "systemd-udevd",
+    "dbus-daemon",
+    "dbus-broker",
+    "dbus-broker-launch",
+    "xorg",
+    "xwayland",
+    "gnome-shell",
+    "gnome-session-binary",
+    "plasmashell",
+    "kwin_wayland",
+    "kwin_x11",
+    "ksmserver",
+    "mutter",
+    "xfce4-session",
+    "xfwm4",
+    "cinnamon",
+    "cinnamon-session",
+    "mate-session",
+    "sway",
+    "hyprland",
+    "gdm",
+    "gdm3",
+    "sddm",
+    "lightdm",
+    "login",
+    "agetty",
+    "polkitd",
+    "launchd",
+    "windowserver",
+    "loginwindow",
+    "kernel_task",
 ];
 
 /// Linux components whose loss is recoverable but noticeable: sound, the
 /// network, panels and file managers restart, often after a sign-out.
 #[cfg(not(windows))]
 const CONFIRM_BEFORE_TERMINATING: &[&str] = &[
-    "pipewire", "pipewire-pulse", "wireplumber", "pulseaudio", "networkmanager", "nm-applet",
-    "gnome-settings-daemon", "gsd-power", "xdg-desktop-portal", "xdg-desktop-portal-gtk",
-    "xdg-desktop-portal-gnome", "xdg-desktop-portal-kde", "nautilus", "dolphin", "nemo", "thunar",
-    "xfce4-panel", "waybar", "ibus-daemon", "fcitx5", "finder", "dock", "systemuiserver",
+    "pipewire",
+    "pipewire-pulse",
+    "wireplumber",
+    "pulseaudio",
+    "networkmanager",
+    "nm-applet",
+    "gnome-settings-daemon",
+    "gsd-power",
+    "xdg-desktop-portal",
+    "xdg-desktop-portal-gtk",
+    "xdg-desktop-portal-gnome",
+    "xdg-desktop-portal-kde",
+    "nautilus",
+    "dolphin",
+    "nemo",
+    "thunar",
+    "xfce4-panel",
+    "waybar",
+    "ibus-daemon",
+    "fcitx5",
+    "finder",
+    "dock",
+    "systemuiserver",
 ];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -341,7 +390,8 @@ pub fn terminate(monitor: &SystemMonitor, pid: u32, confirmed: bool) -> Result<(
                 // cleanly, where SIGKILL (what `kill` sends) does not.
                 #[cfg(unix)]
                 {
-                    p.kill_with(sysinfo::Signal::Term).unwrap_or_else(|| p.kill())
+                    p.kill_with(sysinfo::Signal::Term)
+                        .unwrap_or_else(|| p.kill())
                 }
                 #[cfg(not(unix))]
                 {
@@ -377,7 +427,13 @@ mod tests {
     #[cfg(not(windows))]
     #[test]
     fn session_essentials_are_never_terminable() {
-        for name in ["systemd", "Xwayland", "gnome-shell", "kwin_wayland", "dbus-daemon"] {
+        for name in [
+            "systemd",
+            "Xwayland",
+            "gnome-shell",
+            "kwin_wayland",
+            "dbus-daemon",
+        ] {
             assert_eq!(risk_for(name), ProcessRisk::Critical, "{name}");
         }
         assert_eq!(risk_for("pipewire"), ProcessRisk::SystemComponent);

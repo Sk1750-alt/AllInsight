@@ -47,7 +47,11 @@ pub(super) fn pci_name(ids: &str, vendor: u16, device: u16) -> Option<String> {
             break;
         }
         if let Some(name) = line.strip_prefix(&device_prefix) {
-            return Some(format!("{} {}", short_vendor(vendor, vendor_name?), name.trim()));
+            return Some(format!(
+                "{} {}",
+                short_vendor(vendor, vendor_name?),
+                name.trim()
+            ));
         }
     }
     vendor_name.map(|v| short_vendor(vendor, v).to_string())
@@ -63,7 +67,11 @@ fn short_vendor(vendor: u16, fallback: &str) -> &str {
 }
 
 fn pci_ids() -> String {
-    for path in ["/usr/share/hwdata/pci.ids", "/usr/share/misc/pci.ids", "/usr/share/pci.ids"] {
+    for path in [
+        "/usr/share/hwdata/pci.ids",
+        "/usr/share/misc/pci.ids",
+        "/usr/share/pci.ids",
+    ] {
         if let Ok(text) = std::fs::read_to_string(path) {
             return text;
         }
@@ -92,7 +100,15 @@ fn drm_devices() -> Vec<PathBuf> {
 
 /// Parse `nvidia-smi --query-gpu=name,driver_version,utilization.gpu,memory.used,memory.total
 /// --format=csv,noheader,nounits`.
-pub(super) fn parse_nvidia_smi(text: &str) -> Vec<(String, Option<String>, Option<f32>, Option<u64>, Option<u64>)> {
+pub(super) fn parse_nvidia_smi(
+    text: &str,
+) -> Vec<(
+    String,
+    Option<String>,
+    Option<f32>,
+    Option<u64>,
+    Option<u64>,
+)> {
     text.lines()
         .filter_map(|line| {
             let f: Vec<&str> = line.split(',').map(str::trim).collect();
@@ -127,7 +143,11 @@ fn nvidia_smi() -> Option<String> {
 
 pub fn status() -> GpuStatus {
     let devices = drm_devices();
-    let ids = if devices.is_empty() { String::new() } else { pci_ids() };
+    let ids = if devices.is_empty() {
+        String::new()
+    } else {
+        pci_ids()
+    };
 
     let mut adapters = Vec::new();
     let mut busy: Vec<f32> = Vec::new();
@@ -149,10 +169,14 @@ pub fn status() -> GpuStatus {
             .ok()
             .and_then(|p| p.file_name().map(|n| n.to_string_lossy().into_owned()));
 
-        if let Some(b) = read_trimmed(&dev.join("gpu_busy_percent")).and_then(|b| b.parse::<f32>().ok()) {
+        if let Some(b) =
+            read_trimmed(&dev.join("gpu_busy_percent")).and_then(|b| b.parse::<f32>().ok())
+        {
             busy.push(b);
         }
-        if let Some(used) = read_trimmed(&dev.join("mem_info_vram_used")).and_then(|v| v.parse::<u64>().ok()) {
+        if let Some(used) =
+            read_trimmed(&dev.join("mem_info_vram_used")).and_then(|v| v.parse::<u64>().ok())
+        {
             vram_used = Some(vram_used.unwrap_or(0) + used);
         }
         adapters.push(GpuAdapter {
@@ -184,13 +208,18 @@ pub fn status() -> GpuStatus {
         }
     }
 
-    let utilization = busy.iter().cloned().fold(None, |acc: Option<f32>, b| Some(acc.map_or(b, |a| a.max(b))));
+    let utilization = busy.iter().cloned().fold(None, |acc: Option<f32>, b| {
+        Some(acc.map_or(b, |a| a.max(b)))
+    });
     GpuStatus {
         available: utilization.is_some(),
         note: if adapters.is_empty() {
             Some("No display adapter was found.".into())
         } else if utilization.is_none() {
-            Some("This graphics driver does not publish a utilisation counter to ordinary users.".into())
+            Some(
+                "This graphics driver does not publish a utilisation counter to ordinary users."
+                    .into(),
+            )
         } else {
             None
         },
@@ -216,7 +245,10 @@ mod tests {
 
     #[test]
     fn device_names_come_from_the_pci_database() {
-        assert_eq!(pci_name(IDS, 0x10de, 0x2684).as_deref(), Some("NVIDIA AD102 [GeForce RTX 4090]"));
+        assert_eq!(
+            pci_name(IDS, 0x10de, 0x2684).as_deref(),
+            Some("NVIDIA AD102 [GeForce RTX 4090]")
+        );
         assert_eq!(
             pci_name(IDS, 0x1002, 0x73bf).as_deref(),
             Some("AMD Navi 21 [Radeon RX 6800/6800 XT / 6900 XT]")

@@ -4,3 +4,5 @@
 *.png binary
 *.ico binary
 *.icns binary
+# Signed fixtures: a single changed byte breaks the signature.
+src-tauri/src/services/update/testdata/** -text

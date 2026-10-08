@@ -17,7 +17,6 @@
 //! * Node detail stops at `max_node_depth`; deeper bytes still roll up into
 //!   the ancestors, so totals stay exact while memory stays bounded.
 
-
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
@@ -183,8 +182,12 @@ impl ScanResult {
         let Some(node) = self.nodes.get(index) else {
             return Vec::new();
         };
-        let mut kids: Vec<&DirNode> = node.children.iter().filter_map(|i| self.nodes.get(*i)).collect();
-        kids.sort_by(|a, b| b.size_bytes.cmp(&a.size_bytes));
+        let mut kids: Vec<&DirNode> = node
+            .children
+            .iter()
+            .filter_map(|i| self.nodes.get(*i))
+            .collect();
+        kids.sort_by_key(|e| std::cmp::Reverse(e.size_bytes));
         kids
     }
 }
@@ -222,7 +225,7 @@ impl ScanContext {
         // Trim occasionally rather than on every push, so the sort cost is
         // amortised across the walk.
         if large.len() > self.options.large_file_limit * 4 {
-            large.sort_by(|a, b| b.size_bytes.cmp(&a.size_bytes));
+            large.sort_by_key(|e| std::cmp::Reverse(e.size_bytes));
             large.truncate(self.options.large_file_limit);
         }
     }
@@ -418,7 +421,7 @@ pub fn scan(options: ScanOptions, progress: Arc<ScanProgress>) -> ScanResult {
     });
 
     let mut largest = ctx.large.into_inner();
-    largest.sort_by(|a, b| b.size_bytes.cmp(&a.size_bytes));
+    largest.sort_by_key(|e| std::cmp::Reverse(e.size_bytes));
     largest.truncate(ctx.options.large_file_limit);
 
     ScanResult {
@@ -527,7 +530,7 @@ pub fn treemap_level(result: &ScanResult, path: &Path) -> Vec<TreemapNode> {
         });
     }
 
-    out.sort_by(|a, b| b.size_bytes.cmp(&a.size_bytes));
+    out.sort_by_key(|e| std::cmp::Reverse(e.size_bytes));
     out
 }
 
@@ -537,7 +540,8 @@ mod tests {
     use std::fs;
 
     fn sandbox(tag: &str) -> PathBuf {
-        let base = std::env::temp_dir().join(format!("allinsight-scan-{tag}-{}", std::process::id()));
+        let base =
+            std::env::temp_dir().join(format!("allinsight-scan-{tag}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&base);
         fs::create_dir_all(&base).unwrap();
         paths::canonicalize(&base).unwrap_or(base)
@@ -554,7 +558,10 @@ mod tests {
         fs::create_dir_all(&deeper).unwrap();
         fs::write(deeper.join("c.bin"), vec![0u8; 4000]).unwrap();
 
-        let result = scan(ScanOptions::for_root(&root), Arc::new(ScanProgress::default()));
+        let result = scan(
+            ScanOptions::for_root(&root),
+            Arc::new(ScanProgress::default()),
+        );
 
         assert_eq!(result.total_bytes, 7000);
         assert_eq!(result.total_files, 3);
@@ -637,7 +644,10 @@ mod tests {
             .map(|o| o.status.success())
             .unwrap_or(false);
 
-        let result = scan(ScanOptions::for_root(&root), Arc::new(ScanProgress::default()));
+        let result = scan(
+            ScanOptions::for_root(&root),
+            Arc::new(ScanProgress::default()),
+        );
         assert_eq!(result.total_bytes, 3000, "the payload must be counted once");
         if made {
             assert!(result.skipped_links >= 1);
@@ -654,7 +664,10 @@ mod tests {
         fs::create_dir_all(&a).unwrap();
         fs::write(a.join("x.bin"), vec![0u8; 1500]).unwrap();
 
-        let result = scan(ScanOptions::for_root(&root), Arc::new(ScanProgress::default()));
+        let result = scan(
+            ScanOptions::for_root(&root),
+            Arc::new(ScanProgress::default()),
+        );
         let level = treemap_level(&result, &root);
 
         let sum: u64 = level.iter().map(|n| n.size_bytes).sum();

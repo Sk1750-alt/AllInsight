@@ -225,12 +225,11 @@ impl<'a> DeletionGuard<'a> {
         self.check_protected(&normalized)?;
 
         // 3. Allow-list membership.
-        let root = self
-            .allowed_root_for(&normalized)
-            .cloned()
-            .ok_or_else(|| GuardRejection::OutsideAllowedRoots {
+        let root = self.allowed_root_for(&normalized).cloned().ok_or_else(|| {
+            GuardRejection::OutsideAllowedRoots {
                 path: normalized.clone(),
-            })?;
+            }
+        })?;
         // The reparse walk below starts from whichever form of the root the
         // candidate actually sits under.
         let boundary = if paths::is_strictly_within(&normalized, &root.declared) {
@@ -241,19 +240,19 @@ impl<'a> DeletionGuard<'a> {
 
         // 4. The entry still exists. `symlink_metadata` does not follow links,
         //    which matters for step 5.
-        let meta = std::fs::symlink_metadata(paths::long_path(&normalized)).map_err(|e| {
-            match e.kind() {
-                std::io::ErrorKind::NotFound => GuardRejection::Missing {
-                    path: normalized.clone(),
-                },
-                std::io::ErrorKind::PermissionDenied => GuardRejection::Locked {
-                    path: normalized.clone(),
-                },
-                _ => GuardRejection::Unreadable {
-                    path: normalized.clone(),
-                    detail: e.to_string(),
-                },
-            }
+        let meta = std::fs::symlink_metadata(paths::long_path(&normalized)).map_err(|e| match e
+            .kind()
+        {
+            std::io::ErrorKind::NotFound => GuardRejection::Missing {
+                path: normalized.clone(),
+            },
+            std::io::ErrorKind::PermissionDenied => GuardRejection::Locked {
+                path: normalized.clone(),
+            },
+            _ => GuardRejection::Unreadable {
+                path: normalized.clone(),
+                detail: e.to_string(),
+            },
         })?;
 
         // 5. The entry itself must not be a link.
@@ -304,7 +303,11 @@ impl<'a> DeletionGuard<'a> {
         Ok(ValidatedPath {
             path: real,
             kind,
-            size_bytes: if kind == EntryKind::File { meta.len() } else { 0 },
+            size_bytes: if kind == EntryKind::File {
+                meta.len()
+            } else {
+                0
+            },
         })
     }
 
@@ -359,7 +362,8 @@ mod tests {
     use std::fs;
 
     fn temp_root(tag: &str) -> PathBuf {
-        let base = std::env::temp_dir().join(format!("allinsight-guard-{tag}-{}", std::process::id()));
+        let base =
+            std::env::temp_dir().join(format!("allinsight-guard-{tag}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&base);
         fs::create_dir_all(&base).expect("create sandbox");
         // `TEMP` can itself sit behind a link on some machines; canonicalise
@@ -374,7 +378,7 @@ mod tests {
         fs::write(&file, b"junk").unwrap();
 
         let protected = ProtectedPaths::new(&[]);
-        let guard = DeletionGuard::new(&protected, &[root.clone()]);
+        let guard = DeletionGuard::new(&protected, std::slice::from_ref(&root));
         let ok = guard.validate(&file, EntryKind::File).expect("approved");
         assert_eq!(ok.size_bytes(), 4);
 
@@ -385,7 +389,7 @@ mod tests {
     fn a_path_outside_every_allowed_root_is_refused() {
         let root = temp_root("outside");
         let protected = ProtectedPaths::new(&[]);
-        let guard = DeletionGuard::new(&protected, &[root.clone()]);
+        let guard = DeletionGuard::new(&protected, std::slice::from_ref(&root));
 
         let elsewhere = if cfg!(windows) {
             "D:\\somewhere\\else\\file.tmp"
@@ -404,14 +408,16 @@ mod tests {
     fn traversal_out_of_an_allowed_root_is_refused() {
         let root = temp_root("traversal");
         let protected = ProtectedPaths::new(&[]);
-        let guard = DeletionGuard::new(&protected, &[root.clone()]);
+        let guard = DeletionGuard::new(&protected, std::slice::from_ref(&root));
 
         let hostile = if cfg!(windows) {
             root.join("..\\..\\Windows\\System32\\config")
         } else {
             root.join("../../etc/shadow")
         };
-        let err = guard.validate(&hostile, EntryKind::File).expect_err("must refuse");
+        let err = guard
+            .validate(&hostile, EntryKind::File)
+            .expect_err("must refuse");
         assert!(matches!(
             err,
             GuardRejection::Protected { .. } | GuardRejection::OutsideAllowedRoots { .. }
@@ -424,7 +430,7 @@ mod tests {
     fn the_allowed_root_itself_is_never_deletable() {
         let root = temp_root("selfroot");
         let protected = ProtectedPaths::new(&[]);
-        let guard = DeletionGuard::new(&protected, &[root.clone()]);
+        let guard = DeletionGuard::new(&protected, std::slice::from_ref(&root));
 
         let err = guard
             .validate(&root, EntryKind::Directory)
@@ -438,7 +444,7 @@ mod tests {
     fn a_missing_entry_is_refused_rather_than_deleted() {
         let root = temp_root("missing");
         let protected = ProtectedPaths::new(&[]);
-        let guard = DeletionGuard::new(&protected, &[root.clone()]);
+        let guard = DeletionGuard::new(&protected, std::slice::from_ref(&root));
 
         let err = guard
             .validate(&root.join("gone.tmp"), EntryKind::File)
@@ -455,8 +461,10 @@ mod tests {
         fs::create_dir_all(&dir).unwrap();
 
         let protected = ProtectedPaths::new(&[]);
-        let guard = DeletionGuard::new(&protected, &[root.clone()]);
-        let err = guard.validate(&dir, EntryKind::File).expect_err("must refuse");
+        let guard = DeletionGuard::new(&protected, std::slice::from_ref(&root));
+        let err = guard
+            .validate(&dir, EntryKind::File)
+            .expect_err("must refuse");
         assert!(matches!(err, GuardRejection::KindChanged { .. }));
 
         let _ = fs::remove_dir_all(&root);
@@ -469,8 +477,10 @@ mod tests {
         fs::write(&db, b"not really a database").unwrap();
 
         let protected = ProtectedPaths::new(&[]);
-        let guard = DeletionGuard::new(&protected, &[root.clone()]);
-        let err = guard.validate(&db, EntryKind::File).expect_err("must refuse");
+        let guard = DeletionGuard::new(&protected, std::slice::from_ref(&root));
+        let err = guard
+            .validate(&db, EntryKind::File)
+            .expect_err("must refuse");
         assert!(matches!(err, GuardRejection::Protected { .. }));
 
         let _ = fs::remove_dir_all(&root);
@@ -485,10 +495,12 @@ mod tests {
         fs::write(&file, b"x").unwrap();
 
         let mut protected = ProtectedPaths::new(&[]);
-        protected.set_user_roots(&[keep.clone()]);
-        let guard = DeletionGuard::new(&protected, &[root.clone()]);
+        protected.set_user_roots(std::slice::from_ref(&keep));
+        let guard = DeletionGuard::new(&protected, std::slice::from_ref(&root));
 
-        let err = guard.validate(&file, EntryKind::File).expect_err("must refuse");
+        let err = guard
+            .validate(&file, EntryKind::File)
+            .expect_err("must refuse");
         assert!(matches!(err, GuardRejection::Protected { .. }));
 
         let _ = fs::remove_dir_all(&root);
@@ -503,8 +515,8 @@ mod tests {
         fs::write(&other, b"data").unwrap();
 
         let protected = ProtectedPaths::new(&[]);
-        let guard =
-            DeletionGuard::new(&protected, &[root.clone()]).with_name_exemptions(&["thumbcache_"]);
+        let guard = DeletionGuard::new(&protected, std::slice::from_ref(&root))
+            .with_name_exemptions(&["thumbcache_"]);
 
         assert!(guard.validate(&cache, EntryKind::File).is_ok());
         assert!(matches!(
@@ -560,17 +572,25 @@ mod tests {
         let etc_guard = DeletionGuard::new(&protected, &[PathBuf::from("/etc")]);
         assert!(etc_guard.check_protected(Path::new("/etc/passwd")).is_err());
         let var_guard = DeletionGuard::new(&protected, &[PathBuf::from("/var/tmp")]);
-        assert!(var_guard.check_protected(Path::new("/var/tmp/x.tmp")).is_err());
+        assert!(var_guard
+            .check_protected(Path::new("/var/tmp/x.tmp"))
+            .is_err());
 
         let home = dirs::home_dir().unwrap();
         let cache = home.join("snap/firefox/common/.cache/mozilla/firefox/p.default/cache2");
         let snap_guard = DeletionGuard::new(&protected, &[cache.clone()]);
-        assert!(snap_guard.check_protected(&cache.join("entries/ABC")).is_ok());
+        assert!(snap_guard
+            .check_protected(&cache.join("entries/ABC"))
+            .is_ok());
         // The profile beside it is not.
         let profile = home.join("snap/firefox/common/.mozilla/firefox/p.default");
         let profile_guard = DeletionGuard::new(&protected, &[profile.clone()]);
-        assert!(profile_guard.check_protected(&profile.join("key4.db")).is_err());
-        assert!(profile_guard.check_protected(&profile.join("prefs.js")).is_err());
+        assert!(profile_guard
+            .check_protected(&profile.join("key4.db"))
+            .is_err());
+        assert!(profile_guard
+            .check_protected(&profile.join("prefs.js"))
+            .is_err());
     }
 
     #[cfg(unix)]
@@ -622,7 +642,7 @@ mod tests {
             .is_err());
 
         // Nor may a category claim `C:\Windows` itself as its root.
-        let windows_guard = DeletionGuard::new(&protected, &[windows.clone()]);
+        let windows_guard = DeletionGuard::new(&protected, std::slice::from_ref(&windows));
         assert!(windows_guard
             .check_protected(&windows.join("explorer.exe"))
             .is_err());
@@ -632,9 +652,9 @@ mod tests {
     fn a_user_protected_root_is_never_lifted_by_a_carve_out() {
         let root = temp_root("userbeatscarve");
         let mut protected = ProtectedPaths::new(&[]);
-        protected.set_user_roots(&[root.clone()]);
+        protected.set_user_roots(std::slice::from_ref(&root));
 
-        let guard = DeletionGuard::new(&protected, &[root.clone()]);
+        let guard = DeletionGuard::new(&protected, std::slice::from_ref(&root));
         assert!(guard.check_protected(&root.join("anything.tmp")).is_err());
 
         let _ = fs::remove_dir_all(&root);
@@ -660,7 +680,7 @@ mod tests {
         let created = made.map(|o| o.status.success()).unwrap_or(false);
         if created {
             let protected = ProtectedPaths::new(&[]);
-            let guard = DeletionGuard::new(&protected, &[root.clone()]);
+            let guard = DeletionGuard::new(&protected, std::slice::from_ref(&root));
 
             // The junction itself.
             let err = guard

@@ -139,9 +139,15 @@ pub fn run() {
 
             app.manage(state);
 
+            // The updater is its own managed state, not part of AppState, so
+            // nothing that holds user data is reachable from it.
+            app.manage(commands::update::create());
+
             // Load the model in the background when the user asked for that,
             // so a large GGUF never delays the first frame.
-            if settings.ai_enabled && settings.ai_load_automatically && settings.ai_model_path.is_some()
+            if settings.ai_enabled
+                && settings.ai_load_automatically
+                && settings.ai_model_path.is_some()
             {
                 let handle = app.handle().clone();
                 std::thread::spawn(move || {
@@ -280,6 +286,12 @@ pub fn run() {
             commands::settings::apply_config_import,
             commands::settings::list_config_backups,
             commands::settings::restart_elevated,
+            // Updates
+            commands::update::get_update_status,
+            commands::update::check_for_updates,
+            commands::update::download_update,
+            commands::update::install_update,
+            commands::update::dismiss_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running AllInsight");

@@ -114,7 +114,11 @@ fn read_dpkg() -> Option<PackageDb> {
                 continue;
             }
             // `libfoo:amd64.list` belongs to package `libfoo`.
-            let package = stem(&path).split(':').next().unwrap_or_default().to_string();
+            let package = stem(&path)
+                .split(':')
+                .next()
+                .unwrap_or_default()
+                .to_string();
             let Ok(listing) = std::fs::read_to_string(&path) else {
                 continue;
             };
@@ -182,7 +186,10 @@ fn read_rpm(files: &[PathBuf]) -> Option<PackageDb> {
             let text = String::from_utf8_lossy(&output.stdout);
             // A file shared by two packages yields two lines; the first owner
             // is as good an answer as any.
-            let record = linux_parse::parse_rpm_query(&text).into_iter().flatten().next()?;
+            let record = linux_parse::parse_rpm_query(&text)
+                .into_iter()
+                .flatten()
+                .next()?;
             Some((file.clone(), record))
         })
         .collect();
@@ -306,7 +313,11 @@ pub fn collect() -> Vec<InstalledApp> {
             } else {
                 AppScope::AllUsers
             };
-            (AppSource::Manual, scope, entry.path.to_string_lossy().into_owned())
+            (
+                AppSource::Manual,
+                scope,
+                entry.path.to_string_lossy().into_owned(),
+            )
         };
 
         let id = format!("{}:{}", source_tag(source, scope), package);
@@ -381,14 +392,19 @@ fn run(program: &str, args: &[&str], what: &str) -> Result<()> {
         return Ok(());
     }
     let detail = String::from_utf8_lossy(&output.stderr);
-    let last = detail.lines().rev().find(|l| !l.trim().is_empty()).unwrap_or("");
+    let last = detail
+        .lines()
+        .rev()
+        .find(|l| !l.trim().is_empty())
+        .unwrap_or("");
     Err(AllInsightError::Platform(format!(
         "{program} could not remove {what}. {last}"
     )))
 }
 
 pub fn uninstall(id: &str) -> Result<()> {
-    let invalid = || AllInsightError::InvalidInput("That application reference is not valid.".into());
+    let invalid =
+        || AllInsightError::InvalidInput("That application reference is not valid.".into());
     let (tag, package) = id.split_once(':').ok_or_else(invalid)?;
     // The id came from `collect`, so confirm it is still listed rather than
     // trusting the string.

@@ -98,7 +98,11 @@ struct Ctx<'a> {
     progress: Arc<ScanProgress>,
 }
 
-fn risk_for(protected: &ProtectedPaths, path: &Path, category: StorageCategory) -> (RiskLevel, Option<String>) {
+fn risk_for(
+    protected: &ProtectedPaths,
+    path: &Path,
+    category: StorageCategory,
+) -> (RiskLevel, Option<String>) {
     let verdict = protected.classify(path);
     if verdict.protected {
         return (RiskLevel::Protected, Some(verdict.describe()));
@@ -196,7 +200,7 @@ pub fn find(
     }
 
     let mut entries = ctx.found.into_inner();
-    entries.sort_by(|a, b| b.size_bytes.cmp(&a.size_bytes));
+    entries.sort_by_key(|e| std::cmp::Reverse(e.size_bytes));
     let truncated = entries.len() > ctx.query.limit;
     let total_bytes = entries.iter().map(|e| e.size_bytes).sum();
     entries.truncate(ctx.query.limit);
@@ -217,7 +221,8 @@ mod tests {
     use std::fs;
 
     fn sandbox(tag: &str) -> PathBuf {
-        let base = std::env::temp_dir().join(format!("allinsight-large-{tag}-{}", std::process::id()));
+        let base =
+            std::env::temp_dir().join(format!("allinsight-large-{tag}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&base);
         fs::create_dir_all(&base).unwrap();
         paths::canonicalize(&base).unwrap_or(base)

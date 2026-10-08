@@ -91,11 +91,22 @@ fn the_linux_system_is_refused() {
         "/tmp/../etc/shadow",
         "/home/../usr/share",
     ] {
-        assert!(engine.is_protected(Path::new(path)), "{path} must be protected");
+        assert!(
+            engine.is_protected(Path::new(path)),
+            "{path} must be protected"
+        );
     }
     let home = dirs::home_dir().expect("home");
-    for leaf in [".ssh/id_ed25519", ".gnupg/pubring.kbx", ".mozilla/firefox/x/key4.db", ".local/share/keyrings/login.keyring"] {
-        assert!(engine.is_protected(&home.join(leaf)), "~/{leaf} must be protected");
+    for leaf in [
+        ".ssh/id_ed25519",
+        ".gnupg/pubring.kbx",
+        ".mozilla/firefox/x/key4.db",
+        ".local/share/keyrings/login.keyring",
+    ] {
+        assert!(
+            engine.is_protected(&home.join(leaf)),
+            "~/{leaf} must be protected"
+        );
     }
 }
 
@@ -113,9 +124,15 @@ fn a_symlink_cannot_be_used_to_reach_protected_data() {
 
     let engine = ProtectedPaths::new(&[]);
     let guard = DeletionGuard::new(&engine, &[root.clone()]);
-    assert!(guard.validate(&root.join("link"), EntryKind::Directory).is_err());
-    assert!(guard.validate(&root.join("link").join("important.txt"), EntryKind::File).is_err());
-    assert!(guard.validate(&root.join("file-link"), EntryKind::File).is_err());
+    assert!(guard
+        .validate(&root.join("link"), EntryKind::Directory)
+        .is_err());
+    assert!(guard
+        .validate(&root.join("link").join("important.txt"), EntryKind::File)
+        .is_err());
+    assert!(guard
+        .validate(&root.join("file-link"), EntryKind::File)
+        .is_err());
 
     // The storage walkers do not follow it either: the scan sees only the
     // links themselves, never the 9 bytes behind them.
@@ -135,7 +152,11 @@ fn windows_and_program_files_are_refused() {
         let Some(root) = paths::expand_env(template) else {
             continue;
         };
-        assert!(engine.is_protected(&root), "{} must be protected", root.display());
+        assert!(
+            engine.is_protected(&root),
+            "{} must be protected",
+            root.display()
+        );
         assert!(engine.is_protected(&root.join("subfolder").join("file.dll")));
     }
 }
@@ -170,10 +191,10 @@ fn a_user_protected_folder_cannot_be_cleaned_by_any_category() {
     fs::write(&file, vec![0u8; 4096]).unwrap();
 
     let mut engine = ProtectedPaths::new(&[]);
-    engine.set_user_roots(&[root.clone()]);
+    engine.set_user_roots(std::slice::from_ref(&root));
 
     // Point a guard at the folder anyway, as a hostile caller would.
-    let guard = DeletionGuard::new(&engine, &[root.clone()]);
+    let guard = DeletionGuard::new(&engine, std::slice::from_ref(&root));
     let rejection = guard
         .validate(&file, EntryKind::File)
         .expect_err("a user-protected folder must never be cleanable");
@@ -191,7 +212,7 @@ fn a_user_protected_folder_cannot_be_cleaned_by_any_category() {
 fn traversal_out_of_an_allowed_root_is_refused() {
     let root = sandbox("traversal");
     let engine = ProtectedPaths::new(&[]);
-    let guard = DeletionGuard::new(&engine, &[root.clone()]);
+    let guard = DeletionGuard::new(&engine, std::slice::from_ref(&root));
 
     let payloads: &[&str] = if cfg!(windows) {
         &[
@@ -232,7 +253,7 @@ fn a_junction_cannot_be_used_to_reach_protected_data() {
 
     if created {
         let engine = ProtectedPaths::new(&[]);
-        let guard = DeletionGuard::new(&engine, &[root.clone()]);
+        let guard = DeletionGuard::new(&engine, std::slice::from_ref(&root));
 
         assert!(
             guard.validate(&link, EntryKind::Directory).is_err(),
@@ -290,7 +311,8 @@ fn a_dry_run_removes_nothing() {
 fn an_unconfirmed_request_is_always_a_dry_run() {
     let engine = ProtectedPaths::new(&[]);
     let cancelled = AtomicBool::new(false);
-    let (preview, scan) = cleanup::discover(&engine, Some(&[CleanupCategory::UserTemp]), &cancelled);
+    let (preview, scan) =
+        cleanup::discover(&engine, Some(&[CleanupCategory::UserTemp]), &cancelled);
 
     let outcome = cleanup::execute(
         &engine,
@@ -416,7 +438,7 @@ fn a_validated_file_in_an_allowed_root_is_actually_removed() {
     fs::write(&file, vec![0u8; 8192]).unwrap();
 
     let engine = ProtectedPaths::new(&[]);
-    let guard = DeletionGuard::new(&engine, &[root.clone()]);
+    let guard = DeletionGuard::new(&engine, std::slice::from_ref(&root));
     let validated = guard.validate(&file, EntryKind::File).expect("approved");
     assert_eq!(validated.size_bytes(), 8192);
 
@@ -522,7 +544,9 @@ fn duplicate_detection_is_by_content_not_by_name() {
     assert!(grouped.iter().any(|p| p.ends_with("holiday.jpg")));
     assert!(grouped.iter().any(|p| p.ends_with("copy-of-something.jpg")));
     assert!(
-        !grouped.iter().any(|p| p.ends_with(&format!("b{}report.bin", std::path::MAIN_SEPARATOR))),
+        !grouped
+            .iter()
+            .any(|p| p.ends_with(&format!("b{}report.bin", std::path::MAIN_SEPARATOR))),
         "a file differing in the middle must not be grouped"
     );
 

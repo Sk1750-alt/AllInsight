@@ -38,7 +38,7 @@
     "publisher": "AllInsight",
     "category": "Utility",
     "shortDescription": "Local device intelligence and storage manager",
-    "longDescription": "AllInsight analyses storage, monitors device health, finds what is safe to clean, and explains what it finds. Everything happens on this device: no account, no server, no telemetry.",
+    "longDescription": "AllInsight analyses storage, monitors device health, finds what is safe to clean, and explains what it finds. Everything happens on this device: no account, no telemetry, and no network access except update checks you allow.",
     "copyright": "AllInsight",
     "licenseFile": "../LICENSE",
     "icon": [

@@ -20,7 +20,7 @@ Private by design. Intelligent by default.</p>
 
 AllInsight is an open-source desktop application for **Windows** and **Linux** that analyses storage, monitors device health, finds what is genuinely safe to clean, and explains what it finds — all on your own machine.
 
-No account. No server. No telemetry. Every feature works with the network disconnected.
+No account. No telemetry. Every feature works with the network disconnected. The only time AllInsight goes online is to check for updates, when you ask it to.
 
 ## ✨ Features
 
@@ -43,7 +43,7 @@ No account. No server. No telemetry. Every feature works with the network discon
 
 ## 🔒 Principles
 
-1. **Everything stays on this device.** No account, no cloud, no telemetry. AllInsight makes no network connections.
+1. **Everything stays on this device.** No account, no cloud, no telemetry. The only network request AllInsight can make is an update check you start or allow, and it carries nothing about you ([how updates work](docs/UPDATE_SYSTEM.md)).
 2. **Never guess with your files.** Every item is sorted into Safe, Review or Protected before anything can happen. Only Safe items can be cleaned automatically.
 3. **No scare tactics.** No registry cleaning, no "speed boost" claims, no inflated error counts.
 4. **Never fabricate data.** If a drive doesn't report a value, AllInsight says "Not reported" — never a guess.

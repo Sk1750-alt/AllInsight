@@ -168,7 +168,7 @@ fn chromium_profile_dirs(user_data: &PathBuf) -> Vec<PathBuf> {
 /// Firefox stores its cache outside the profile that holds bookmarks and
 /// logins, so the cache directory can be listed directly.
 fn firefox_cache_dirs(profiles: &PathBuf) -> Vec<PathBuf> {
-    let Ok(entries) = std::fs::read_dir(&profiles) else {
+    let Ok(entries) = std::fs::read_dir(profiles) else {
         return Vec::new();
     };
     entries
@@ -196,7 +196,9 @@ fn browser_cache_roots() -> Vec<PathBuf> {
         roots.extend(chromium_cache_dirs(&local.join(browser)));
     }
 
-    roots.extend(firefox_cache_dirs(&local.join("Mozilla\\Firefox\\Profiles")));
+    roots.extend(firefox_cache_dirs(
+        &local.join("Mozilla\\Firefox\\Profiles"),
+    ));
     roots
 }
 
@@ -206,6 +208,8 @@ pub fn definitions() -> Vec<CategoryDefinition> {
 }
 
 #[cfg(windows)]
+// One push per category reads as a catalogue; a vec! literal would not.
+#[allow(clippy::vec_init_then_push)]
 fn platform_definitions() -> Vec<CategoryDefinition> {
     let local = local_app_data();
     let mut out = Vec::new();
@@ -303,11 +307,12 @@ fn platform_definitions() -> Vec<CategoryDefinition> {
         id: CleanupCategory::IconCache,
         name: "Icon cache",
         description: "Cached application icons used by the taskbar and Start menu.",
-        what_happens: "Icon cache files are deleted permanently. Windows rebuilds them automatically.",
+        what_happens:
+            "Icon cache files are deleted permanently. Windows rebuilds them automatically.",
         what_is_untouched: "Installed applications and their shortcuts.",
-        roots: existing(vec![
-            paths::expand_env("%LOCALAPPDATA%\\Microsoft\\Windows\\Explorer")
-        ]),
+        roots: existing(vec![paths::expand_env(
+            "%LOCALAPPDATA%\\Microsoft\\Windows\\Explorer",
+        )]),
         rule: MatchRule::NamePrefixes(&["iconcache_"]),
         deletion: DeletionMode::Permanent,
         requires_elevation: false,
@@ -394,7 +399,8 @@ fn platform_definitions() -> Vec<CategoryDefinition> {
         id: CleanupCategory::ComponentStoreLogs,
         name: "Servicing logs",
         description: "Text logs written while Windows installs components.",
-        what_happens: "Old servicing logs are deleted permanently. Windows writes new ones as needed.",
+        what_happens:
+            "Old servicing logs are deleted permanently. Windows writes new ones as needed.",
         what_is_untouched: "The component store itself and every installed component.",
         roots: existing(vec![paths::expand_env("%SystemRoot%\\Logs\\CBS")]),
         rule: MatchRule::Extensions(&["log", "cab", "etl"]),
@@ -426,7 +432,8 @@ fn platform_definitions() -> Vec<CategoryDefinition> {
         id: CleanupCategory::RecycleBin,
         name: "Recycle Bin",
         description: "Items you already deleted, still recoverable until the bin is emptied.",
-        what_happens: "The Recycle Bin is emptied through Windows. After this, the items cannot be restored.",
+        what_happens:
+            "The Recycle Bin is emptied through Windows. After this, the items cannot be restored.",
         what_is_untouched: "Everything that is not already in the Recycle Bin.",
         roots: Vec::new(),
         rule: MatchRule::ShellManaged,
@@ -481,11 +488,13 @@ fn browser_cache_roots() -> Vec<PathBuf> {
 #[cfg(not(windows))]
 fn platform_definitions() -> Vec<CategoryDefinition> {
     let cache = dirs::cache_dir();
-    let in_cache = |leaf: &str| cache.as_ref().map(|c| {
-        let mut p = c.clone();
-        p.extend(leaf.split('/'));
-        p
-    });
+    let in_cache = |leaf: &str| {
+        cache.as_ref().map(|c| {
+            let mut p = c.clone();
+            p.extend(leaf.split('/'));
+            p
+        })
+    };
     let mut out = Vec::new();
 
     out.push(CategoryDefinition {
@@ -593,6 +602,8 @@ pub fn definition_for(category: CleanupCategory) -> Option<CategoryDefinition> {
 }
 
 #[cfg(test)]
+// The platform is a compile-time constant here on purpose.
+#[allow(clippy::assertions_on_constants)]
 mod tests {
     use super::*;
     use crate::services::security::ProtectedPaths;

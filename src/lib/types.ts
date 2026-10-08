@@ -621,6 +621,10 @@ export interface Settings {
 
   protected_paths: string[];
   require_confirmation_for_processes: boolean;
+
+  /** Off by default; nothing contacts the network until the user opts in. */
+  update_auto_check: boolean;
+  update_check_interval_hours: number;
 }
 
 export interface ProtectedPathView {
@@ -705,4 +709,47 @@ export interface DashboardSnapshot {
   reclaimable_bytes: number;
   scanned: boolean;
   elevated: boolean;
+}
+
+// ---------------------------------------------------------------- updates
+
+export interface ReleaseInfo {
+  version: string;
+  release_date: string | null;
+  notes: string[];
+  security: boolean;
+  kind: "application" | "model" | "configuration" | "security";
+  size: number;
+  installable: boolean;
+  note: string | null;
+}
+
+export type UpdateFailure = "offline" | "network" | "verification" | "install";
+
+export type UpdatePhase =
+  | { state: "idle" }
+  | { state: "unavailable"; reason: string }
+  | { state: "checking" }
+  | { state: "up_to_date"; latest: string }
+  | { state: "available"; release: ReleaseInfo }
+  | { state: "downloading"; release: ReleaseInfo; downloaded: number; total: number | null }
+  | { state: "verifying"; release: ReleaseInfo }
+  | { state: "ready"; release: ReleaseInfo; manual_install: boolean }
+  | { state: "failed"; kind: UpdateFailure; message: string };
+
+export type InstallReport =
+  | { outcome: "completed"; version: string }
+  | { outcome: "not_completed"; attempted: string; running: string };
+
+export interface UpdateView {
+  phase: UpdatePhase;
+  current_version: string;
+  channel: "stable" | "beta" | "dev";
+  platform: string;
+  last_install: InstallReport | null;
+  last_checked: number | null;
+  auto_check: boolean;
+  check_interval_hours: number;
+  /** Set when an automatic check found an update and the user should be asked. */
+  prompt: boolean;
 }

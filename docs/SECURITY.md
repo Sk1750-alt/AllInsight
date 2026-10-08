@@ -357,9 +357,57 @@ they are given:
   privilege. Flatpak and Snap removals go through those tools as the user;
   apt, dnf, zypper and pacman removals are shown as a command to run.
 
+## 10b. Updates
+
+The updater is the only code that reaches the internet, and the only code
+that can cause a new program to run. It is built so that compromising the
+download server is not enough to compromise users. Full design:
+[UPDATE_SYSTEM.md](UPDATE_SYSTEM.md).
+
+- **HTTPS, to trusted hosts only.** Every URL goes through
+  `update::config::check_url`: the metadata address, every redirect hop
+  (redirects are followed by hand, never by the library), and the package
+  address. It refuses `http://`, other schemes, hosts outside the compiled
+  allowlist, look-alike hosts, and URLs carrying credentials. The HTTP agent
+  is also built with `https_only(true)`.
+- **Trusted endpoint, fixed at build time.** The update address and the
+  trusted key are compile-time constants. No setting, settings import or
+  environment variable at run time can change them.
+- **Signed metadata.** `latest.json` must verify against the minisign / `tauri
+  signer` public key compiled into the binary *before it is parsed*. If this
+  build has no key, the updater makes no request at all. Signed metadata is
+  then checked again: right product, right channel, a supported schema,
+  valid versions, and never a downgrade.
+- **SHA-256.** The package must hash to the value in the signed metadata. A
+  mismatch deletes the file and reports *Update verification failed. For your
+  security, the update was not installed.* The hash is checked again
+  immediately before the installer runs, because the file sat on disk in the
+  meantime.
+- **Digital signatures (Windows).** `WinVerifyTrust` checks the installer's
+  Authenticode signature, including the revocation of the whole chain. A
+  broken or untrusted signature is always refused. When the build sets
+  `ALLINSIGHT_UPDATE_PUBLISHER`, the installer must be validly signed by
+  exactly that publisher, or it is refused.
+- **No silent install.** Nothing downloads without *Update Now*, and nothing
+  installs or restarts without *Restart Now*.
+- **Rollback and safe installation.**
+  - The database is backed up before every install, and the install doesn't
+    start if the backup fails.
+  - Schema migrations run in one transaction after a full backup.
+  - The NSIS installer runs in update mode, where the uninstall hook keeps
+    user data.
+  - An AppImage swap restores the previous file if it fails.
+  - A Windows install that is interrupted is repaired by re-running the
+    verified installer, which is kept until the new version starts.
+
 ## 11. What is not claimed
 
-- The installer is unsigned. Windows will warn on first run.
+- Until a code-signing certificate is in place, the installer is unsigned and
+  Windows will warn on first run. Updates are still verified by the signed
+  metadata and its SHA-256.
+- An NSIS installer killed halfway is not transactional. AllInsight detects it
+  on the next launch and keeps the verified installer to run again, but it
+  does not undo partial file copies itself.
 - AllInsight is not anti-malware and makes no claim about the trustworthiness of
   the files it lists.
 - Drive health is only as good as what the drive reports. Where the counters

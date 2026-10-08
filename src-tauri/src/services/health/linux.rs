@@ -96,8 +96,8 @@ fn hwmon_temperature(device_dir: &Path) -> Option<i32> {
             if !name.starts_with("hwmon") {
                 continue;
             }
-            if let Some(milli) = read_trimmed(&entry.path().join("temp1_input"))
-                .and_then(|t| t.parse::<i64>().ok())
+            if let Some(milli) =
+                read_trimmed(&entry.path().join("temp1_input")).and_then(|t| t.parse::<i64>().ok())
             {
                 return Some((milli / 1000) as i32);
             }
@@ -207,17 +207,33 @@ pub(super) fn apply_smart(drive: &mut DriveHealth, smart: &Smart) {
                 .to_string(),
             );
         }
-        drive.windows_health = Some(if smart.nvme_warnings.is_empty() { "Healthy" } else { "Warning" }.into());
+        drive.windows_health = Some(
+            if smart.nvme_warnings.is_empty() {
+                "Healthy"
+            } else {
+                "Warning"
+            }
+            .into(),
+        );
     } else {
         if smart.failing == Some(true) {
             status.push("Predictive failure".into());
         } else if smart.attributes_failing.unwrap_or(0) > 0 || smart.bad_sectors.unwrap_or(0) > 0 {
             status.push("Degraded".into());
         }
-        drive.windows_health = Some(if smart.failing == Some(true) { "Unhealthy" } else { "Healthy" }.into());
+        drive.windows_health = Some(
+            if smart.failing == Some(true) {
+                "Unhealthy"
+            } else {
+                "Healthy"
+            }
+            .into(),
+        );
     }
     if let Some(bad) = smart.bad_sectors.filter(|b| *b > 0) {
-        drive.notes.push(format!("{bad} bad sectors have been recorded."));
+        drive
+            .notes
+            .push(format!("{bad} bad sectors have been recorded."));
     }
     status.dedup();
     drive.operational_status = status;
@@ -256,7 +272,9 @@ mod udisks {
     fn get_bytes_string(props: &Props, key: &str) -> Option<String> {
         let value = props.get(key)?.try_clone().ok()?;
         let bytes = Vec::<u8>::try_from(value).ok()?;
-        let text = String::from_utf8_lossy(&bytes).trim_end_matches('\0').to_string();
+        let text = String::from_utf8_lossy(&bytes)
+            .trim_end_matches('\0')
+            .to_string();
         (!text.is_empty()).then_some(text)
     }
 
@@ -268,7 +286,11 @@ mod udisks {
             return Vec::new();
         };
         list.into_iter()
-            .map(|b| String::from_utf8_lossy(&b).trim_end_matches('\0').to_string())
+            .map(|b| {
+                String::from_utf8_lossy(&b)
+                    .trim_end_matches('\0')
+                    .to_string()
+            })
             .filter(|s| !s.is_empty())
             .collect()
     }
@@ -313,12 +335,17 @@ mod udisks {
         let mut whole_disk: HashMap<String, String> = HashMap::new();
         let mut mounts: HashMap<String, Vec<String>> = HashMap::new();
         for interfaces in objects.values() {
-            let Some(block) = interfaces.get(BLOCK) else { continue };
+            let Some(block) = interfaces.get(BLOCK) else {
+                continue;
+            };
             let Some(drive) = get_path(block, "Drive").filter(|d| d != "/") else {
                 continue;
             };
             if let Some(fs) = interfaces.get(FILESYSTEM) {
-                mounts.entry(drive.clone()).or_default().extend(get_mount_points(fs));
+                mounts
+                    .entry(drive.clone())
+                    .or_default()
+                    .extend(get_mount_points(fs));
             }
             if !interfaces.contains_key(PARTITION) {
                 if let Some(device) = get_bytes_string(block, "Device") {
@@ -329,8 +356,13 @@ mod udisks {
 
         let mut out = Vec::new();
         for (path, interfaces) in &objects {
-            let Some(props) = interfaces.get(DRIVE) else { continue };
-            let device = whole_disk.get(path).cloned().unwrap_or_else(|| path.clone());
+            let Some(props) = interfaces.get(DRIVE) else {
+                continue;
+            };
+            let device = whole_disk
+                .get(path)
+                .cloned()
+                .unwrap_or_else(|| path.clone());
             // Optical drives have no health story to tell.
             if device.starts_with("/dev/sr") {
                 continue;
@@ -436,7 +468,9 @@ pub fn report() -> Result<DriveHealthReport> {
         decide(drive);
         drive.notes.extend(extra);
         if drive.reliability_unavailable {
-            drive.notes.retain(|n| !n.contains("does not report detailed health data"));
+            drive
+                .notes
+                .retain(|n| !n.contains("does not report detailed health data"));
             drive.notes.push(if used_udisks {
                 "This drive has not reported SMART data to the system. USB enclosures often block it.".into()
             } else {
@@ -497,14 +531,26 @@ mod tests {
     #[test]
     fn a_clean_nvme_drive_is_healthy_and_a_warning_is_not() {
         let mut d = empty_drive("/dev/nvme0n1".into(), "SSD".into());
-        apply_smart(&mut d, &Smart { updated: true, is_nvme: true, ..Default::default() });
+        apply_smart(
+            &mut d,
+            &Smart {
+                updated: true,
+                is_nvme: true,
+                ..Default::default()
+            },
+        );
         decide(&mut d);
         assert_eq!(d.state, HealthState::Healthy);
 
         let mut d = empty_drive("/dev/nvme0n1".into(), "SSD".into());
         apply_smart(
             &mut d,
-            &Smart { updated: true, is_nvme: true, nvme_warnings: vec!["spare".into()], ..Default::default() },
+            &Smart {
+                updated: true,
+                is_nvme: true,
+                nvme_warnings: vec!["spare".into()],
+                ..Default::default()
+            },
         );
         decide(&mut d);
         assert_eq!(d.state, HealthState::Critical);

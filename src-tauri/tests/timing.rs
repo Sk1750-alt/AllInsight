@@ -21,10 +21,7 @@ fn time_each_cleanup_category() {
         let started = Instant::now();
         let (preview, scan) = cleanup::discover(&engine, Some(&[category]), &cancelled);
         let elapsed = started.elapsed();
-        let report = preview
-            .categories
-            .iter()
-            .find(|c| c.category == category);
+        let report = preview.categories.iter().find(|c| c.category == category);
         println!(
             "{:>32?}  {:>8.2}s  {:>10} bytes  {:>7} items  {:>7} candidates",
             category,

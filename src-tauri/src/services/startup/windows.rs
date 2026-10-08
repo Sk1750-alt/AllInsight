@@ -35,8 +35,7 @@ fn approval_key(location: StartupLocation) -> Option<(&'static str, bool)> {
 }
 
 const RUN_PATH: &str = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
-const APPROVED_PATH: &str =
-    r"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved";
+const APPROVED_PATH: &str = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved";
 
 /// Pull the executable out of a command line so its size and publisher can be
 /// read. Uses the same conservative split as the uninstaller launcher.
@@ -74,7 +73,11 @@ fn read_approval(location: StartupLocation, name: &str) -> bool {
         return true;
     };
     match key.get_raw_value(name) {
-        Ok(value) => value.bytes.first().map(|b| *b == 2 || *b == 0).unwrap_or(true),
+        Ok(value) => value
+            .bytes
+            .first()
+            .map(|b| *b == 2 || *b == 0)
+            .unwrap_or(true),
         Err(_) => true,
     }
 }
@@ -98,7 +101,9 @@ fn write_approval(location: StartupLocation, name: &str, enabled: bool) -> Resul
     });
     let (key, _) = root
         .create_subkey_with_flags(format!("{APPROVED_PATH}\\{leaf}"), KEY_SET_VALUE | KEY_READ)
-        .map_err(|e| AllInsightError::Platform(format!("Could not open the startup settings: {e}")))?;
+        .map_err(|e| {
+            AllInsightError::Platform(format!("Could not open the startup settings: {e}"))
+        })?;
 
     // The value is 12 bytes: a state byte, three reserved bytes, then a
     // FILETIME recording when it changed. Windows only reads the first byte.
@@ -118,8 +123,9 @@ fn write_approval(location: StartupLocation, name: &str, enabled: bool) -> Resul
         vtype: winreg::enums::RegType::REG_BINARY,
         bytes,
     };
-    key.set_raw_value(name, &value)
-        .map_err(|e| AllInsightError::Platform(format!("Could not update the startup setting: {e}")))
+    key.set_raw_value(name, &value).map_err(|e| {
+        AllInsightError::Platform(format!("Could not update the startup setting: {e}"))
+    })
 }
 
 fn read_run_key(location: StartupLocation, out: &mut Vec<StartupItem>) {
@@ -141,7 +147,11 @@ fn read_run_key(location: StartupLocation, out: &mut Vec<StartupItem>) {
     }
 }
 
-fn read_startup_folder(location: StartupLocation, folder: Option<PathBuf>, out: &mut Vec<StartupItem>) {
+fn read_startup_folder(
+    location: StartupLocation,
+    folder: Option<PathBuf>,
+    out: &mut Vec<StartupItem>,
+) {
     let Some(folder) = folder else { return };
     let Ok(entries) = std::fs::read_dir(&folder) else {
         return;
@@ -246,9 +256,9 @@ pub fn list() -> StartupList {
 
 /// Enable or disable one entry, addressed by the id `list` produced.
 pub fn set_enabled(id: &str, enabled: bool) -> Result<()> {
-    let (tag, name) = id
-        .split_once(':')
-        .ok_or_else(|| AllInsightError::InvalidInput("That startup item reference is not valid.".into()))?;
+    let (tag, name) = id.split_once(':').ok_or_else(|| {
+        AllInsightError::InvalidInput("That startup item reference is not valid.".into())
+    })?;
     let location = location_from_tag(tag)
         .ok_or_else(|| AllInsightError::InvalidInput("Unknown startup location.".into()))?;
     if name.is_empty() {

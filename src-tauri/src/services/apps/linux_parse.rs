@@ -325,7 +325,10 @@ pub fn parse_rpm_query(text: &str) -> Vec<Option<PackageRecord>> {
 /// The `version:` of a snap, from its `meta/snap.yaml`.
 pub fn snap_version(yaml: &str) -> Option<String> {
     yaml.lines().find_map(|l| {
-        let v = l.strip_prefix("version:")?.trim().trim_matches(|c| c == '\'' || c == '"');
+        let v = l
+            .strip_prefix("version:")?
+            .trim()
+            .trim_matches(|c| c == '\'' || c == '"');
         (!v.is_empty()).then(|| v.to_string())
     })
 }
@@ -355,7 +358,10 @@ Exec=/snap/bin/firefox -new-window
         assert_eq!(e.name, "Firefox Web Browser");
         assert!(e.is_application);
         assert!(!e.no_display && !e.hidden);
-        assert_eq!(exec_program(e.exec.as_deref().unwrap()).as_deref(), Some("/snap/bin/firefox"));
+        assert_eq!(
+            exec_program(e.exec.as_deref().unwrap()).as_deref(),
+            Some("/snap/bin/firefox")
+        );
     }
 
     #[test]
@@ -383,7 +389,10 @@ Exec=/snap/bin/firefox -new-window
 
     #[test]
     fn desktop_filters_follow_the_running_desktop() {
-        let group = desktop_group("[Desktop Entry]\nOnlyShowIn=GNOME;Unity;\n", "Desktop Entry");
+        let group = desktop_group(
+            "[Desktop Entry]\nOnlyShowIn=GNOME;Unity;\n",
+            "Desktop Entry",
+        );
         assert!(shown_in(&group, "ubuntu:GNOME"));
         assert!(!shown_in(&group, "KDE"));
         let group = desktop_group("[Desktop Entry]\nNotShowIn=KDE;\n", "Desktop Entry");
@@ -437,10 +446,17 @@ Version: 1.0
 
     #[test]
     fn package_listings_yield_their_desktop_files() {
-        let pacman = "%FILES%\nusr/\nusr/share/applications/firefox.desktop\nusr/lib/firefox/firefox\n";
-        assert_eq!(desktop_files_in_listing(pacman), vec!["/usr/share/applications/firefox.desktop"]);
+        let pacman =
+            "%FILES%\nusr/\nusr/share/applications/firefox.desktop\nusr/lib/firefox/firefox\n";
+        assert_eq!(
+            desktop_files_in_listing(pacman),
+            vec!["/usr/share/applications/firefox.desktop"]
+        );
         let dpkg = "/.\n/usr/share/applications/gimp.desktop\n/usr/share/doc/gimp/x.desktop\n";
-        assert_eq!(desktop_files_in_listing(dpkg), vec!["/usr/share/applications/gimp.desktop"]);
+        assert_eq!(
+            desktop_files_in_listing(dpkg),
+            vec!["/usr/share/applications/gimp.desktop"]
+        );
     }
 
     #[test]
@@ -448,12 +464,18 @@ Version: 1.0
         let out = "gimp\t2.10.38-1.fc40\tFedora Project\t120000000\t1715000000\nfile /usr/local/share/applications/x.desktop is not owned by any package\n";
         let parsed = parse_rpm_query(out);
         assert_eq!(parsed.len(), 2);
-        assert_eq!(parsed[0].as_ref().unwrap().publisher.as_deref(), Some("Fedora Project"));
+        assert_eq!(
+            parsed[0].as_ref().unwrap().publisher.as_deref(),
+            Some("Fedora Project")
+        );
         assert!(parsed[1].is_none());
     }
 
     #[test]
     fn snap_versions_are_read() {
-        assert_eq!(snap_version("name: firefox\nversion: '130.0'\n").as_deref(), Some("130.0"));
+        assert_eq!(
+            snap_version("name: firefox\nversion: '130.0'\n").as_deref(),
+            Some("130.0")
+        );
     }
 }

@@ -14,4 +14,5 @@ pub mod security;
 pub mod startup;
 pub mod storage;
 pub mod system;
+pub mod update;
 pub mod wmi_thread;

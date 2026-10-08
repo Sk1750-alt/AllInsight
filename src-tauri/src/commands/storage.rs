@@ -71,7 +71,11 @@ fn validate_root(root: &str) -> Result<PathBuf> {
 }
 
 #[tauri::command]
-pub async fn scan_directory(app: AppHandle, state: State<'_, AppState>, root: String) -> Result<()> {
+pub async fn scan_directory(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    root: String,
+) -> Result<()> {
     let path = validate_root(&root)?;
     let progress = Arc::new(ScanProgress::default());
     state.begin_scan(progress.clone())?;
@@ -148,17 +152,20 @@ fn summarise(result: &storage::ScanResult) -> ScanSummary {
 }
 
 #[tauri::command]
-pub async fn get_scan_summary(state: State<'_, AppState>, root: String) -> Result<Option<ScanSummary>> {
+pub async fn get_scan_summary(
+    state: State<'_, AppState>,
+    root: String,
+) -> Result<Option<ScanSummary>> {
     Ok({
-    let key = paths::normalize_lexical(std::path::Path::new(&root))
-        .to_string_lossy()
-        .into_owned();
-    let scans = state.scans.read();
-    scans
-        .get(&key)
-        .or_else(|| scans.values().next())
-        .map(summarise)
-})
+        let key = paths::normalize_lexical(std::path::Path::new(&root))
+            .to_string_lossy()
+            .into_owned();
+        let scans = state.scans.read();
+        scans
+            .get(&key)
+            .or_else(|| scans.values().next())
+            .map(summarise)
+    })
 }
 
 #[tauri::command]
@@ -225,7 +232,10 @@ pub async fn find_large_files(
     let reporter = progress.clone();
     std::thread::spawn(move || loop {
         std::thread::sleep(std::time::Duration::from_millis(250));
-        if handle.emit(EVENT_SCAN_PROGRESS, &reporter.snapshot()).is_err() {
+        if handle
+            .emit(EVENT_SCAN_PROGRESS, &reporter.snapshot())
+            .is_err()
+        {
             return;
         }
         if Arc::strong_count(&reporter) <= 1 {
@@ -259,9 +269,7 @@ pub async fn find_large_files(
 
 #[tauri::command]
 pub async fn get_large_files(state: State<'_, AppState>) -> Result<Option<LargeFileReport>> {
-    Ok({
-    state.large_files.read().clone()
-})
+    Ok(state.large_files.read().clone())
 }
 
 #[tauri::command]
@@ -286,7 +294,10 @@ pub async fn find_duplicates(
     let reporter = progress.clone();
     std::thread::spawn(move || loop {
         std::thread::sleep(std::time::Duration::from_millis(250));
-        if handle.emit(EVENT_SCAN_PROGRESS, &reporter.snapshot()).is_err() {
+        if handle
+            .emit(EVENT_SCAN_PROGRESS, &reporter.snapshot())
+            .is_err()
+        {
             return;
         }
         if Arc::strong_count(&reporter) <= 1 {
@@ -320,9 +331,7 @@ pub async fn find_duplicates(
 
 #[tauri::command]
 pub async fn get_duplicates(state: State<'_, AppState>) -> Result<Option<DuplicateReport>> {
-    Ok({
-    state.duplicates.read().clone()
-})
+    Ok(state.duplicates.read().clone())
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -332,7 +341,10 @@ pub struct VolumeTrend {
 }
 
 #[tauri::command]
-pub async fn get_volume_trend(state: State<'_, AppState>, mount_point: String) -> Result<VolumeTrend> {
+pub async fn get_volume_trend(
+    state: State<'_, AppState>,
+    mount_point: String,
+) -> Result<VolumeTrend> {
     Ok(VolumeTrend {
         samples: state.db.volume_trend(&mount_point, 120)?,
         mount_point,
@@ -347,7 +359,9 @@ pub async fn get_volume_trend(state: State<'_, AppState>, mount_point: String) -
 pub async fn show_in_explorer(path: String) -> Result<()> {
     let target = paths::normalize_lexical(std::path::Path::new(&path));
     if !target.is_absolute() {
-        return Err(AllInsightError::InvalidInput("That location is not valid.".into()));
+        return Err(AllInsightError::InvalidInput(
+            "That location is not valid.".into(),
+        ));
     }
     if !target.exists() {
         return Err(AllInsightError::NotFound(target));

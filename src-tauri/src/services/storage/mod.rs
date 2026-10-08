@@ -40,7 +40,10 @@ pub fn overview() -> StorageOverview {
         total_bytes: local.iter().map(|v| v.total_bytes).sum(),
         used_bytes: local.iter().map(|v| v.used_bytes).sum(),
         free_bytes: local.iter().map(|v| v.free_bytes).sum(),
-        system_volume: volumes.iter().find(|v| v.is_system).map(|v| v.mount_point.clone()),
+        system_volume: volumes
+            .iter()
+            .find(|v| v.is_system)
+            .map(|v| v.mount_point.clone()),
         volumes,
     }
 }

@@ -23,7 +23,25 @@ pub mod settings;
 
 pub use settings::Settings;
 
+/// The schema this build writes. Raise it together with a new entry in
+/// [`MIGRATIONS`]; never edit a migration that has shipped.
 const SCHEMA_VERSION: i32 = 1;
+
+/// One forward step of the schema.
+pub struct Migration {
+    /// The schema version this step produces.
+    pub version: i32,
+    /// Statements run inside the upgrade transaction.
+    pub sql: &'static str,
+}
+
+/// Every schema change since version 1, oldest first. Empty while the schema
+/// is still the original one. A future step looks like:
+///
+/// ```text
+/// Migration { version: 2, sql: "ALTER TABLE scan_history ADD COLUMN kind TEXT;" },
+/// ```
+const MIGRATIONS: &[Migration] = &[];
 
 pub struct Database {
     connection: Mutex<Connection>,
@@ -168,19 +186,112 @@ impl Database {
         )?;
 
         let current: Option<i32> = connection
-            .query_row("SELECT version FROM schema_info LIMIT 1", [], |row| row.get(0))
+            .query_row("SELECT version FROM schema_info LIMIT 1", [], |row| {
+                row.get(0)
+            })
             .ok();
         match current {
             None => {
-                connection.execute("INSERT INTO schema_info (version) VALUES (?1)", params![
-                    SCHEMA_VERSION
-                ])?;
+                connection.execute(
+                    "INSERT INTO schema_info (version) VALUES (?1)",
+                    params![SCHEMA_VERSION],
+                )?;
             }
             Some(v) if v < SCHEMA_VERSION => {
-                connection.execute("UPDATE schema_info SET version = ?1", params![SCHEMA_VERSION])?;
+                drop(connection);
+                self.apply_migrations(v, MIGRATIONS)?;
             }
             _ => {}
         }
+        Ok(())
+    }
+
+    /// Bring a database written by an older AllInsight up to date.
+    ///
+    /// An application update must never cost the user their data, so every
+    /// step that changes the schema is guarded twice:
+    ///
+    /// 1. Before anything runs, the whole file is copied with `VACUUM INTO`
+    ///    to `backups/pre-migration-v<from>.db` beside it. If the backup cannot
+    ///    be written, nothing runs.
+    /// 2. All pending steps run in one transaction, together with the version
+    ///    bump. SQLite's DDL is transactional, so a failing step leaves the
+    ///    file exactly as it was, at the old version.
+    ///
+    /// The backup is there for the case the transaction cannot cover: a step
+    /// that succeeds but turns out to be wrong.
+    fn apply_migrations(&self, from: i32, migrations: &[Migration]) -> Result<()> {
+        let pending: Vec<&Migration> = migrations.iter().filter(|m| m.version > from).collect();
+        let target = migrations
+            .iter()
+            .map(|m| m.version)
+            .max()
+            .unwrap_or(SCHEMA_VERSION)
+            .max(from);
+
+        let mut connection = self.connection.lock();
+
+        if !pending.is_empty() {
+            if let Some(backup) = self.migration_backup_path(from) {
+                let refuse = |e: String| {
+                    AllInsightError::Database(format!(
+                        "The database could not be backed up before upgrading it, so it was left unchanged: {e}"
+                    ))
+                };
+                if let Some(parent) = backup.parent() {
+                    std::fs::create_dir_all(parent).map_err(|e| refuse(e.to_string()))?;
+                }
+                let _ = std::fs::remove_file(&backup);
+                connection
+                    .execute("VACUUM INTO ?1", params![backup.to_string_lossy()])
+                    .map_err(|e| refuse(e.to_string()))?;
+                tracing::info!(
+                    target: "allinsight::db",
+                    "database backed up before upgrading from schema {from}"
+                );
+            }
+        }
+
+        let tx = connection.transaction()?;
+        for migration in &pending {
+            tx.execute_batch(migration.sql).map_err(|e| {
+                AllInsightError::Database(format!(
+                    "Upgrading the database to schema {} failed and was rolled back: {e}",
+                    migration.version
+                ))
+            })?;
+        }
+        tx.execute("UPDATE schema_info SET version = ?1", params![target])?;
+        tx.commit()?;
+
+        if !pending.is_empty() {
+            tracing::info!(target: "allinsight::db", "database upgraded from schema {from} to {target}");
+        }
+        Ok(())
+    }
+
+    /// Where the pre-migration copy goes. In-memory databases have none.
+    fn migration_backup_path(&self, from: i32) -> Option<PathBuf> {
+        if self.path.as_os_str() == ":memory:" {
+            return None;
+        }
+        let parent = self.path.parent()?;
+        Some(
+            parent
+                .join("backups")
+                .join(format!("pre-migration-v{from}.db")),
+        )
+    }
+
+    /// Copy the live database to `destination` as a consistent snapshot,
+    /// without stopping writers. Used before an application update.
+    pub fn backup_to(&self, destination: &Path) -> Result<()> {
+        if let Some(parent) = destination.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let _ = std::fs::remove_file(destination);
+        let connection = self.connection.lock();
+        connection.execute("VACUUM INTO ?1", params![destination.to_string_lossy()])?;
         Ok(())
     }
 
@@ -189,9 +300,11 @@ impl Database {
     pub fn get_setting(&self, key: &str) -> Result<Option<String>> {
         let connection = self.connection.lock();
         let value = connection
-            .query_row("SELECT value FROM settings WHERE key = ?1", params![key], |row| {
-                row.get::<_, String>(0)
-            })
+            .query_row(
+                "SELECT value FROM settings WHERE key = ?1",
+                params![key],
+                |row| row.get::<_, String>(0),
+            )
             .ok();
         Ok(value)
     }
@@ -266,7 +379,13 @@ impl Database {
         })
     }
 
-    pub fn record_scan(&self, root: &str, total_bytes: u64, total_files: u64, duration_ms: u64) -> Result<()> {
+    pub fn record_scan(
+        &self,
+        root: &str,
+        total_bytes: u64,
+        total_files: u64,
+        duration_ms: u64,
+    ) -> Result<()> {
         let connection = self.connection.lock();
         connection.execute(
             "INSERT INTO scan_history (ran_at, root, total_bytes, total_files, duration_ms)
@@ -470,6 +589,105 @@ mod tests {
         let entries = db.activity(3).unwrap();
         assert_eq!(entries.len(), 3);
         assert_eq!(entries[0].summary, "scan 4");
+    }
+
+    fn temp_db(tag: &str) -> (PathBuf, PathBuf) {
+        let dir = std::env::temp_dir().join(format!("allinsight-mig-{tag}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        (dir.clone(), dir.join("allinsight.db"))
+    }
+
+    fn version(db: &Database) -> i32 {
+        db.connection
+            .lock()
+            .query_row("SELECT version FROM schema_info", [], |r| r.get(0))
+            .unwrap()
+    }
+
+    #[test]
+    fn a_successful_migration_backs_up_first_and_keeps_user_data() {
+        let (dir, path) = temp_db("ok");
+        let db = Database::open(&path).unwrap();
+        db.set_setting("settings.v1", r#"{"theme":"dark"}"#)
+            .unwrap();
+        db.log_activity("scan", "kept", None).unwrap();
+
+        let steps = [Migration {
+            version: 2,
+            sql: "ALTER TABLE scan_history ADD COLUMN kind TEXT;",
+        }];
+        db.apply_migrations(1, &steps).unwrap();
+
+        assert_eq!(version(&db), 2);
+        assert!(dir.join("backups").join("pre-migration-v1.db").exists());
+        assert_eq!(
+            db.get_setting("settings.v1").unwrap().as_deref(),
+            Some(r#"{"theme":"dark"}"#)
+        );
+        assert_eq!(db.activity(10).unwrap()[0].summary, "kept");
+        drop(db);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_failing_migration_rolls_back_and_leaves_the_data_untouched() {
+        let (dir, path) = temp_db("fail");
+        let db = Database::open(&path).unwrap();
+        db.set_setting("settings.v1", "precious").unwrap();
+
+        // The first step succeeds, the second fails; neither may stick.
+        let steps = [
+            Migration {
+                version: 2,
+                sql: "DROP TABLE activity_log;",
+            },
+            Migration {
+                version: 3,
+                sql: "THIS IS NOT SQL;",
+            },
+        ];
+        assert!(db.apply_migrations(1, &steps).is_err());
+
+        assert_eq!(version(&db), 1, "the version must not move");
+        assert_eq!(
+            db.get_setting("settings.v1").unwrap().as_deref(),
+            Some("precious")
+        );
+        db.log_activity("scan", "the table still exists", None)
+            .unwrap();
+        assert!(dir.join("backups").join("pre-migration-v1.db").exists());
+        drop(db);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn reopening_an_older_database_brings_it_up_to_date() {
+        let (dir, path) = temp_db("reopen");
+        {
+            let db = Database::open(&path).unwrap();
+            db.connection
+                .lock()
+                .execute("UPDATE schema_info SET version = 0", [])
+                .unwrap();
+        }
+        let db = Database::open(&path).unwrap();
+        assert_eq!(version(&db), SCHEMA_VERSION);
+        drop(db);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn backup_to_writes_a_readable_copy() {
+        let (dir, path) = temp_db("backup");
+        let db = Database::open(&path).unwrap();
+        db.set_setting("k", "v").unwrap();
+        let copy = dir.join("backups").join("copy.db");
+        db.backup_to(&copy).unwrap();
+        let reopened = Database::open(&copy).unwrap();
+        assert_eq!(reopened.get_setting("k").unwrap().as_deref(), Some("v"));
+        drop(db);
+        drop(reopened);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

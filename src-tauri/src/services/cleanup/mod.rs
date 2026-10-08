@@ -11,7 +11,7 @@ pub mod recycle_bin;
 pub mod remove;
 
 pub use categories::{
-    definitions, definition_for, CategoryDefinition, CleanupCategory, DeletionMode,
+    definition_for, definitions, CategoryDefinition, CleanupCategory, DeletionMode,
     ALL_CLEANUP_CATEGORIES,
 };
 pub use engine::{

@@ -118,14 +118,12 @@ pub fn compose_user_message(facts: &DeviceFacts, question: &str) -> String {
 
 /// Answer a question, using the local model when it is loaded and the
 /// deterministic generator when it is not.
-pub fn answer(
-    engine: &LlamaEngine,
-    facts: &DeviceFacts,
-    question: &str,
-) -> Result<AiAnswer> {
+pub fn answer(engine: &LlamaEngine, facts: &DeviceFacts, question: &str) -> Result<AiAnswer> {
     let question = question.trim();
     if question.is_empty() {
-        return Err(AllInsightError::InvalidInput("Ask a question first.".into()));
+        return Err(AllInsightError::InvalidInput(
+            "Ask a question first.".into(),
+        ));
     }
     if question.chars().count() > 2000 {
         return Err(AllInsightError::InvalidInput(
@@ -255,7 +253,9 @@ mod tests {
         facts.storage_scanned = false;
         let actions = actions_for(&facts);
         assert!(actions.iter().any(|a| a.action == InsightAction::RunScan));
-        assert!(!actions.iter().any(|a| a.action == InsightAction::OpenCleanup));
+        assert!(!actions
+            .iter()
+            .any(|a| a.action == InsightAction::OpenCleanup));
     }
 
     #[test]

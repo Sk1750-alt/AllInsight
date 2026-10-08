@@ -15,18 +15,16 @@ use parking_lot::{Mutex, RwLock};
 use std::collections::HashMap;
 
 use crate::error::{AllInsightError, Result};
+use crate::services::ai::facts::DuplicateFact;
 use crate::services::ai::facts::{
     BatteryFact, CpuFact, DeviceFacts, DriveHealthFact, FolderFact, LargeFileFact, MemoryFact,
     StartupFact, VolumeFact,
 };
-use crate::services::ai::facts::DuplicateFact;
 use crate::services::ai::LlamaEngine;
 use crate::services::cleanup::{CleanupPreview, CleanupScan};
 use crate::services::db::{Database, Settings};
 use crate::services::security::ProtectedPaths;
-use crate::services::storage::{
-    DuplicateReport, LargeFileReport, ScanProgress, ScanResult,
-};
+use crate::services::storage::{DuplicateReport, LargeFileReport, ScanProgress, ScanResult};
 use crate::services::system::SystemMonitor;
 
 /// Where AllInsight keeps its data. One folder, easy to find, easy to delete.
@@ -246,8 +244,7 @@ impl AppState {
                 }
                 Some(CleanupOwner::User) => {
                     return Err(AllInsightError::InvalidInput(
-                        "A cleanup is already running. Wait for it to finish, or cancel it."
-                            .into(),
+                        "A cleanup is already running. Wait for it to finish, or cancel it.".into(),
                     ));
                 }
                 Some(CleanupOwner::Automatic) => {
@@ -352,14 +349,10 @@ impl AppState {
             .system_volume
             .clone()
             .unwrap_or_else(|| "C:\\".to_string());
-        let scan = scans
-            .get(&system_root)
-            .or_else(|| scans.values().next());
+        let scan = scans.get(&system_root).or_else(|| scans.values().next());
 
         let storage_scanned = scan.is_some();
-        let storage_categories = scan
-            .map(|s| s.totals.ranked())
-            .unwrap_or_default();
+        let storage_categories = scan.map(|s| s.totals.ranked()).unwrap_or_default();
 
         let top_folders: Vec<FolderFact> = scan
             .map(|s| {
@@ -444,7 +437,11 @@ impl AppState {
             .unwrap_or_default();
 
         let drive_report = self.drive_report();
-        let drives = drive_report.drives.iter().map(DriveHealthFact::from).collect();
+        let drives = drive_report
+            .drives
+            .iter()
+            .map(DriveHealthFact::from)
+            .collect();
 
         let startup_list = crate::services::startup::list();
         let startup = StartupFact {
@@ -453,16 +450,12 @@ impl AppState {
             high_impact: startup_list
                 .items
                 .iter()
-                .filter(|i| {
-                    i.enabled && i.impact == crate::services::startup::StartupImpact::High
-                })
+                .filter(|i| i.enabled && i.impact == crate::services::startup::StartupImpact::High)
                 .count() as u64,
             top_names: startup_list
                 .items
                 .iter()
-                .filter(|i| {
-                    i.enabled && i.impact == crate::services::startup::StartupImpact::High
-                })
+                .filter(|i| i.enabled && i.impact == crate::services::startup::StartupImpact::High)
                 .take(3)
                 .map(|i| i.name.clone())
                 .collect(),

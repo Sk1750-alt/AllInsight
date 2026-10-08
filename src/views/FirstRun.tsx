@@ -113,8 +113,9 @@ export function FirstRunView({ onDone }: { onDone: () => void }) {
                 Your device stays yours
               </h2>
               <p className="text-sm leading-relaxed text-[var(--color-ink-muted)]">
-                AllInsight has no server, no account and no analytics. It contains no code that sends
-                data anywhere, which is why the switches below have no on position.
+                AllInsight has no account and no analytics. It contains no code that sends your data
+                anywhere, which is why the switches below have no on position. It goes online only to
+                check for updates, and only when you ask it to.
               </p>
 
               <div className="divide-y divide-[var(--color-line)] rounded-md border border-[var(--color-line)]">

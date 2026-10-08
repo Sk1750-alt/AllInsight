@@ -184,12 +184,18 @@ impl DeviceFacts {
                 format_bytes(v.total_bytes),
                 format_bytes(v.free_bytes),
                 v.used_percent,
-                if v.is_system { ", holds the operating system" } else { "" }
+                if v.is_system {
+                    ", holds the operating system"
+                } else {
+                    ""
+                }
             ));
         }
 
         if !self.storage_scanned {
-            lines.push("No storage scan has been run yet, so folder-level detail is unknown.".into());
+            lines.push(
+                "No storage scan has been run yet, so folder-level detail is unknown.".into(),
+            );
         } else {
             for c in self.storage_categories.iter().take(6) {
                 lines.push(format!("{}: {}.", c.label, format_bytes(c.bytes)));
@@ -278,7 +284,9 @@ impl DeviceFacts {
             if b.present {
                 lines.push(format!(
                     "Battery at {}%{}.",
-                    b.charge_percent.map(|c| c.to_string()).unwrap_or_else(|| "unknown ".into()),
+                    b.charge_percent
+                        .map(|c| c.to_string())
+                        .unwrap_or_else(|| "unknown ".into()),
                     b.health_percent
                         .map(|h| format!(", holding {h}% of design capacity"))
                         .unwrap_or_else(|| ", health not reported by this device".into())

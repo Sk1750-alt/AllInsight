@@ -122,7 +122,11 @@ pub fn list(measure_sizes: bool) -> AppList {
         b.measured_size_bytes
             .or(b.estimated_size_bytes)
             .unwrap_or(0)
-            .cmp(&a.measured_size_bytes.or(a.estimated_size_bytes).unwrap_or(0))
+            .cmp(
+                &a.measured_size_bytes
+                    .or(a.estimated_size_bytes)
+                    .unwrap_or(0),
+            )
             .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
     });
 

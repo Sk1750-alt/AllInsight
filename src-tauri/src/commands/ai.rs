@@ -14,17 +14,15 @@ use crate::state::AppState;
 
 #[tauri::command]
 pub async fn get_ai_status(state: State<'_, AppState>) -> Result<EngineStatus> {
-    Ok({
-    state.engine.status()
-})
+    Ok(state.engine.status())
 }
 
 #[tauri::command]
 pub async fn get_local_models(state: State<'_, AppState>) -> Result<ModelInventory> {
     Ok({
-    let settings = state.settings();
-    models::inventory(settings.ai_engine_path.as_deref())
-})
+        let settings = state.settings();
+        models::inventory(settings.ai_engine_path.as_deref())
+    })
 }
 
 /// Copy a GGUF the user chose into the managed folder.
@@ -45,7 +43,10 @@ pub async fn remove_local_model(path: String) -> Result<()> {
 /// Blocking, and it can take a minute on a large model, so the interface shows
 /// a loading state rather than assuming it is instant.
 #[tauri::command]
-pub async fn load_ai_model(state: State<'_, AppState>, model_path: Option<String>) -> Result<EngineStatus> {
+pub async fn load_ai_model(
+    state: State<'_, AppState>,
+    model_path: Option<String>,
+) -> Result<EngineStatus> {
     let settings = state.settings();
     if !settings.ai_enabled {
         return Err(AllInsightError::Ai(
@@ -80,26 +81,24 @@ pub async fn load_ai_model(state: State<'_, AppState>, model_path: Option<String
     next.ai_model_path = Some(model);
     let _ = state.update_settings(next);
 
-    let _ = state
-        .db
-        .log_activity("ai", "Loaded the local model", None);
+    let _ = state.db.log_activity("ai", "Loaded the local model", None);
     Ok(status)
 }
 
 #[tauri::command]
 pub async fn unload_ai_model(state: State<'_, AppState>) -> Result<EngineStatus> {
     Ok({
-    state.engine.stop();
-    state.engine.status()
-})
+        state.engine.stop();
+        state.engine.status()
+    })
 }
 
 #[tauri::command]
 pub async fn get_ai_insight(state: State<'_, AppState>) -> Result<AiAnswer> {
     Ok({
-    let facts = state.facts();
-    ai::overview_insight(&state.engine, &facts)
-})
+        let facts = state.facts();
+        ai::overview_insight(&state.engine, &facts)
+    })
 }
 
 #[tauri::command]
@@ -132,21 +131,15 @@ pub async fn ask_ai(state: State<'_, AppState>, question: String) -> Result<AiAn
 /// the deterministic layer. Nothing is hidden from them.
 #[tauri::command]
 pub async fn get_ai_context(state: State<'_, AppState>) -> Result<String> {
-    Ok({
-    state.facts().briefing()
-})
+    Ok(state.facts().briefing())
 }
 
 #[tauri::command]
 pub async fn get_insights(state: State<'_, AppState>) -> Result<Vec<ai::Insight>> {
-    Ok({
-    ai::insights::generate(&state.facts())
-})
+    Ok(ai::insights::generate(&state.facts()))
 }
 
 #[tauri::command]
 pub async fn get_device_score(state: State<'_, AppState>) -> Result<ai::DeviceScore> {
-    Ok({
-    ai::device_score(&state.facts())
-})
+    Ok(ai::device_score(&state.facts()))
 }

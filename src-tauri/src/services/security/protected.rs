@@ -60,7 +60,9 @@ impl ProtectionReason {
             ProtectionReason::ProgramFiles => "This belongs to an installed application.",
             ProtectionReason::ProgramData => "This holds shared application data.",
             ProtectionReason::BootOrRecovery => "This is boot or recovery data.",
-            ProtectionReason::SystemVolumeMetadata => "This is managed by the system and is never cleaned file by file.",
+            ProtectionReason::SystemVolumeMetadata => {
+                "This is managed by the system and is never cleaned file by file."
+            }
             ProtectionReason::UserDocuments => "This is inside your Documents folder.",
             ProtectionReason::UserDesktop => "This is on your Desktop.",
             ProtectionReason::UserPictures => "This is inside your Pictures folder.",
@@ -83,7 +85,9 @@ impl ProtectionReason {
                 "This location, or a folder above it, is a link that points somewhere else."
             }
             ProtectionReason::Unresolvable => "This location could not be verified.",
-            ProtectionReason::HostileName => "This name contains characters that cannot be trusted.",
+            ProtectionReason::HostileName => {
+                "This name contains characters that cannot be trusted."
+            }
         }
     }
 }
@@ -225,10 +229,22 @@ mod platform {
             paths::expand_env("%SystemRoot%").or_else(|| Some(PathBuf::from("C:\\Windows"))),
             ProtectionReason::WindowsDirectory,
         );
-        add(paths::expand_env("%ProgramFiles%"), ProtectionReason::ProgramFiles);
-        add(paths::expand_env("%ProgramFiles(x86)%"), ProtectionReason::ProgramFiles);
-        add(paths::expand_env("%ProgramW6432%"), ProtectionReason::ProgramFiles);
-        add(paths::expand_env("%ProgramData%"), ProtectionReason::ProgramData);
+        add(
+            paths::expand_env("%ProgramFiles%"),
+            ProtectionReason::ProgramFiles,
+        );
+        add(
+            paths::expand_env("%ProgramFiles(x86)%"),
+            ProtectionReason::ProgramFiles,
+        );
+        add(
+            paths::expand_env("%ProgramW6432%"),
+            ProtectionReason::ProgramFiles,
+        );
+        add(
+            paths::expand_env("%ProgramData%"),
+            ProtectionReason::ProgramData,
+        );
 
         // Per-drive boot, recovery and volume metadata. `GetLogicalDrives`
         // is read through the standard library to keep this module free of
@@ -239,7 +255,10 @@ mod platform {
                 continue;
             }
             for (leaf, reason) in [
-                ("System Volume Information", ProtectionReason::SystemVolumeMetadata),
+                (
+                    "System Volume Information",
+                    ProtectionReason::SystemVolumeMetadata,
+                ),
                 ("$Recycle.Bin", ProtectionReason::SystemVolumeMetadata),
                 ("$RECYCLE.BIN", ProtectionReason::SystemVolumeMetadata),
                 ("Recovery", ProtectionReason::BootOrRecovery),
@@ -304,8 +323,14 @@ mod platform {
             }
         }
         if let Some(roaming) = dirs::data_dir() {
-            out.push((roaming.join("Mozilla\\Firefox\\Profiles"), ProtectionReason::BrowserProfile));
-            out.push((roaming.join("Thunderbird\\Profiles"), ProtectionReason::BrowserProfile));
+            out.push((
+                roaming.join("Mozilla\\Firefox\\Profiles"),
+                ProtectionReason::BrowserProfile,
+            ));
+            out.push((
+                roaming.join("Thunderbird\\Profiles"),
+                ProtectionReason::BrowserProfile,
+            ));
         }
         out
     }
@@ -328,9 +353,28 @@ mod platform {
     use super::ProtectionReason;
 
     const SYSTEM_DIRECTORIES: &[&str] = &[
-        "/bin", "/boot", "/dev", "/efi", "/etc", "/gnu", "/lib", "/lib32", "/lib64", "/libx32",
-        "/lost+found", "/nix", "/opt", "/proc", "/root", "/run", "/sbin", "/snap", "/srv", "/sys",
-        "/usr", "/var",
+        "/bin",
+        "/boot",
+        "/dev",
+        "/efi",
+        "/etc",
+        "/gnu",
+        "/lib",
+        "/lib32",
+        "/lib64",
+        "/libx32",
+        "/lost+found",
+        "/nix",
+        "/opt",
+        "/proc",
+        "/root",
+        "/run",
+        "/sbin",
+        "/snap",
+        "/srv",
+        "/sys",
+        "/usr",
+        "/var",
     ];
 
     pub fn system_roots() -> Vec<(PathBuf, ProtectionReason)> {
@@ -393,8 +437,18 @@ mod platform {
     use super::ProtectionReason;
 
     const SYSTEM_DIRECTORIES: &[&str] = &[
-        "/System", "/Library", "/Applications", "/usr", "/bin", "/sbin", "/opt", "/cores",
-        "/private/etc", "/private/var/db", "/private/var/vm", "/private/var/root",
+        "/System",
+        "/Library",
+        "/Applications",
+        "/usr",
+        "/bin",
+        "/sbin",
+        "/opt",
+        "/cores",
+        "/private/etc",
+        "/private/var/db",
+        "/private/var/vm",
+        "/private/var/root",
     ];
 
     pub fn system_roots() -> Vec<(PathBuf, ProtectionReason)> {
@@ -538,7 +592,10 @@ impl ProtectedPaths {
             .collect::<Vec<_>>();
 
         let carve_outs = platform::carve_outs();
-        let carve_out_keys = carve_outs.iter().map(|c| paths::comparison_key(c)).collect();
+        let carve_out_keys = carve_outs
+            .iter()
+            .map(|c| paths::comparison_key(c))
+            .collect();
 
         Self {
             roots,
@@ -598,7 +655,10 @@ impl ProtectedPaths {
 
     /// Every protected root, for the Settings screen.
     pub fn all_roots(&self) -> Vec<(PathBuf, ProtectionReason)> {
-        self.roots.iter().map(|r| (r.path.clone(), r.reason)).collect()
+        self.roots
+            .iter()
+            .map(|r| (r.path.clone(), r.reason))
+            .collect()
     }
 
     /// The core question. Purely lexical: no filesystem access, so it is cheap
@@ -695,12 +755,10 @@ fn default_protected_extensions() -> HashSet<String> {
     [
         // Databases and mail stores.
         "db", "db3", "sqlite", "sqlite3", "sqlitedb", "mdb", "accdb", "mdf", "ldf", "pst", "ost",
-        "edb", "fdb", "realm", "sdf",
-        // Keys, certificates and password vaults.
+        "edb", "fdb", "realm", "sdf", // Keys, certificates and password vaults.
         "kdbx", "kdb", "pem", "key", "pfx", "p12", "ppk", "jks", "keystore", "asc", "gpg",
         // Virtual machines and disk images that are expensive to recreate.
-        "vhd", "vhdx", "vmdk", "vdi", "qcow2", "hds",
-        // Backups.
+        "vhd", "vhdx", "vmdk", "vdi", "qcow2", "hds", // Backups.
         "bak", "bkp", "tib", "wim",
     ]
     .into_iter()
@@ -709,10 +767,18 @@ fn default_protected_extensions() -> HashSet<String> {
 }
 
 fn default_protected_dir_names() -> HashSet<String> {
-    [".git", ".svn", ".hg", ".ssh", ".gnupg", "$recycle.bin", "system volume information"]
-        .into_iter()
-        .map(str::to_string)
-        .collect()
+    [
+        ".git",
+        ".svn",
+        ".hg",
+        ".ssh",
+        ".gnupg",
+        "$recycle.bin",
+        "system volume information",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
 }
 
 #[cfg(all(test, target_os = "linux"))]
@@ -726,7 +792,14 @@ mod linux_tests {
     #[test]
     fn the_operating_system_is_protected() {
         let e = engine();
-        for p in ["/usr/bin/ls", "/etc/passwd", "/var/lib/dpkg/status", "/boot/vmlinuz", "/proc/kcore", "/opt/app/bin"] {
+        for p in [
+            "/usr/bin/ls",
+            "/etc/passwd",
+            "/var/lib/dpkg/status",
+            "/boot/vmlinuz",
+            "/proc/kcore",
+            "/opt/app/bin",
+        ] {
             assert!(e.is_protected(Path::new(p)), "{p} must be protected");
         }
         assert_eq!(
@@ -776,10 +849,14 @@ mod linux_tests {
     fn the_snap_firefox_cache_is_the_only_carve_out() {
         let e = engine();
         let home = dirs::home_dir().expect("home");
-        assert!(e.is_carve_out(&home.join("snap/firefox/common/.cache/mozilla/firefox/abc.default/cache2")));
+        assert!(e.is_carve_out(
+            &home.join("snap/firefox/common/.cache/mozilla/firefox/abc.default/cache2")
+        ));
         assert!(!e.is_carve_out(&home.join("snap/firefox/common/.mozilla/firefox/abc.default")));
         // Exact case on Linux: a differently cased twin is a different folder.
-        assert!(!e.is_carve_out(&home.join("snap/Firefox/common/.cache/mozilla/firefox/abc.default/cache2")));
+        assert!(!e.is_carve_out(
+            &home.join("snap/Firefox/common/.cache/mozilla/firefox/abc.default/cache2")
+        ));
     }
 
     #[test]

@@ -87,7 +87,14 @@ fn collect_candidates(
 ) -> HashMap<u64, Vec<PathBuf>> {
     let by_size: Mutex<HashMap<u64, Vec<PathBuf>>> = Mutex::new(HashMap::new());
 
-    fn walk(dir: &Path, depth: u32, min_bytes: u64, progress: &ScanProgress, out: &Mutex<HashMap<u64, Vec<PathBuf>>>, fence: &Fence) {
+    fn walk(
+        dir: &Path,
+        depth: u32,
+        min_bytes: u64,
+        progress: &ScanProgress,
+        out: &Mutex<HashMap<u64, Vec<PathBuf>>>,
+        fence: &Fence,
+    ) {
         if progress.is_cancelled() || depth > 64 {
             return;
         }
@@ -205,6 +212,9 @@ fn describe(path: &Path, size: u64, protected: &ProtectedPaths) -> DuplicateFile
     }
 }
 
+/// Files grouped by size and a BLAKE3 hash.
+type HashGroups = HashMap<(u64, [u8; 32]), Vec<PathBuf>>;
+
 pub fn find(
     query: DuplicateQuery,
     protected: &ProtectedPaths,
@@ -214,14 +224,18 @@ pub fn find(
     let files_compared: u64 = by_size.values().map(|v| v.len() as u64).sum();
 
     // Pass 2: partial hash, in parallel across every candidate.
-    let partial_groups: Mutex<HashMap<(u64, [u8; 32]), Vec<PathBuf>>> = Mutex::new(HashMap::new());
+    let partial_groups: Mutex<HashGroups> = Mutex::new(HashMap::new());
     by_size.into_par_iter().for_each(|(size, group)| {
         if progress.is_cancelled() {
             return;
         }
         for path in group {
             if let Some(h) = partial_hash(&path, size) {
-                partial_groups.lock().entry((size, h)).or_default().push(path);
+                partial_groups
+                    .lock()
+                    .entry((size, h))
+                    .or_default()
+                    .push(path);
             }
         }
     });
@@ -230,7 +244,7 @@ pub fn find(
     candidates.retain(|_, group| group.len() > 1);
 
     // Pass 3: full hash for the survivors.
-    let confirmed: Mutex<HashMap<(u64, [u8; 32]), Vec<PathBuf>>> = Mutex::new(HashMap::new());
+    let confirmed: Mutex<HashGroups> = Mutex::new(HashMap::new());
     let hashed = std::sync::atomic::AtomicU64::new(0);
     candidates.into_par_iter().for_each(|((size, _), group)| {
         if progress.is_cancelled() {
@@ -260,7 +274,7 @@ pub fn find(
         })
         .collect();
 
-    groups.sort_by(|a, b| b.reclaimable_bytes.cmp(&a.reclaimable_bytes));
+    groups.sort_by_key(|e| std::cmp::Reverse(e.reclaimable_bytes));
     let total_reclaimable_bytes = groups.iter().map(|g| g.reclaimable_bytes).sum();
     let truncated = groups.len() > query.max_groups;
     groups.truncate(query.max_groups);
@@ -289,7 +303,8 @@ mod tests {
     use std::fs;
 
     fn sandbox(tag: &str) -> PathBuf {
-        let base = std::env::temp_dir().join(format!("allinsight-dupe-{tag}-{}", std::process::id()));
+        let base =
+            std::env::temp_dir().join(format!("allinsight-dupe-{tag}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&base);
         fs::create_dir_all(&base).unwrap();
         paths::canonicalize(&base).unwrap_or(base)
@@ -355,7 +370,10 @@ mod tests {
 
         let protected = ProtectedPaths::new(&[]);
         let report = find(query(&root), &protected, Arc::new(ScanProgress::default()));
-        assert!(report.groups.is_empty(), "middle difference must be detected");
+        assert!(
+            report.groups.is_empty(),
+            "middle difference must be detected"
+        );
 
         let _ = fs::remove_dir_all(&root);
     }
@@ -406,7 +424,14 @@ mod tests {
         let report = find(query(&root), &protected, Arc::new(ScanProgress::default()));
 
         assert_eq!(report.groups.len(), 1);
-        assert_eq!(report.groups[0].files.iter().filter(|f| f.protected).count(), 1);
+        assert_eq!(
+            report.groups[0]
+                .files
+                .iter()
+                .filter(|f| f.protected)
+                .count(),
+            1
+        );
 
         let _ = fs::remove_dir_all(&root);
     }

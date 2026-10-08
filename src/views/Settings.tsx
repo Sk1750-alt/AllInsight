@@ -17,6 +17,7 @@ import {
   Info,
   Lock,
   Palette,
+  RefreshCw,
   Settings2,
   Shield,
   ShieldCheck,
@@ -50,6 +51,7 @@ import {
 } from "@/components/ui/controls";
 import { Dialog } from "@/components/ui/overlay";
 import { ConfigTransfer } from "@/components/ConfigTransfer";
+import { takeRequestedSettingsSection, UpdatesPanel } from "@/components/Updates";
 import { cn } from "@/lib/utils";
 import type {
   CategoryDescription,
@@ -69,6 +71,7 @@ type SectionId =
   | "performance"
   | "security"
   | "backup"
+  | "updates"
   | "advanced"
   | "about";
 
@@ -84,6 +87,7 @@ const SECTIONS: { id: SectionId; label: string; icon: React.ComponentType<{ clas
     { id: "performance", label: "Performance", icon: Gauge },
     { id: "security", label: "Security", icon: Shield },
     { id: "backup", label: "Backup", icon: ArchiveRestore },
+    { id: "updates", label: "Updates", icon: RefreshCw },
     { id: "advanced", label: "Advanced", icon: Bug },
     { id: "about", label: "About", icon: Info },
   ];
@@ -113,8 +117,21 @@ const DUPLICATE_SIZES = [
 export function SettingsView() {
   const { settings, saveSettings, environment, toast, reportError } = useStore();
   const w = usePlatformWords();
-  const [section, setSection] = React.useState<SectionId>("general");
+  const [section, setSection] = React.useState<SectionId>(() => {
+    const requested = takeRequestedSettingsSection();
+    return SECTIONS.some((s) => s.id === requested) ? (requested as SectionId) : "general";
+  });
   const [draft, setDraft] = React.useState<SettingsType | null>(null);
+
+  // The update prompt opens this screen on the Updates section.
+  React.useEffect(() => {
+    const open = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      if (SECTIONS.some((s) => s.id === id)) setSection(id as SectionId);
+    };
+    window.addEventListener("allinsight:settings-section", open);
+    return () => window.removeEventListener("allinsight:settings-section", open);
+  }, []);
 
   React.useEffect(() => {
     if (settings) setDraft(settings);
@@ -615,9 +632,11 @@ export function SettingsView() {
                       Everything stays on this device.
                     </p>
                     <p className="mt-1 text-xs leading-relaxed text-[var(--color-ink-muted)]">
-                      AllInsight contains no code that sends data anywhere. There is no account, no
-                      server, and no analytics. The switches below are shown so you can verify
-                      that, not so you can turn them on.
+                      AllInsight contains no code that sends your data anywhere. There is no
+                      account and no analytics. The only network request it can make is an update
+                      check, which you start or allow, and which carries nothing about you or this
+                      device. The switches below are shown so you can verify that, not so you can
+                      turn them on.
                     </p>
                   </div>
                 </div>
@@ -629,7 +648,8 @@ export function SettingsView() {
                   {[
                     {
                       title: "Cloud services",
-                      description: "No part of AllInsight contacts a remote service.",
+                      description:
+                        "No part of AllInsight sends your data to a remote service. Update checks only download public release information.",
                     },
                     {
                       title: "Telemetry",
@@ -840,6 +860,8 @@ export function SettingsView() {
 
           {section === "backup" ? <ConfigTransfer /> : null}
 
+          {section === "updates" ? <UpdatesPanel /> : null}
+
           {section === "advanced" ? (
             <Panel>
               <PanelHeader title="Advanced" />
@@ -930,7 +952,7 @@ export function SettingsView() {
                   <div className="flex justify-between">
                     <dt className="text-[var(--color-ink-muted)]">Version</dt>
                     <dd className="numeric text-[var(--color-ink)]">
-                      {environment?.app_version ?? "1.0.0"}
+                      {environment?.app_version ?? "-"}
                     </dd>
                   </div>
                   <div className="flex justify-between">
@@ -939,7 +961,9 @@ export function SettingsView() {
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-[var(--color-ink-muted)]">Network access</dt>
-                    <dd className="text-[var(--color-ink)]">None</dd>
+                    <dd className="text-[var(--color-ink)]">
+                      {draft.update_auto_check ? "Daily update check" : "Only when you check for updates"}
+                    </dd>
                   </div>
                 </dl>
 
@@ -947,8 +971,9 @@ export function SettingsView() {
 
                 <p className="text-xs leading-relaxed text-[var(--color-ink-muted)]">
                   AllInsight analyses storage, monitors device health and explains what it finds,
-                  entirely on this computer. It has no account, no server and no telemetry, and it
-                  works exactly the same with the network disconnected.
+                  entirely on this computer. It has no account and no telemetry, and it works exactly
+                  the same with the network disconnected. It goes online only to check for updates,
+                  and only when you allow it.
                 </p>
 
                 <ThirdPartyLicences />

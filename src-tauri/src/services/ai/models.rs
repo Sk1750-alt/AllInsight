@@ -148,7 +148,7 @@ pub const MODEL_TIERS: &[ModelTier] = &[
         parameters: "0.5B",
         quantisation: "Q4_K_M",
         disk_bytes: 400 * MIB,
-        memory_bytes: 1 * GIB,
+        memory_bytes: GIB,
         note: "Smallest useful option. Terse but coherent, and it fits almost anywhere.",
     },
     ModelTier {

@@ -102,14 +102,13 @@ pub fn normalize_lexical(path: &Path) -> PathBuf {
     for c in stripped.components() {
         match c {
             Component::CurDir => {}
-            Component::ParentDir => match out.last() {
-                Some(Component::Normal(_)) => {
+            Component::ParentDir => {
+                // `..` above the root is meaningless; it is dropped rather
+                // than allowed to escape.
+                if let Some(Component::Normal(_)) = out.last() {
                     out.pop();
                 }
-                // `..` above the root is meaningless; drop it rather than
-                // letting it escape.
-                _ => {}
-            },
+            }
             other => out.push(other),
         }
     }
@@ -341,15 +340,24 @@ mod unix_tests {
     #[test]
     fn prefix_similarity_is_not_ancestry() {
         assert!(!is_within(Path::new("/home/bobby"), Path::new("/home/bob")));
-        assert!(is_within(Path::new("/home/bob/file.txt"), Path::new("/home/bob")));
+        assert!(is_within(
+            Path::new("/home/bob/file.txt"),
+            Path::new("/home/bob")
+        ));
     }
 
     #[test]
     fn traversal_is_collapsed_before_comparison() {
         let hostile = Path::new("/tmp/../home/me/Documents");
-        assert_eq!(normalize_lexical(hostile), PathBuf::from("/home/me/Documents"));
+        assert_eq!(
+            normalize_lexical(hostile),
+            PathBuf::from("/home/me/Documents")
+        );
         assert!(!is_within(hostile, Path::new("/tmp")));
-        assert_eq!(normalize_lexical(Path::new("/../../etc")), PathBuf::from("/etc"));
+        assert_eq!(
+            normalize_lexical(Path::new("/../../etc")),
+            PathBuf::from("/etc")
+        );
     }
 
     #[test]
@@ -361,14 +369,23 @@ mod unix_tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn comparison_is_exact_on_linux() {
-        assert!(!same_path(Path::new("/tmp/Film.mkv"), Path::new("/tmp/film.mkv")));
-        assert!(same_path(Path::new("/tmp/./film.mkv"), Path::new("/tmp/film.mkv")));
+        assert!(!same_path(
+            Path::new("/tmp/Film.mkv"),
+            Path::new("/tmp/film.mkv")
+        ));
+        assert!(same_path(
+            Path::new("/tmp/./film.mkv"),
+            Path::new("/tmp/film.mkv")
+        ));
     }
 
     #[test]
     fn deny_names_match_in_any_case() {
         let names: HashSet<String> = [".git".to_string()].into_iter().collect();
-        assert!(contains_component(Path::new("/src/.GIT/objects/ab"), &names));
+        assert!(contains_component(
+            Path::new("/src/.GIT/objects/ab"),
+            &names
+        ));
     }
 
     #[test]

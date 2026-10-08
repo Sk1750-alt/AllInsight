@@ -13,9 +13,7 @@ use crate::state::AppState;
 
 #[tauri::command]
 pub async fn get_settings(state: State<'_, AppState>) -> Result<Settings> {
-    Ok({
-    state.settings()
-})
+    Ok(state.settings())
 }
 
 #[tauri::command]
@@ -89,25 +87,25 @@ pub struct ProtectedPathView {
 #[tauri::command]
 pub async fn get_protected_paths(state: State<'_, AppState>) -> Result<Vec<ProtectedPathView>> {
     Ok({
-    let protected = state.protected();
-    let user_roots: Vec<PathBuf> = protected.user_roots().to_vec();
-    let mut views: Vec<ProtectedPathView> = protected
-        .all_roots()
-        .into_iter()
-        .map(|(path, reason)| ProtectedPathView {
-            user_added: user_roots.iter().any(|u| paths::same_path(u, &path)),
-            path: path.to_string_lossy().into_owned(),
-            reason: format!("{reason:?}"),
-            explanation: reason.explain().to_string(),
-        })
-        .collect();
-    views.sort_by(|a, b| {
-        b.user_added
-            .cmp(&a.user_added)
-            .then_with(|| a.path.to_lowercase().cmp(&b.path.to_lowercase()))
-    });
-    views
-})
+        let protected = state.protected();
+        let user_roots: Vec<PathBuf> = protected.user_roots().to_vec();
+        let mut views: Vec<ProtectedPathView> = protected
+            .all_roots()
+            .into_iter()
+            .map(|(path, reason)| ProtectedPathView {
+                user_added: user_roots.iter().any(|u| paths::same_path(u, &path)),
+                path: path.to_string_lossy().into_owned(),
+                reason: format!("{reason:?}"),
+                explanation: reason.explain().to_string(),
+            })
+            .collect();
+        views.sort_by(|a, b| {
+            b.user_added
+                .cmp(&a.user_added)
+                .then_with(|| a.path.to_lowercase().cmp(&b.path.to_lowercase()))
+        });
+        views
+    })
 }
 
 /// The narrow exceptions inside protected roots that cleanup categories may
@@ -115,14 +113,14 @@ pub async fn get_protected_paths(state: State<'_, AppState>) -> Result<Vec<Prote
 #[tauri::command]
 pub async fn get_cleanup_exceptions(state: State<'_, AppState>) -> Result<Vec<String>> {
     Ok({
-    state
-        .protected
-        .read()
-        .carve_outs()
-        .iter()
-        .map(|p| p.to_string_lossy().into_owned())
-        .collect()
-})
+        state
+            .protected
+            .read()
+            .carve_outs()
+            .iter()
+            .map(|p| p.to_string_lossy().into_owned())
+            .collect()
+    })
 }
 
 #[tauri::command]
@@ -137,7 +135,11 @@ pub async fn add_protected_path(state: State<'_, AppState>, path: String) -> Res
         return Err(AllInsightError::NotFound(target));
     }
     let mut settings = state.settings();
-    if settings.protected_paths.iter().any(|p| paths::same_path(p, &target)) {
+    if settings
+        .protected_paths
+        .iter()
+        .any(|p| paths::same_path(p, &target))
+    {
         return Ok(settings);
     }
     settings.protected_paths.push(target);
@@ -188,7 +190,9 @@ fn apply_launch_at_startup(enabled: bool) -> Result<()> {
 #[cfg(all(unix, not(target_os = "macos")))]
 fn apply_launch_at_startup(enabled: bool) -> Result<()> {
     let dir = dirs::config_dir()
-        .ok_or_else(|| AllInsightError::Platform("Your autostart folder could not be located.".into()))?
+        .ok_or_else(|| {
+            AllInsightError::Platform("Your autostart folder could not be located.".into())
+        })?
         .join("autostart");
     let entry = dir.join("allinsight.desktop");
 
@@ -210,7 +214,8 @@ fn apply_launch_at_startup(enabled: bool) -> Result<()> {
     let quoted = exe.to_string_lossy().into_owned();
     if quoted.contains(['"', '`', '$', '\\', '\n']) {
         return Err(AllInsightError::Platform(
-            "AllInsight is installed at a path autostart cannot express. Move it and try again.".into(),
+            "AllInsight is installed at a path autostart cannot express. Move it and try again."
+                .into(),
         ));
     }
     let text = format!(
@@ -265,8 +270,9 @@ pub async fn export_diagnostics(state: State<'_, AppState>, destination: String)
         "note": "This file contains no file names and no personal data. Review it before sharing."
     });
 
-    std::fs::write(&target, serde_json::to_string_pretty(&report)?)
-        .map_err(|e| AllInsightError::Other(format!("Could not write the diagnostics file: {e}")))?;
+    std::fs::write(&target, serde_json::to_string_pretty(&report)?).map_err(|e| {
+        AllInsightError::Other(format!("Could not write the diagnostics file: {e}"))
+    })?;
 
     Ok(target.to_string_lossy().into_owned())
 }
@@ -356,7 +362,12 @@ pub async fn apply_config_import(
     accept_weakening: bool,
 ) -> Result<ImportResult> {
     let current = state.settings();
-    let next = config::prepare_apply(&current, std::path::Path::new(&source), &token, accept_weakening)?;
+    let next = config::prepare_apply(
+        &current,
+        std::path::Path::new(&source),
+        &token,
+        accept_weakening,
+    )?;
     let backup = config::backup_before_import(&backup_directory(), &current)?;
     let settings = apply_settings(&state, next)?;
     tracing::info!("settings imported; previous settings backed up");
@@ -411,9 +422,8 @@ pub async fn restart_elevated(app: tauri::AppHandle) -> Result<()> {
 
     let exe = std::env::current_exe()
         .map_err(|e| AllInsightError::Platform(format!("Could not locate AllInsight: {e}")))?;
-    let wide = |s: &std::ffi::OsStr| -> Vec<u16> {
-        s.encode_wide().chain(std::iter::once(0)).collect()
-    };
+    let wide =
+        |s: &std::ffi::OsStr| -> Vec<u16> { s.encode_wide().chain(std::iter::once(0)).collect() };
     let verb = wide(std::ffi::OsStr::new("runas"));
     let file = wide(exe.as_os_str());
 
@@ -424,7 +434,7 @@ pub async fn restart_elevated(app: tauri::AppHandle) -> Result<()> {
             file.as_ptr(),
             std::ptr::null(),
             std::ptr::null(),
-            SW_SHOWNORMAL as i32,
+            SW_SHOWNORMAL,
         )
     };
 
@@ -467,7 +477,11 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
 
         let ours = dir.join("ours.json");
-        std::fs::write(&ours, br#"{"application":{"name":"AllInsight","version":"1.0.0"}}"#).unwrap();
+        std::fs::write(
+            &ours,
+            br#"{"application":{"name":"AllInsight","version":"1.0.0"}}"#,
+        )
+        .unwrap();
         assert!(is_previous_diagnostics(&ours));
 
         let theirs = dir.join("theirs.json");

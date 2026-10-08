@@ -75,7 +75,7 @@ impl ProcessorCounters {
         let status = unsafe {
             PdhGetFormattedCounterValue(counter, PDH_FMT_DOUBLE, std::ptr::null_mut(), &mut value)
         };
-        (status == OK && value.CStatus == OK).then(|| unsafe { value.Anonymous.doubleValue })
+        (status == OK && value.CStatus == OK).then_some(unsafe { value.Anonymous.doubleValue })
     }
 
     /// Collect and read. `None` until the counters have two samples to

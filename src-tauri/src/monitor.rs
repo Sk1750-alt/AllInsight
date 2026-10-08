@@ -50,6 +50,9 @@ fn run(app: AppHandle) {
             if settings.background_monitoring {
                 tick(&app, &state);
             }
+            // Only does anything when the user turned automatic update
+            // checks on and the interval has passed. See commands::update.
+            crate::commands::update::auto_check_if_due(&app);
             settings.monitor_interval_seconds.max(60)
         };
         std::thread::sleep(Duration::from_secs(interval as u64));
@@ -64,9 +67,11 @@ fn tick(app: &AppHandle, state: &AppState) {
         if !volume.is_ready || !volume.kind.is_scannable() {
             continue;
         }
-        let _ = state
-            .db
-            .record_volume_sample(&volume.mount_point, volume.total_bytes, volume.free_bytes);
+        let _ = state.db.record_volume_sample(
+            &volume.mount_point,
+            volume.total_bytes,
+            volume.free_bytes,
+        );
 
         if !settings.notifications_enabled {
             continue;
@@ -242,12 +247,7 @@ fn notify(app: &AppHandle, state: &AppState, id: &str, severity: &str, title: &s
 
     {
         use tauri_plugin_notification::NotificationExt;
-        let _ = app
-            .notification()
-            .builder()
-            .title(title)
-            .body(body)
-            .show();
+        let _ = app.notification().builder().title(title).body(body).show();
     }
 
     let _ = state.db.log_activity("alert", title, Some(body));

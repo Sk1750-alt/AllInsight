@@ -9,7 +9,7 @@ use std::time::Instant;
 
 use allinsight_lib::services::system::SystemMonitor;
 
-fn time<T>(label: &str,times: u32, mut f: impl FnMut() -> T) {
+fn time<T>(label: &str, times: u32, mut f: impl FnMut() -> T) {
     // Warm once so first-call caching does not distort the figure.
     let _ = f();
     let started = Instant::now();
@@ -54,7 +54,11 @@ fn time_the_calls_the_interface_polls() {
     time("battery::status()", 3, || {
         allinsight_lib::services::battery::status()
     });
-    time("startup::list()", 3, || allinsight_lib::services::startup::list());
+    time(
+        "startup::list()",
+        3,
+        allinsight_lib::services::startup::list,
+    );
     time("apps::list(measure = false)", 2, || {
         allinsight_lib::services::apps::list(false)
     });

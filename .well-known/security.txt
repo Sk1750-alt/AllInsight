@@ -1,0 +1,6 @@
+Contact: https://github.com/Sk1750-alt/AllInsight/security/advisories/new
+Contact: mailto:security@allinsight.biz
+Expires: 2027-10-01T00:00:00.000Z
+Policy: https://github.com/Sk1750-alt/AllInsight/blob/main/SECURITY.md
+Preferred-Languages: en, hi
+Canonical: https://allinsight.biz/.well-known/security.txt

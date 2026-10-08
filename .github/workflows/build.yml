@@ -10,6 +10,11 @@
 # a release can be rebuilt from the tagged commit rather than from whatever
 # was on a developer's disk.
 #
+# On a tag, the `release` job then builds latest.json from those exact files,
+# signs it with the update key (repository secrets TAURI_SIGNING_PRIVATE_KEY and
+# TAURI_SIGNING_PRIVATE_KEY_PASSWORD), and opens a *draft* GitHub release. A
+# person reviews the draft and presses Publish; see docs/RELEASE_PROCESS.md.
+#
 # This mirrors BUILD_WINDOWS.bat and scripts/build-linux.sh; if one changes,
 # change the others.
 
@@ -35,6 +40,8 @@ jobs:
           cache: npm
 
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -45,6 +52,15 @@ jobs:
 
       - name: Type-check the interface
         run: npm run typecheck
+
+      - name: Formatting (rustfmt)
+        working-directory: src-tauri
+        run: cargo fmt --check
+
+      # Warnings are errors, as CONTRIBUTING.md asks of contributors.
+      - name: Lint (clippy, warnings denied)
+        working-directory: src-tauri
+        run: cargo clippy --all-targets -- -D warnings
 
       - name: Rust tests, including the safety suite
         working-directory: src-tauri
@@ -91,6 +107,8 @@ jobs:
           cache: npm
 
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -101,6 +119,15 @@ jobs:
 
       - name: Type-check the interface
         run: npm run typecheck
+
+      - name: Formatting (rustfmt)
+        working-directory: src-tauri
+        run: cargo fmt --check
+
+      # Warnings are errors, as CONTRIBUTING.md asks of contributors.
+      - name: Lint (clippy, warnings denied)
+        working-directory: src-tauri
+        run: cargo clippy --all-targets -- -D warnings
 
       - name: Rust tests, including the safety suite
         working-directory: src-tauri
@@ -198,3 +225,84 @@ jobs:
 
       - name: Build the application
         run: npx tauri build
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # create the draft release
+      id-token: write        # build-provenance attestation
+      attestations: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Collect the built packages
+        uses: actions/download-artifact@v4
+        with:
+          path: release-files
+          merge-multiple: true
+
+      - name: Build latest.json from the exact files being released
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          exe=$(find release-files -name "AllInsight_${version}_x64-setup.exe" | head -1)
+          appimage=$(find release-files -name "*.AppImage" | head -1)
+          test -n "$exe" && test -n "$appimage"
+          node scripts/make-update-manifest.mjs --version "$version" \
+            --asset "windows-x64=${exe}:nsis" \
+            --asset "linux-x64=${appimage}:appimage"
+
+      - name: Sign latest.json with the update key
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          test -n "$TAURI_SIGNING_PRIVATE_KEY" || { echo "TAURI_SIGNING_PRIVATE_KEY secret is not set"; exit 1; }
+          npx tauri signer sign latest.json
+          # The same check the application makes, against the key compiled
+          # into this commit. A signature the app would reject never ships.
+          node scripts/verify-update-manifest.mjs latest.json latest.json.sig
+
+      - name: Checksums file
+        run: |
+          find release-files -type f \( -name "*-setup.exe" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" \) \
+            -exec sha256sum {} + | sed 's#  .*/#  #' > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Software bills of materials (CycloneDX)
+        run: |
+          cargo install cargo-cyclonedx --locked
+          (cd src-tauri && cargo cyclonedx --format json)
+          mkdir -p sbom
+          find src-tauri -maxdepth 1 -name '*.cdx.json' -exec sh -c 'cp "$1" "sbom/rust-$(basename "$1")"' _ {} \;
+          npx --yes @cyclonedx/cyclonedx-npm --omit dev --output-file sbom/npm-sbom.cdx.json
+          ls sbom
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            release-files/**/*-setup.exe
+            release-files/**/*.AppImage
+            release-files/**/*.deb
+            release-files/**/*.rpm
+            latest.json
+            sbom/*.cdx.json
+
+      - name: Open a draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          files=$(find release-files -type f \( -name "*-setup.exe" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" \))
+          gh release create "$GITHUB_REF_NAME" $files latest.json latest.json.sig SHA256SUMS.txt sbom/*.cdx.json \
+            --draft --title "AllInsight ${GITHUB_REF_NAME#v}" --notes-file CHANGELOG.md

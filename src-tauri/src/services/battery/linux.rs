@@ -74,7 +74,9 @@ pub(super) fn from_attributes(
     out.full_charge_capacity_mwh = to_mwh("energy_full", "charge_full").filter(|v| *v > 0);
     out.remaining_capacity_mwh = to_mwh("energy_now", "charge_now");
 
-    out.cycle_count = number(attrs, "cycle_count").filter(|c| *c > 0).map(|c| c as u32);
+    out.cycle_count = number(attrs, "cycle_count")
+        .filter(|c| *c > 0)
+        .map(|c| c as u32);
     out.chemistry = attrs.get("technology").filter(|t| *t != "Unknown").cloned();
     out.manufacturer = attrs.get("manufacturer").filter(|m| !m.is_empty()).cloned();
 
@@ -89,7 +91,9 @@ pub(super) fn from_attributes(
             let volts = number(attrs, "voltage_now")?;
             Some(current.saturating_mul(volts) / 1_000_000_000)
         });
-        if let (Some(draw), Some(remaining)) = (draw_mw.filter(|d| *d > 0), out.remaining_capacity_mwh) {
+        if let (Some(draw), Some(remaining)) =
+            (draw_mw.filter(|d| *d > 0), out.remaining_capacity_mwh)
+        {
             out.runtime_seconds = Some(((remaining as u64 * 3600) / draw) as u32);
         }
     }
@@ -101,10 +105,12 @@ pub(super) fn from_attributes(
         );
     }
     if out.cycle_count.is_none() {
-        out.notes.push("The battery did not report a cycle count.".into());
+        out.notes
+            .push("The battery did not report a cycle count.".into());
     }
     if out.notes.is_empty() {
-        out.notes.push("Read from the kernel's battery driver.".into());
+        out.notes
+            .push("Read from the kernel's battery driver.".into());
     }
     out
 }
@@ -154,7 +160,10 @@ mod tests {
     use super::*;
 
     fn attrs(pairs: &[(&str, &str)]) -> HashMap<String, String> {
-        pairs.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
+        pairs
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect()
     }
 
     #[test]
@@ -202,7 +211,10 @@ mod tests {
 
     #[test]
     fn missing_capacities_mean_no_health_figure() {
-        let s = from_attributes(&attrs(&[("status", "Full"), ("capacity", "100")]), Some(true));
+        let s = from_attributes(
+            &attrs(&[("status", "Full"), ("capacity", "100")]),
+            Some(true),
+        );
         assert!(s.health_percent.is_none());
         assert!(!s.notes.is_empty());
     }

@@ -40,6 +40,7 @@ export const events = {
   SCAN_PROGRESS: "allinsight://scan-progress",
   SCAN_COMPLETE: "allinsight://scan-complete",
   ALERT: "allinsight://alert",
+  UPDATE: "allinsight://update",
 } as const;
 
 export function onScanProgress(handler: (p: T.ScanProgressSnapshot) => void): Promise<UnlistenFn> {
@@ -52,6 +53,10 @@ export function onScanComplete(handler: (payload: unknown) => void): Promise<Unl
 
 export function onAlert(handler: (a: T.Alert) => void): Promise<UnlistenFn> {
   return listen<T.Alert>(events.ALERT, (e) => handler(e.payload));
+}
+
+export function onUpdate(handler: (u: T.UpdateView) => void): Promise<UnlistenFn> {
+  return listen<T.UpdateView>(events.UPDATE, (e) => handler(e.payload));
 }
 
 // --------------------------------------------------------------- storage
@@ -142,4 +147,14 @@ export const api = {
     call<T.ImportResult>("apply_config_import", { source, token, acceptWeakening }),
   listConfigBackups: () => call<T.BackupEntry[]>("list_config_backups"),
   restartElevated: () => call<void>("restart_elevated"),
+
+  // --------------------------------------------------------------- updates
+  // The only calls that can reach the network, and only these two do:
+  // checkForUpdates fetches the signed release metadata, downloadUpdate the
+  // package it names. Nothing about this device is sent with either.
+  getUpdateStatus: () => call<T.UpdateView>("get_update_status"),
+  checkForUpdates: () => call<T.UpdateView>("check_for_updates"),
+  downloadUpdate: () => call<T.UpdateView>("download_update"),
+  installUpdate: () => call<T.UpdateView>("install_update"),
+  dismissUpdate: () => call<T.UpdateView>("dismiss_update"),
 };

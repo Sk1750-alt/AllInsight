@@ -170,18 +170,19 @@ impl LlamaEngine {
     /// Start the engine. Blocking, and safe to call when it is already up.
     pub fn start(&self, config: EngineConfig) -> Result<EngineStatus> {
         Self::validate(&config)?;
+        // Before any state changes, so a failure here leaves nothing half-started.
+        let api_key = new_api_key()?;
 
         {
             let mut inner = self.inner.lock();
-            if inner.status.state == EngineState::Ready {
-                if inner
+            if inner.status.state == EngineState::Ready
+                && inner
                     .config
                     .as_ref()
                     .map(|c| c.model_path == config.model_path)
                     .unwrap_or(false)
-                {
-                    return Ok(inner.status.clone());
-                }
+            {
+                return Ok(inner.status.clone());
             }
             // A different model was requested: stop the old one first.
             Self::stop_locked(&mut inner);
@@ -199,7 +200,6 @@ impl LlamaEngine {
         }
 
         let port = pick_port();
-        let api_key = new_api_key();
         let threads = if config.threads == 0 {
             // Leave a core for the interface.
             (num_cpus::get().saturating_sub(1)).max(1) as u32
@@ -248,14 +248,20 @@ impl LlamaEngine {
         // The lines go to the log, not to the user interface.
         if let Some(stdout) = child.stdout.take() {
             std::thread::spawn(move || {
-                for line in BufReader::new(stdout).lines().map_while(std::result::Result::ok) {
+                for line in BufReader::new(stdout)
+                    .lines()
+                    .map_while(std::result::Result::ok)
+                {
                     tracing::debug!(target: "allinsight::ai", "{line}");
                 }
             });
         }
         if let Some(stderr) = child.stderr.take() {
             std::thread::spawn(move || {
-                for line in BufReader::new(stderr).lines().map_while(std::result::Result::ok) {
+                for line in BufReader::new(stderr)
+                    .lines()
+                    .map_while(std::result::Result::ok)
+                {
                     tracing::debug!(target: "allinsight::ai", "{line}");
                 }
             });
@@ -317,9 +323,7 @@ impl LlamaEngine {
         let (port, api_key) = {
             let inner = self.inner.lock();
             if inner.status.state != EngineState::Ready {
-                return Err(AllInsightError::Ai(
-                    "The local model is not loaded.".into(),
-                ));
+                return Err(AllInsightError::Ai("The local model is not loaded.".into()));
             }
             let port = inner
                 .port
@@ -348,9 +352,9 @@ impl LlamaEngine {
             .send_json(body)
             .map_err(|e| AllInsightError::Ai(format!("The local model did not respond: {e}")))?;
 
-        let parsed: serde_json::Value = response
-            .into_json()
-            .map_err(|e| AllInsightError::Ai(format!("The local model returned an unreadable reply: {e}")))?;
+        let parsed: serde_json::Value = response.into_json().map_err(|e| {
+            AllInsightError::Ai(format!("The local model returned an unreadable reply: {e}"))
+        })?;
 
         let content = parsed
             .get("content")
@@ -388,7 +392,8 @@ pub fn sanitise_output(raw: &str) -> String {
     let cleaned: String = raw
         .chars()
         .filter(|c| {
-            !c.is_control() && !matches!(c,
+            !c.is_control()
+                && !matches!(c,
                 '\u{00AD}'
                 | '\u{200B}'..='\u{200F}'
                 | '\u{202A}'..='\u{202E}'
@@ -422,19 +427,19 @@ fn pick_port() -> u16 {
 /// The engine listens on loopback, which is not a boundary: every process
 /// running as this user, and on a shared machine every other user's processes
 /// too, can reach the port. The key means only AllInsight can send it work.
-fn new_api_key() -> String {
-    use std::hash::{BuildHasher, Hasher, RandomState};
-    // Four draws from `RandomState`, which seeds itself from the operating
-    // system once per thread and derives each later value from that seed. The
-    // result is a 256-bit string carrying the seed's entropy, which is ample
-    // for a token that lives as long as one engine process. No dependency is
-    // added for it.
-    let mut out = String::with_capacity(32);
-    for _ in 0..4 {
-        let value = RandomState::new().build_hasher().finish();
-        out.push_str(&format!("{value:016x}"));
-    }
-    out
+fn new_api_key() -> Result<String> {
+    // 256 bits from the operating system's cryptographic generator
+    // (ProcessPrng on Windows, getrandom(2) on Linux). A credential must not
+    // come from a hash seed, however well seeded. If the OS generator is
+    // unavailable the engine does not start, rather than starting with a
+    // guessable key.
+    let mut bytes = [0u8; 32];
+    getrandom::fill(&mut bytes).map_err(|e| {
+        AllInsightError::Ai(format!(
+            "The local model could not be started securely: the system's random number generator is unavailable ({e})."
+        ))
+    })?;
+    Ok(bytes.iter().map(|b| format!("{b:02x}")).collect())
 }
 
 /// Poll the engine's health endpoint until it answers, or the engine dies.
@@ -495,7 +500,9 @@ mod tests {
         let result = wait_until_ready(1, "unused", || false);
 
         let error = result.expect_err("a dead engine must not report ready");
-        assert!(error.to_string().contains("stopped before it finished loading"));
+        assert!(error
+            .to_string()
+            .contains("stopped before it finished loading"));
         assert!(
             started.elapsed() < Duration::from_secs(2),
             "it must fail at once rather than polling until the startup timeout"

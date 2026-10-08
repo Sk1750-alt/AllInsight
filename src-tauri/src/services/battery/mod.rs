@@ -224,11 +224,10 @@ mod imp {
 pub fn status() -> Result<BatteryStatus> {
     match crate::services::wmi_thread::run("battery", imp::status) {
         Ok(result) => result,
-        Err(message) => {
-            let mut out = BatteryStatus::default();
-            out.notes = vec![message];
-            Ok(out)
-        }
+        Err(message) => Ok(BatteryStatus {
+            notes: vec![message],
+            ..BatteryStatus::default()
+        }),
     }
 }
 
@@ -248,15 +247,20 @@ mod tests {
         if let Some(p) = status.charge_percent {
             assert!(p <= 100);
         }
-        assert!(!status.notes.is_empty(), "the user always gets an explanation");
+        assert!(
+            !status.notes.is_empty(),
+            "the user always gets an explanation"
+        );
     }
 
     #[test]
     fn a_device_without_a_battery_says_so_plainly() {
         let status = status().unwrap();
         if !status.present {
-            assert!(status.notes.iter().any(|n| n.contains("No battery")
-                || n.contains("did not report")));
+            assert!(status
+                .notes
+                .iter()
+                .any(|n| n.contains("No battery") || n.contains("did not report")));
             assert!(status.health_percent.is_none());
         }
     }

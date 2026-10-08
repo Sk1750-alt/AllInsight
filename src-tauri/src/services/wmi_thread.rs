@@ -26,9 +26,9 @@ where
         .spawn(f)
         .map_err(|e| format!("Could not start the {what} query: {e}"))?;
 
-    handle.join().map_err(|_| {
-        format!("The {what} query stopped unexpectedly and was ignored.")
-    })
+    handle
+        .join()
+        .map_err(|_| format!("The {what} query stopped unexpectedly and was ignored."))
 }
 
 #[cfg(test)]

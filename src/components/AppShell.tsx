@@ -10,6 +10,7 @@ import { useStore } from "@/app/store";
 import { GROUP_LABELS, ROUTES, type Route } from "@/app/navigation";
 import { CommandPalette, ROUTE_ICONS } from "./CommandPalette";
 import { EmergencyBanner } from "./EmergencyBanner";
+import { UpdatePrompt } from "./Updates";
 import { Logo, Wordmark } from "./Logo";
 import { Badge, IconButton } from "./ui/primitives";
 import { IndeterminateBar } from "./ui/data";
@@ -245,6 +246,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <Toasts />
+      <UpdatePrompt />
 
       {/* A quiet affordance so a long scan can always be stopped, wherever the
           user has navigated to. */}

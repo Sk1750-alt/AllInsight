@@ -36,6 +36,8 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "icons": "node scripts/generate-icons.mjs",
+    "update-manifest": "node scripts/make-update-manifest.mjs",
+    "verify-update": "node scripts/verify-update-manifest.mjs",
     "test": "cd src-tauri && cargo test",
     "typecheck": "tsc --noEmit"
   },

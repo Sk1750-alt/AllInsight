@@ -135,7 +135,8 @@ pub fn list() -> StartupList {
 
 /// Enable or disable one entry, addressed by the id `list` produced.
 pub fn set_enabled(id: &str, enabled: bool) -> Result<()> {
-    let invalid = || AllInsightError::InvalidInput("That startup item reference is not valid.".into());
+    let invalid =
+        || AllInsightError::InvalidInput("That startup item reference is not valid.".into());
     let (_, file_name) = id.split_once(':').ok_or_else(invalid)?;
     if file_name.is_empty()
         || file_name.contains('/')
@@ -161,7 +162,8 @@ pub fn set_enabled(id: &str, enabled: bool) -> Result<()> {
 
     let original = std::fs::read_to_string(&source)
         .map_err(|e| AllInsightError::Platform(format!("Could not read the startup entry: {e}")))?;
-    let mut text = linux_parse::set_desktop_key(&original, "Hidden", if enabled { "false" } else { "true" });
+    let mut text =
+        linux_parse::set_desktop_key(&original, "Hidden", if enabled { "false" } else { "true" });
     if enabled && original.contains("X-GNOME-Autostart-enabled") {
         text = linux_parse::set_desktop_key(&text, "X-GNOME-Autostart-enabled", "true");
     }
@@ -174,7 +176,9 @@ pub fn set_enabled(id: &str, enabled: bool) -> Result<()> {
     }
     std::fs::create_dir_all(&user_dir)
         .and_then(|_| std::fs::write(&target, text))
-        .map_err(|e| AllInsightError::Platform(format!("Could not update the startup setting: {e}")))
+        .map_err(|e| {
+            AllInsightError::Platform(format!("Could not update the startup setting: {e}"))
+        })
 }
 
 #[cfg(test)]

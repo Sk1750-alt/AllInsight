@@ -110,7 +110,9 @@ fn read_document(path: &Path) -> Result<(ConfigDocument, String)> {
     let meta = std::fs::metadata(paths::long_path(path))
         .map_err(|_| AllInsightError::NotFound(path.to_path_buf()))?;
     if !meta.is_file() {
-        return Err(AllInsightError::InvalidInput("Choose a settings file, not a folder.".into()));
+        return Err(AllInsightError::InvalidInput(
+            "Choose a settings file, not a folder.".into(),
+        ));
     }
     if meta.len() > MAX_FILE_BYTES {
         return Err(AllInsightError::InvalidInput(
@@ -131,7 +133,10 @@ fn parse(bytes: &[u8]) -> Result<ConfigDocument> {
     if value.get("format").and_then(Value::as_str) != Some(FORMAT) {
         return Err(not_ours());
     }
-    let version = value.get("schema_version").and_then(Value::as_u64).unwrap_or(0);
+    let version = value
+        .get("schema_version")
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
     if version == 0 {
         return Err(not_ours());
     }
@@ -216,7 +221,12 @@ fn diff(current: &Settings, next: &Settings) -> (Vec<SettingChange>, Vec<String>
     let protected_added: Vec<String> = next
         .protected_paths
         .iter()
-        .filter(|p| !current.protected_paths.iter().any(|c| paths::same_path(c, p)))
+        .filter(|p| {
+            !current
+                .protected_paths
+                .iter()
+                .any(|c| paths::same_path(c, p))
+        })
         .map(shown)
         .collect();
     let protected_removed: Vec<String> = current
@@ -249,7 +259,11 @@ fn diff(current: &Settings, next: &Settings) -> (Vec<SettingChange>, Vec<String>
             weakens_protection: weakens(key, old, new),
         });
     }
-    changes.sort_by(|a, b| b.weakens_protection.cmp(&a.weakens_protection).then(a.label.cmp(&b.label)));
+    changes.sort_by(|a, b| {
+        b.weakens_protection
+            .cmp(&a.weakens_protection)
+            .then(a.label.cmp(&b.label))
+    });
     (changes, protected_added, protected_removed)
 }
 
@@ -258,10 +272,16 @@ fn weakens(key: &str, old: &Value, new: &Value) -> bool {
     let turned_off = old.as_bool() == Some(true) && new.as_bool() == Some(false);
     match key {
         "auto_clean_enabled" => old.as_bool() == Some(false) && new.as_bool() == Some(true),
+        // Turning on automatic update checks makes AllInsight contact the
+        // network unprompted, which a settings file must not do quietly.
+        "update_auto_check" => old.as_bool() == Some(false) && new.as_bool() == Some(true),
         // A higher threshold means Auto-Clean starts while more space is free.
         "auto_clean_free_space_percent" => new.as_u64() > old.as_u64(),
         "auto_clean_categories" => {
-            let had: Vec<&Value> = old.as_array().map(|a| a.iter().collect()).unwrap_or_default();
+            let had: Vec<&Value> = old
+                .as_array()
+                .map(|a| a.iter().collect())
+                .unwrap_or_default();
             new.as_array()
                 .map(|a| a.iter().any(|c| !had.contains(&c)))
                 .unwrap_or(false)
@@ -300,6 +320,8 @@ fn label(key: &str) -> &str {
         "monitor_interval_seconds" => "Background check interval",
         "scan_threads" => "Scan threads",
         "require_confirmation_for_processes" => "Confirm before ending a process",
+        "update_auto_check" => "Check for updates automatically",
+        "update_check_interval_hours" => "Hours between update checks",
         other => other,
     }
 }
@@ -353,7 +375,10 @@ pub fn backup_directory(data_directory: &Path) -> PathBuf {
 
 /// Write today's daily backup if there is none yet, then prune.
 pub fn ensure_daily_backup(dir: &Path, settings: &Settings) -> Result<Option<PathBuf>> {
-    let name = format!("{DAILY_PREFIX}{}.json", chrono::Local::now().format("%Y-%m-%d"));
+    let name = format!(
+        "{DAILY_PREFIX}{}.json",
+        chrono::Local::now().format("%Y-%m-%d")
+    );
     let path = dir.join(&name);
     if path.exists() {
         return Ok(None);
@@ -375,15 +400,18 @@ pub fn backup_before_import(dir: &Path, settings: &Settings) -> Result<PathBuf> 
 }
 
 fn write_backup(dir: &Path, name: &str, settings: &Settings) -> Result<PathBuf> {
-    std::fs::create_dir_all(dir)
-        .map_err(|e| AllInsightError::Other(format!("The backup folder could not be created: {e}")))?;
+    std::fs::create_dir_all(dir).map_err(|e| {
+        AllInsightError::Other(format!("The backup folder could not be created: {e}"))
+    })?;
     let path = dir.join(name);
     // Written beside the target and renamed into place, so a crash mid-write
     // never leaves a half-written backup that a restore would then refuse.
     let partial = dir.join(format!("{name}.partial"));
     std::fs::write(&partial, ConfigDocument::from_settings(settings).to_json()?)
         .and_then(|_| std::fs::rename(&partial, &path))
-        .map_err(|e| AllInsightError::Other(format!("The settings backup could not be written: {e}")))?;
+        .map_err(|e| {
+            AllInsightError::Other(format!("The settings backup could not be written: {e}"))
+        })?;
     Ok(path)
 }
 
@@ -417,7 +445,10 @@ pub fn list_backups(dir: &Path) -> Vec<BackupEntry> {
         .into_iter()
         .flat_map(|(prefix, kind)| {
             backup_names(dir, prefix).into_iter().map(move |name| {
-                let stamp = name.trim_start_matches(prefix).trim_end_matches(".json").to_string();
+                let stamp = name
+                    .trim_start_matches(prefix)
+                    .trim_end_matches(".json")
+                    .to_string();
                 BackupEntry {
                     path: dir.join(&name).to_string_lossy().into_owned(),
                     file_name: name,
@@ -432,6 +463,8 @@ pub fn list_backups(dir: &Path) -> Vec<BackupEntry> {
 }
 
 #[cfg(test)]
+// Tests start from the defaults and change the one field under test.
+#[allow(clippy::field_reassign_with_default)]
 mod tests {
     use super::*;
 
@@ -447,12 +480,20 @@ mod tests {
 
     fn write(dir: &Path, settings: &Settings) -> PathBuf {
         let path = dir.join("exported.json");
-        std::fs::write(&path, ConfigDocument::from_settings(settings).to_json().unwrap()).unwrap();
+        std::fs::write(
+            &path,
+            ConfigDocument::from_settings(settings).to_json().unwrap(),
+        )
+        .unwrap();
         path
     }
 
     fn root(name: &str) -> PathBuf {
-        PathBuf::from(if cfg!(windows) { format!("D:\\{name}") } else { format!("/srv/{name}") })
+        PathBuf::from(if cfg!(windows) {
+            format!("D:\\{name}")
+        } else {
+            format!("/srv/{name}")
+        })
     }
 
     #[test]
@@ -487,7 +528,10 @@ mod tests {
         let mut mine = Settings::default();
         mine.ai_engine_path = Some(root("llama-server.exe"));
         let preview = preview(&mine, &path).unwrap();
-        assert!(preview.changes.iter().all(|c| !c.key.starts_with("ai_") || !c.key.ends_with("_path")));
+        assert!(preview
+            .changes
+            .iter()
+            .all(|c| !c.key.starts_with("ai_") || !c.key.ends_with("_path")));
         let next = prepare_apply(&mine, &path, &preview.token, false).unwrap();
         assert_eq!(next.ai_engine_path, mine.ai_engine_path);
         assert_eq!(next.ai_model_path, None);
@@ -504,8 +548,14 @@ mod tests {
         let path = write(&dir, &theirs);
 
         let preview = preview(&mine, &path).unwrap();
-        assert_eq!(preview.protected_removed, vec![root("Thesis").to_string_lossy().into_owned()]);
-        assert_eq!(preview.protected_added, vec![root("Music").to_string_lossy().into_owned()]);
+        assert_eq!(
+            preview.protected_removed,
+            vec![root("Thesis").to_string_lossy().into_owned()]
+        );
+        assert_eq!(
+            preview.protected_added,
+            vec![root("Music").to_string_lossy().into_owned()]
+        );
         assert!(preview.weakens_protection);
 
         assert!(prepare_apply(&mine, &path, &preview.token, false).is_err());
@@ -582,7 +632,11 @@ mod tests {
         let mine = Settings::default();
         let preview = preview(&mine, &path).unwrap();
         let next = prepare_apply(&mine, &path, &preview.token, true).unwrap();
-        assert!(!next.telemetry_enabled && !next.cloud_services_enabled && !next.crash_reporting_enabled);
+        assert!(
+            !next.telemetry_enabled
+                && !next.cloud_services_enabled
+                && !next.crash_reporting_enabled
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -592,8 +646,14 @@ mod tests {
         let mine = Settings::default();
         let cases = [
             ("notes.json", "my own notes".to_string()),
-            ("diag.json", r#"{"application":{"name":"AllInsight"}}"#.to_string()),
-            ("future.json", format!(r#"{{"format":"{FORMAT}","schema_version":99,"settings":{{}}}}"#)),
+            (
+                "diag.json",
+                r#"{"application":{"name":"AllInsight"}}"#.to_string(),
+            ),
+            (
+                "future.json",
+                format!(r#"{{"format":"{FORMAT}","schema_version":99,"settings":{{}}}}"#),
+            ),
         ];
         for (name, body) in cases {
             let path = dir.join(name);

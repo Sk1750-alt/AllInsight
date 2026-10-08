@@ -11,6 +11,7 @@ pub mod cleanup;
 pub mod device;
 pub mod settings;
 pub mod storage;
+pub mod update;
 
 use serde::Serialize;
 

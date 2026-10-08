@@ -180,7 +180,10 @@ fn platform_roots() -> (Vec<std::path::PathBuf>, Vec<std::path::PathBuf>) {
     if let Some(p) = paths::expand_env("%ProgramData%") {
         program_files.push(p);
     }
-    (paths::expand_env("%SystemRoot%").into_iter().collect(), program_files)
+    (
+        paths::expand_env("%SystemRoot%").into_iter().collect(),
+        program_files,
+    )
 }
 
 #[cfg(not(windows))]
@@ -193,10 +196,16 @@ fn platform_roots() -> (Vec<std::path::PathBuf>, Vec<std::path::PathBuf>) {
     .iter()
     .map(PathBuf::from)
     .collect();
-    let mut program_files: Vec<PathBuf> = ["/opt", "/snap", "/var/lib/snapd", "/var/lib/flatpak", "/Applications"]
-        .iter()
-        .map(PathBuf::from)
-        .collect();
+    let mut program_files: Vec<PathBuf> = [
+        "/opt",
+        "/snap",
+        "/var/lib/snapd",
+        "/var/lib/flatpak",
+        "/Applications",
+    ]
+    .iter()
+    .map(PathBuf::from)
+    .collect();
     if let Some(data) = dirs::data_dir() {
         program_files.push(data.join("flatpak"));
     }
@@ -227,7 +236,12 @@ fn classify_by_component(path: &Path) -> Option<StorageCategory> {
     if has("\\temp\\") || has("\\tmp\\") || lowered.ends_with(".tmp") {
         return Some(StorageCategory::TemporaryFiles);
     }
-    if has("\\cache") || has("cache\\") || has("\\.cache\\") || has("\\code cache") || has("\\gpucache") {
+    if has("\\cache")
+        || has("cache\\")
+        || has("\\.cache\\")
+        || has("\\code cache")
+        || has("\\gpucache")
+    {
         return Some(StorageCategory::Cache);
     }
     None
@@ -241,7 +255,9 @@ fn classify_by_extension(ext: &str) -> Option<StorageCategory> {
         "jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "webp", "heic", "raw", "cr2", "nef",
         "arw", "dng", "psd", "svg",
     ];
-    const AUDIO: &[&str] = &["mp3", "flac", "wav", "aac", "m4a", "ogg", "wma", "opus", "aiff"];
+    const AUDIO: &[&str] = &[
+        "mp3", "flac", "wav", "aac", "m4a", "ogg", "wma", "opus", "aiff",
+    ];
     const ARCHIVE: &[&str] = &[
         "zip", "rar", "7z", "tar", "gz", "bz2", "xz", "iso", "img", "cab", "msi", "msix", "appx",
     ];
@@ -311,7 +327,7 @@ impl CategoryTotals {
                 files: self.files[i],
             })
             .collect();
-        out.sort_by(|a, b| b.bytes.cmp(&a.bytes));
+        out.sort_by_key(|e| std::cmp::Reverse(e.bytes));
         out
     }
 }
@@ -331,15 +347,23 @@ mod tests {
     #[test]
     fn extensions_map_to_the_expected_buckets() {
         assert_eq!(classify_by_extension("mkv"), Some(StorageCategory::Videos));
-        assert_eq!(classify_by_extension("vhdx"), Some(StorageCategory::VirtualMachines));
-        assert_eq!(classify_by_extension("iso"), Some(StorageCategory::Archives));
+        assert_eq!(
+            classify_by_extension("vhdx"),
+            Some(StorageCategory::VirtualMachines)
+        );
+        assert_eq!(
+            classify_by_extension("iso"),
+            Some(StorageCategory::Archives)
+        );
         assert_eq!(classify_by_extension("zzz"), None);
     }
 
     #[test]
     fn game_and_dev_folders_win_over_extension() {
         assert_eq!(
-            classify_by_component(Path::new("D:\\SteamLibrary\\steamapps\\common\\Game\\intro.mp4")),
+            classify_by_component(Path::new(
+                "D:\\SteamLibrary\\steamapps\\common\\Game\\intro.mp4"
+            )),
             Some(StorageCategory::Games)
         );
         assert_eq!(

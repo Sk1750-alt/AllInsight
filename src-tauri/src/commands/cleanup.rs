@@ -73,7 +73,10 @@ pub struct ExecuteArgs {
 }
 
 #[tauri::command]
-pub async fn execute_cleanup(state: State<'_, AppState>, args: ExecuteArgs) -> Result<CleanupOutcome> {
+pub async fn execute_cleanup(
+    state: State<'_, AppState>,
+    args: ExecuteArgs,
+) -> Result<CleanupOutcome> {
     if !args.confirmed {
         return Err(AllInsightError::InvalidInput(
             "Cleanup was not confirmed, so nothing was removed.".into(),
@@ -128,7 +131,11 @@ pub fn record(state: &AppState, outcome: &CleanupOutcome, trigger: &str) {
         "cleanup",
         &format!(
             "{} cleanup reclaimed {}",
-            if trigger == "auto" { "Automatic" } else { "Manual" },
+            if trigger == "auto" {
+                "Automatic"
+            } else {
+                "Manual"
+            },
             format_bytes(outcome.reclaimed_bytes)
         ),
         None,
@@ -181,7 +188,9 @@ pub async fn get_cleanup_history(
 }
 
 #[tauri::command]
-pub async fn get_cleanup_totals(state: State<'_, AppState>) -> Result<crate::services::db::CleanupTotals> {
+pub async fn get_cleanup_totals(
+    state: State<'_, AppState>,
+) -> Result<crate::services::db::CleanupTotals> {
     state.db.cleanup_totals()
 }
 

@@ -15,9 +15,10 @@ pub fn remove(entry: &ValidatedPath, mode: DeletionMode) -> Result<()> {
     match mode {
         DeletionMode::Recycle => recycle(entry),
         DeletionMode::Permanent => permanent(entry),
-        DeletionMode::ShellApi => Err(AllInsightError::InvalidInput(
-            format!("This category is handled by {}, not by file removal.", crate::platform::os_name()),
-        )),
+        DeletionMode::ShellApi => Err(AllInsightError::InvalidInput(format!(
+            "This category is handled by {}, not by file removal.",
+            crate::platform::os_name()
+        ))),
     }
 }
 
@@ -80,7 +81,8 @@ mod tests {
     use std::path::PathBuf;
 
     fn sandbox(tag: &str) -> PathBuf {
-        let base = std::env::temp_dir().join(format!("allinsight-remove-{tag}-{}", std::process::id()));
+        let base =
+            std::env::temp_dir().join(format!("allinsight-remove-{tag}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&base);
         fs::create_dir_all(&base).unwrap();
         paths::canonicalize(&base).unwrap_or(base)
@@ -93,7 +95,7 @@ mod tests {
         fs::write(&file, vec![0u8; 128]).unwrap();
 
         let protected = ProtectedPaths::new(&[]);
-        let guard = DeletionGuard::new(&protected, &[root.clone()]);
+        let guard = DeletionGuard::new(&protected, std::slice::from_ref(&root));
         let valid = guard.validate(&file, EntryKind::File).unwrap();
 
         remove(&valid, DeletionMode::Permanent).unwrap();
@@ -109,7 +111,7 @@ mod tests {
         fs::write(&file, b"x").unwrap();
 
         let protected = ProtectedPaths::new(&[]);
-        let guard = DeletionGuard::new(&protected, &[root.clone()]);
+        let guard = DeletionGuard::new(&protected, std::slice::from_ref(&root));
         let valid = guard.validate(&file, EntryKind::File).unwrap();
 
         fs::remove_file(&file).unwrap();
@@ -126,7 +128,7 @@ mod tests {
         fs::write(dir.join("child.bin"), b"keep me").unwrap();
 
         let protected = ProtectedPaths::new(&[]);
-        let guard = DeletionGuard::new(&protected, &[root.clone()]);
+        let guard = DeletionGuard::new(&protected, std::slice::from_ref(&root));
         let valid = guard.validate(&dir, EntryKind::Directory).unwrap();
 
         assert!(remove(&valid, DeletionMode::Permanent).is_err());
@@ -142,7 +144,7 @@ mod tests {
         fs::write(&file, b"x").unwrap();
 
         let protected = ProtectedPaths::new(&[]);
-        let guard = DeletionGuard::new(&protected, &[root.clone()]);
+        let guard = DeletionGuard::new(&protected, std::slice::from_ref(&root));
         let valid = guard.validate(&file, EntryKind::File).unwrap();
 
         assert!(remove(&valid, DeletionMode::ShellApi).is_err());

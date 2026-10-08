@@ -80,7 +80,9 @@ fn percent(used: u64, total: u64) -> f64 {
 #[cfg(windows)]
 fn wide_to_string(buf: &[u16]) -> String {
     let end = buf.iter().position(|&c| c == 0).unwrap_or(buf.len());
-    OsString::from_wide(&buf[..end]).to_string_lossy().into_owned()
+    OsString::from_wide(&buf[..end])
+        .to_string_lossy()
+        .into_owned()
 }
 
 #[cfg(windows)]
@@ -210,16 +212,38 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
 /// Filesystems that are listed as network drives: present, but never walked.
 #[cfg(not(windows))]
 const NETWORK_FILESYSTEMS: &[&str] = &[
-    "nfs", "nfs4", "cifs", "smb3", "smbfs", "fuse.sshfs", "fuse.rclone", "9p", "drvfs", "afs",
-    "ceph", "glusterfs",
+    "nfs",
+    "nfs4",
+    "cifs",
+    "smb3",
+    "smbfs",
+    "fuse.sshfs",
+    "fuse.rclone",
+    "9p",
+    "drvfs",
+    "afs",
+    "ceph",
+    "glusterfs",
 ];
 
 /// Filesystems that are not storage the user owns: kernel interfaces, memory,
 /// read-only application images and container layers.
 #[cfg(not(windows))]
 const HIDDEN_FILESYSTEMS: &[&str] = &[
-    "tmpfs", "devtmpfs", "ramfs", "squashfs", "overlay", "proc", "sysfs", "efivarfs", "autofs",
-    "fuse.portal", "fuse.snapfuse", "fuse.gvfsd-fuse", "nsfs", "devfs",
+    "tmpfs",
+    "devtmpfs",
+    "ramfs",
+    "squashfs",
+    "overlay",
+    "proc",
+    "sysfs",
+    "efivarfs",
+    "autofs",
+    "fuse.portal",
+    "fuse.snapfuse",
+    "fuse.gvfsd-fuse",
+    "nsfs",
+    "devfs",
 ];
 
 /// Mount points that hold the system's plumbing rather than anything a person
@@ -230,9 +254,23 @@ fn is_plumbing(mount: &str) -> bool {
     if mount.starts_with("/run/media/") {
         return false;
     }
-    ["/boot", "/efi", "/snap", "/usr", "/var/lib/", "/run", "/sys", "/proc", "/dev", "/System/Volumes/"]
-        .iter()
-        .any(|p| mount == p.trim_end_matches('/') || mount.starts_with(&format!("{}/", p.trim_end_matches('/'))))
+    [
+        "/boot",
+        "/efi",
+        "/snap",
+        "/usr",
+        "/var/lib/",
+        "/run",
+        "/sys",
+        "/proc",
+        "/dev",
+        "/System/Volumes/",
+    ]
+    .iter()
+    .any(|p| {
+        mount == p.trim_end_matches('/')
+            || mount.starts_with(&format!("{}/", p.trim_end_matches('/')))
+    })
 }
 
 /// Linux and macOS: every mounted filesystem the user would recognise as a
@@ -288,7 +326,10 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
         };
 
         let device = disk.name().to_os_string();
-        if let Some((_, at)) = seen_devices.iter().find(|(d, _)| *d == device && !d.is_empty()) {
+        if let Some((_, at)) = seen_devices
+            .iter()
+            .find(|(d, _)| *d == device && !d.is_empty())
+        {
             if info.mount_point.len() < out[*at].mount_point.len() {
                 out[*at] = info;
             }

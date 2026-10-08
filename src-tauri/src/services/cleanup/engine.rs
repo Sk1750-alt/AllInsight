@@ -467,7 +467,7 @@ pub fn discover(
         });
     }
 
-    reports.sort_by(|a, b| b.bytes.cmp(&a.bytes));
+    reports.sort_by_key(|e| std::cmp::Reverse(e.bytes));
 
     (
         CleanupPreview {
@@ -582,7 +582,8 @@ pub fn execute(
                     outcome.reclaimed_bytes =
                         outcome.reclaimed_bytes.saturating_add(valid.size_bytes());
                     outcome.removed_items += 1;
-                    entry.reclaimed_bytes = entry.reclaimed_bytes.saturating_add(valid.size_bytes());
+                    entry.reclaimed_bytes =
+                        entry.reclaimed_bytes.saturating_add(valid.size_bytes());
                     entry.removed_items += 1;
                     continue;
                 }
@@ -655,7 +656,9 @@ pub fn execute(
     }
 
     outcome.categories = per_category.into_values().collect();
-    outcome.categories.sort_by(|a, b| b.reclaimed_bytes.cmp(&a.reclaimed_bytes));
+    outcome
+        .categories
+        .sort_by_key(|e| std::cmp::Reverse(e.reclaimed_bytes));
     outcome.finished_at = now_secs();
     Ok(outcome)
 }
@@ -758,7 +761,8 @@ mod tests {
 
     #[test]
     fn an_unconfirmed_request_never_deletes_anything() {
-        let dir = std::env::temp_dir().join(format!("allinsight-cleanup-dry-{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("allinsight-cleanup-dry-{}", std::process::id()));
         let _ = fs::remove_dir_all(&dir);
         fs::create_dir_all(&dir).unwrap();
         let file = dir.join("scratch.tmp");
@@ -827,7 +831,10 @@ mod tests {
 
     #[test]
     fn match_rules_behave_as_declared() {
-        assert!(matches_rule(&MatchRule::AllContents, &Path::new("a").join("b.bin")));
+        assert!(matches_rule(
+            &MatchRule::AllContents,
+            &Path::new("a").join("b.bin")
+        ));
         assert!(matches_rule(
             &MatchRule::Extensions(&["dmp"]),
             &Path::new("a").join("crash.DMP")
@@ -844,6 +851,9 @@ mod tests {
             &MatchRule::NamePrefixes(&["thumbcache_"]),
             &Path::new("a").join("contacts.db")
         ));
-        assert!(!matches_rule(&MatchRule::ShellManaged, &Path::new("a").join("b")));
+        assert!(!matches_rule(
+            &MatchRule::ShellManaged,
+            &Path::new("a").join("b")
+        ));
     }
 }

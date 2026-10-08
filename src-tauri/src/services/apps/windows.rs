@@ -291,7 +291,7 @@ pub fn uninstall(id: &str) -> Result<()> {
                 args_w.as_ptr()
             },
             std::ptr::null(),
-            SW_SHOWNORMAL as i32,
+            SW_SHOWNORMAL,
         )
     };
 

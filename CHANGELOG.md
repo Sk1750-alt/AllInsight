@@ -21,7 +21,9 @@ All notable changes to this project are documented here. The format follows [Kee
 - **Settings** — Eleven configuration sections including the real protected-path list.
 - Cross-platform support: Windows 10/11 (x64), Linux x64 (Ubuntu 22.04+, Debian 12+, Fedora 39+, Arch, and more).
 - Experimental macOS support (CI-only).
-- Full offline operation — no network requests, no telemetry, no accounts.
+- Full offline operation — no telemetry, no accounts, and no network requests except an update check the user starts or allows.
+- **Updates** — Settings → Updates checks a signed release file on request (or daily, if the user opts in). Every package is verified by signature and SHA-256 before it can run, and nothing installs without the user's approval. See docs/UPDATE_SYSTEM.md.
+- Database migrations run in a transaction after a full backup, and the database is backed up before every application update.
 - Three-tier safety model (Safe → Review → Protected) with `ValidatedPath` tokens.
 - Background monitor with volume capacity alerts and optional auto-clean.
 - Single-instance enforcement via `tauri-plugin-single-instance`.
