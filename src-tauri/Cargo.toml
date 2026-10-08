@@ -57,7 +57,7 @@ ureq = { version = "2", default-features = false, features = ["json"] }
 # Windows platform access.
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"
-wmi = "0.14"
+wmi = "0.18"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
