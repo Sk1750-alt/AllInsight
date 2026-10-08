@@ -52,7 +52,7 @@ tracing-appender = "0.2"
 
 # Talks to the local llama.cpp server over loopback only. TLS is disabled
 # because AllInsight never makes an outbound request.
-ureq = { version = "2", default-features = false, features = ["json"] }
+ureq = { version = "3", default-features = false, features = ["json"] }
 
 # Windows platform access.
 [target.'cfg(windows)'.dependencies]
