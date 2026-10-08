@@ -855,40 +855,16 @@ h3 { font-size: 20px; font-weight: 400; line-height: 1.3; letter-spacing: -0.02e
 .card-icon * { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .card-icon .dot { fill: var(--amber); stroke: none; }
 
-/* ── Hero instrument: a dial behind the headline ─────────────────── */
+/* ── Navigation mark, redrawn every 30 seconds (app.js adds .replay) ── */
 
-.hero { position: relative; isolation: isolate; overflow: hidden; }
-.dial {
-  position: absolute;
-  z-index: -1;
-  left: 50%;
-  top: 50%;
-  width: min(1000px, 150vw);
-  aspect-ratio: 1;
-  transform: translate(-50%, -46%);
-  perspective: 1400px;
-  pointer-events: none;
-  /* Quiet where the words are, clear at the rim. */
-  -webkit-mask-image: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.18) 32%, #000 58%);
-  mask-image: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.18) 32%, #000 58%);
-}
-.dial svg { width: 100%; height: 100%; overflow: visible; transform: rotateX(var(--ry, 0deg)) rotateY(var(--rx, 0deg)); transition: transform 1.2s var(--ease); }
-.dial .bezel { transform-origin: 0 0; animation: bezel 240s linear infinite; }
-@keyframes bezel { to { transform: rotate(360deg); } }
-.dial .tick { stroke: var(--ink); stroke-width: 1; opacity: 0.22; }
-.dial .tick.major { opacity: 0.5; }
-.dial .ring { fill: none; stroke: var(--ink); stroke-width: 0.75; opacity: 0.16; }
-.dial .arc { fill: none; stroke: var(--amber); stroke-width: 1.25; opacity: 0.7; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transform: rotate(-90deg); }
-.dial .hand-dot { fill: var(--amber); }
-.dial .hand-glow { fill: none; stroke: var(--amber); stroke-width: 1; opacity: 0.4; }
-.dial .readout { font-family: var(--text); font-size: 9.5px; letter-spacing: 0.22em; fill: var(--stone); text-transform: uppercase; }
-.dial .readout-num { font-family: var(--serif); font-size: 15px; letter-spacing: 0; fill: var(--ink); }
-.dial .readout-line { stroke: var(--ink); stroke-width: 0.75; opacity: 0.3; }
-.dial .readout-g { opacity: 0; transition: opacity 1.4s var(--ease); }
-.dial.live .readout-g { opacity: 1; }
-.dial.live .readout-g:nth-of-type(2) { transition-delay: 0.3s; }
-.dial.live .readout-g:nth-of-type(3) { transition-delay: 0.6s; }
-@media (max-width: 760px) { .dial .readout-g { display: none; } }
+.nav .mark { overflow: visible; }
+.nav .mark .mark-ring { fill: none; stroke: var(--amber); stroke-width: 4; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.nav .mark.replay path { stroke-dasharray: 1; animation: markDraw 1s cubic-bezier(0.65, 0, 0.35, 1) both; }
+.nav .mark.replay circle:not(.mark-ring) { transform-box: fill-box; transform-origin: center; animation: markDrop 0.7s cubic-bezier(0.34, 1.45, 0.64, 1) 0.75s both; }
+.nav .mark.replay .mark-ring { animation: markRing 1.4s var(--ease) 1.25s forwards; }
+@keyframes markDraw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes markDrop { 0% { opacity: 0; transform: translateY(-34px); } 35% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+@keyframes markRing { 0% { opacity: 0.9; transform: scale(1); } 100% { opacity: 0; transform: scale(4.5); } }
 
 /* ── Scroll story: Measure, Explain, Clean ─────────────────────────── */
 
@@ -1260,8 +1236,6 @@ h3 { font-size: 20px; font-weight: 400; line-height: 1.3; letter-spacing: -0.02e
   .app-icon .tile, .app-icon .mark-stem, .app-icon .mark-dot { opacity: 1; transform: none; }
   .reasons li, .chips span { opacity: 1; transform: none; }
   .wire i { display: none; }
-  .dial .arc { stroke-dashoffset: 14; }
-  .dial .readout-g { opacity: 1; }
   .story { height: auto; }
   .story-pin { position: static; height: auto; padding-block: 96px; }
   .story-step { opacity: 1; display: block; }

@@ -313,75 +313,29 @@
     }
   }
 
-  /* ── Hero instrument ──────────────────────────────────────────────
-     A dial behind the headline: a slowly turning bezel of 120 hairline
-     ticks, a ring, and an amber hand that sweeps to the device-health
-     reading. Readouts sit at the rim. Built here so the markup stays small. */
+  /* ── The navigation mark redraws itself every 30 seconds ─────────
+     The A draws in, the stem rises, the dot drops and sends out a ring:
+     the same order as the logo reveal. Paused in background tabs. */
   {
-    const host = $('.dial');
-    const svg = host && $('svg', host);
-    if (svg) {
-      const NS = 'http://www.w3.org/2000/svg';
-      const el = (name, attrs, parent) => {
-        const n = document.createElementNS(NS, name);
-        for (const k in attrs) n.setAttribute(k, attrs[k]);
-        (parent || svg).appendChild(n);
-        return n;
-      };
-      const score = 86;
-      const bezel = el('g', { class: 'bezel' });
-      for (let i = 0; i < 120; i++) {
-        const a = (i / 120) * Math.PI * 2;
-        const major = i % 10 === 0;
-        const r1 = 292, r2 = major ? 274 : 284;
-        el('line', { class: major ? 'tick major' : 'tick', x1: Math.sin(a) * r1, y1: -Math.cos(a) * r1, x2: Math.sin(a) * r2, y2: -Math.cos(a) * r2 }, bezel);
+    const mark = $('.nav .brand .mark');
+    if (mark && !reduced) {
+      const a = mark.querySelector('path');
+      if (a) a.setAttribute('pathLength', '1');
+      const dot = mark.querySelector('circle');
+      if (dot) {
+        const ring = dot.cloneNode();
+        ring.setAttribute('class', 'mark-ring');
+        ring.removeAttribute('fill');
+        mark.appendChild(ring);
       }
-      el('circle', { class: 'ring', r: 262 });
-      el('circle', { class: 'ring', r: 206 });
-      const arc = el('circle', { class: 'arc', r: 248, pathLength: 100 });
-      const glow = el('circle', { class: 'hand-glow', r: 9 });
-      const dot = el('circle', { class: 'hand-dot', r: 3.5 });
-      const place = (pct) => {
-        const a = (pct / 100) * Math.PI * 2;
-        const x = Math.sin(a) * 248, y = -Math.cos(a) * 248;
-        dot.setAttribute('cx', x); dot.setAttribute('cy', y);
-        glow.setAttribute('cx', x); glow.setAttribute('cy', y);
-        arc.style.strokeDashoffset = String(100 - pct);
+      const play = () => {
+        if (document.hidden) return;
+        mark.classList.remove('replay');
+        void mark.getBoundingClientRect();
+        mark.classList.add('replay');
       };
-      const readouts = [
-        { deg: 232, label: 'Drive C:', value: '91%' },
-        { deg: 128, label: 'Drive health', value: '92%' },
-        { deg: 300, label: 'Memory', value: '62%' },
-      ];
-      for (const r of readouts) {
-        const a = (r.deg / 360) * Math.PI * 2;
-        const g = el('g', { class: 'readout-g' });
-        const x1 = Math.sin(a) * 296, y1 = -Math.cos(a) * 296;
-        const x2 = Math.sin(a) * 322, y2 = -Math.cos(a) * 322;
-        el('line', { class: 'readout-line', x1, y1, x2, y2 }, g);
-        const right = x2 >= 0;
-        const anchor = right ? 'start' : 'end';
-        const tx = x2 + (right ? 8 : -8);
-        el('text', { class: 'readout', x: tx, y: y2 - 4, 'text-anchor': anchor }, g).textContent = r.label;
-        el('text', { class: 'readout-num', x: tx, y: y2 + 14, 'text-anchor': anchor }, g).textContent = r.value;
-      }
-      place(0);
-      const go = () => {
-        host.classList.add('live');
-        tween(0, score, 2600, place);
-      };
-      if (reduced) { place(score); host.classList.add('live'); }
-      else setTimeout(go, 1500);
-      if (!reduced && matchMedia('(hover: hover)').matches) {
-        const hero = host.parentElement;
-        hero.addEventListener('pointermove', (e) => {
-          const r = hero.getBoundingClientRect();
-          const nx = (e.clientX - r.left) / r.width - 0.5, ny = (e.clientY - r.top) / r.height - 0.5;
-          svg.style.setProperty('--rx', `${(nx * 6).toFixed(2)}deg`);
-          svg.style.setProperty('--ry', `${(-ny * 6).toFixed(2)}deg`);
-        }, { passive: true });
-        hero.addEventListener('pointerleave', () => { svg.style.setProperty('--rx', '0deg'); svg.style.setProperty('--ry', '0deg'); });
-      }
+      setTimeout(play, 2500);
+      setInterval(play, 30000);
     }
   }
 
