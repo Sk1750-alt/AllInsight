@@ -32,7 +32,7 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
@@ -93,7 +93,7 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install the Tauri build dependencies
         run: |
@@ -179,7 +179,7 @@ jobs:
       - name: Install the build dependencies
         run: ${{ matrix.packages }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Create an unprivileged user
         run: |
@@ -203,7 +203,7 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
@@ -236,7 +236,7 @@ jobs:
       attestations: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
