@@ -11,6 +11,7 @@ Private by design. Intelligent by default.</p>
 <p align="center">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue?style=flat-square"></a>
   <a href="https://github.com/Sk1750-alt/AllInsight/actions/workflows/build.yml"><img alt="CI" src="https://github.com/Sk1750-alt/AllInsight/actions/workflows/build.yml/badge.svg"></a>
+  <a href="https://www.bestpractices.dev/projects/15309"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/15309/badge"></a>
   <img alt="Platform" src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey?style=flat-square">
   <img alt="Version" src="https://img.shields.io/badge/version-1.0.0-green?style=flat-square">
   <img alt="Made with Tauri" src="https://img.shields.io/badge/built%20with-Tauri%20v2-FFC131?style=flat-square&logo=tauri&logoColor=white">
