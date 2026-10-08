@@ -1,6 +1,0 @@
-* text=auto eol=lf
-*.ps1 text eol=crlf
-*.svg text
-*.png binary
-*.ico binary
-*.icns binary

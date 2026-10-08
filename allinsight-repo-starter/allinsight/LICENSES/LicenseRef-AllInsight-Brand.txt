@@ -1,7 +1,0 @@
-AllInsight brand assets (name, logo, app icon, and the files in .github/assets/)
-
-Copyright (c) 2026 FULL_NAME. All rights reserved.
-
-These files are not licensed under the GNU General Public License.
-You may use them only as described in TRADEMARKS.md in the root of the
-AllInsight repository. Any other use requires written permission.
