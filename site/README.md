@@ -1,7 +1,7 @@
 # AllInsight landing site
 
 Static HTML, CSS and JavaScript. No build step, no framework, no external
-requests. The two webfonts, Sora and Instrument Serif Italic (both SIL OFL,
+requests. The two webfonts, Sora and Instrument Serif (both SIL OFL,
 licences beside them), are served from `assets/fonts/`. Nginx serves this
 directory as-is.
 
@@ -54,7 +54,7 @@ way; nginx needs no such help.
 The page follows the brand kit: Paper ground with a faint drawn grain, Ink
 text, Graphite for the privacy section, Sora Light headlines, hairline rules
 instead of cards, and Insight Amber only for the dot in the mark and small
-status marks. Instrument Serif Italic is the single accent: a few words per
+status marks. Instrument Serif, upright, is the single accent: a few words per
 headline, the method numerals and the zero, never body text.
 
 `styles.css` and `app.js` are linked with a `?v=` query. Bump it when either
