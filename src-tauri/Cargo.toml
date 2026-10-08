@@ -2,7 +2,10 @@
 name = "allinsight"
 version = "1.0.0"
 description = "AllInsight - local device intelligence and storage manager"
-authors = ["AllInsight"]
+authors = ["Sk1750-alt"]
+license = "MIT"
+repository = "https://github.com/Sk1750-alt/AllInsight"
+homepage = "https://github.com/Sk1750-alt/AllInsight"
 edition = "2021"
 rust-version = "1.77"
 

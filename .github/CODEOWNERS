@@ -1,0 +1,8 @@
+# Default owner
+*                                    @Sk1750-alt
+
+# Anything that can delete files needs the maintainer's review
+/docs/SECURITY.md                    @Sk1750-alt
+/src-tauri/src/services/security/    @Sk1750-alt
+/src-tauri/src/services/cleanup/     @Sk1750-alt
+/.github/workflows/                  @Sk1750-alt

@@ -1,29 +1,42 @@
-# Dependencies
+# ---- Node / Frontend ----
 node_modules/
-
-# Build output
 dist/
-dist-release/
+*.log
+
+# ---- Rust / Tauri ----
 src-tauri/target/
 src-tauri/gen/schemas/
 
-# Generated icon rasters. The SVGs in assets/logo are the source of truth.
+# ---- Build output ----
+dist-release/
+
+# ---- Local AI models (never committed) ----
+models/
+*.gguf
+
+# ---- Generated icon rasters (SVGs in assets/logo are the source of truth) ----
 assets/icons/*.png
 
-# Development screenshots from scripts/capture-all.ps1
+# ---- Development screenshots ----
 shots/
 
-# Editor and OS
+# ---- Editor and OS ----
 .vscode/*
 !.vscode/extensions.json
 .idea/
 *.swp
+*~
+.DS_Store
 Thumbs.db
 desktop.ini
 
-# Logs and local state
-*.log
+# ---- Logs and local state ----
 *.db
 *.db-shm
 *.db-wal
 .gstack/
+
+# ---- Environment ----
+.env
+.env.local
+.env.*.local

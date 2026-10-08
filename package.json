@@ -3,6 +3,30 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "author": "Sk1750-alt",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sk1750-alt/AllInsight.git"
+  },
+  "homepage": "https://github.com/Sk1750-alt/AllInsight",
+  "bugs": {
+    "url": "https://github.com/Sk1750-alt/AllInsight/issues"
+  },
+  "keywords": [
+    "system-utility",
+    "storage-analyzer",
+    "disk-cleanup",
+    "device-health",
+    "tauri",
+    "desktop-app",
+    "privacy",
+    "offline",
+    "open-source"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "npm run licenses && tsc --noEmit && vite build",
