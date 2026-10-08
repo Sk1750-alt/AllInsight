@@ -193,7 +193,13 @@ The model runs as a child process on `127.0.0.1` with a per-launch API key. It e
 npm test
 ```
 
-**191 tests** covering path normalisation, protected-path classification, junction/symlink refusal, cleanup category invariants, guard rejections, duplicate detection, storage roll-up arithmetic, drive-health decision rules, settings clamping, and the database layer.
+**298 tests** covering the update system's signature, checksum and privacy rules, path normalisation, protected-path classification, junction/symlink refusal, cleanup category invariants, guard rejections, duplicate detection, storage roll-up arithmetic, drive-health decision rules, settings clamping, and the database layer.
+
+## 💬 Feedback and bug reports
+
+- **Bugs and ideas:** open an issue at [github.com/Sk1750-alt/AllInsight/issues](https://github.com/Sk1750-alt/AllInsight/issues). There are templates for bug reports, cleanup incidents and feature requests.
+- **Security problems:** do not open a public issue. Report them privately as described in [SECURITY.md](SECURITY.md).
+- **Downloads:** [GitHub Releases](https://github.com/Sk1750-alt/AllInsight/releases).
 
 ## 🤝 Contributing
 
