@@ -123,6 +123,21 @@ CI (`.github/workflows/build.yml`) then does the following:
 
    It must print `OK: ... signed by the AllInsight update key`.
 
+### 7a. If CI did not sign (no `TAURI_SIGNING_PRIVATE_KEY` secret)
+
+The draft then has `latest.json` but no `latest.json.sig`. Sign it on your own
+machine, where the key lives, and attach the signature:
+
+```powershell
+gh release download vX.Y.Z -p latest.json --clobber
+npx tauri signer sign -f "$env:USERPROFILE\.allinsight\allinsight.key" latest.json
+node scripts/verify-update-manifest.mjs latest.json latest.json.sig
+gh release upload vX.Y.Z latest.json.sig
+```
+
+Signing locally keeps the private key off GitHub entirely, at the cost of one
+manual step per release.
+
 ### 8. Publish
 
 Click **Publish release**. From this moment,

@@ -272,7 +272,15 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
-          test -n "$TAURI_SIGNING_PRIVATE_KEY" || { echo "TAURI_SIGNING_PRIVATE_KEY secret is not set"; exit 1; }
+          # Signing in CI is optional. Without the secret, latest.json goes into
+          # the draft unsigned and the maintainer signs it on their own machine
+          # (docs/RELEASE_PROCESS.md), so the private key never leaves it. The
+          # updater ignores metadata without a valid signature, so a draft
+          # cannot be published in a state users would act on.
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "::warning::No TAURI_SIGNING_PRIVATE_KEY secret: sign latest.json locally before publishing."
+            exit 0
+          fi
           npx tauri signer sign latest.json
           # The same check the application makes, against the key compiled
           # into this commit. A signature the app would reject never ships.
@@ -309,5 +317,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           files=$(find release-files -type f \( -name "*-setup.exe" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" \))
-          gh release create "$GITHUB_REF_NAME" $files latest.json latest.json.sig SHA256SUMS.txt sbom/*.cdx.json \
+          signature=$(test -f latest.json.sig && echo latest.json.sig || true)
+          gh release create "$GITHUB_REF_NAME" $files latest.json $signature SHA256SUMS.txt sbom/*.cdx.json \
             --draft --title "AllInsight ${GITHUB_REF_NAME#v}" --notes-file CHANGELOG.md
