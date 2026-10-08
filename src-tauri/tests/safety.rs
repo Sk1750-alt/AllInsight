@@ -123,7 +123,7 @@ fn a_symlink_cannot_be_used_to_reach_protected_data() {
     std::os::unix::fs::symlink(&secret, root.join("file-link")).unwrap();
 
     let engine = ProtectedPaths::new(&[]);
-    let guard = DeletionGuard::new(&engine, &[root.clone()]);
+    let guard = DeletionGuard::new(&engine, std::slice::from_ref(&root));
     assert!(guard
         .validate(&root.join("link"), EntryKind::Directory)
         .is_err());
