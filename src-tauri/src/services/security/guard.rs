@@ -578,13 +578,13 @@ mod tests {
 
         let home = dirs::home_dir().unwrap();
         let cache = home.join("snap/firefox/common/.cache/mozilla/firefox/p.default/cache2");
-        let snap_guard = DeletionGuard::new(&protected, &[cache.clone()]);
+        let snap_guard = DeletionGuard::new(&protected, std::slice::from_ref(&cache));
         assert!(snap_guard
             .check_protected(&cache.join("entries/ABC"))
             .is_ok());
         // The profile beside it is not.
         let profile = home.join("snap/firefox/common/.mozilla/firefox/p.default");
-        let profile_guard = DeletionGuard::new(&protected, &[profile.clone()]);
+        let profile_guard = DeletionGuard::new(&protected, std::slice::from_ref(&profile));
         assert!(profile_guard
             .check_protected(&profile.join("key4.db"))
             .is_err());
@@ -603,7 +603,7 @@ mod tests {
         std::os::unix::fs::symlink(&outside, &link).unwrap();
 
         let protected = ProtectedPaths::new(&[]);
-        let guard = DeletionGuard::new(&protected, &[root.clone()]);
+        let guard = DeletionGuard::new(&protected, std::slice::from_ref(&root));
         let err = guard
             .validate(&link, EntryKind::Directory)
             .expect_err("symlink must be refused");

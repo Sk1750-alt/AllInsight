@@ -117,9 +117,10 @@ pub(super) fn from_attributes(
 
 pub fn status() -> Result<BatteryStatus> {
     let Ok(entries) = std::fs::read_dir(POWER_SUPPLY) else {
-        let mut out = BatteryStatus::default();
-        out.notes = vec!["No battery information is available on this system.".into()];
-        return Ok(out);
+        return Ok(BatteryStatus {
+            notes: vec!["No battery information is available on this system.".into()],
+            ..BatteryStatus::default()
+        });
     };
 
     let mut battery = None;
@@ -142,16 +143,15 @@ pub fn status() -> Result<BatteryStatus> {
 
     match battery {
         Some(attrs) => Ok(from_attributes(&attrs, mains_online)),
-        None => {
-            let mut out = BatteryStatus::default();
-            out.power_source = if mains_online == Some(true) {
+        None => Ok(BatteryStatus {
+            power_source: if mains_online == Some(true) {
                 PowerSource::AcPower
             } else {
                 PowerSource::Unknown
-            };
-            out.notes = vec!["No battery was found. This looks like a desktop computer.".into()];
-            Ok(out)
-        }
+            },
+            notes: vec!["No battery was found. This looks like a desktop computer.".into()],
+            ..BatteryStatus::default()
+        }),
     }
 }
 

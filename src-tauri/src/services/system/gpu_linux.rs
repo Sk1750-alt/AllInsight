@@ -100,15 +100,16 @@ fn drm_devices() -> Vec<PathBuf> {
 
 /// Parse `nvidia-smi --query-gpu=name,driver_version,utilization.gpu,memory.used,memory.total
 /// --format=csv,noheader,nounits`.
-pub(super) fn parse_nvidia_smi(
-    text: &str,
-) -> Vec<(
+/// One `nvidia-smi` row: name, driver, utilisation %, memory used, memory total.
+pub(super) type NvidiaRow = (
     String,
     Option<String>,
     Option<f32>,
     Option<u64>,
     Option<u64>,
-)> {
+);
+
+pub(super) fn parse_nvidia_smi(text: &str) -> Vec<NvidiaRow> {
     text.lines()
         .filter_map(|line| {
             let f: Vec<&str> = line.split(',').map(str::trim).collect();

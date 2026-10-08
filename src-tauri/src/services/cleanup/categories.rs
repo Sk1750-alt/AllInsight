@@ -486,6 +486,8 @@ fn browser_cache_roots() -> Vec<PathBuf> {
 /// that belongs to the distribution. Package caches such as `/var/cache/apt`
 /// are left to the package manager, which knows what it still needs.
 #[cfg(not(windows))]
+// One push per category reads as a catalogue; a vec! literal would not.
+#[allow(clippy::vec_init_then_push)]
 fn platform_definitions() -> Vec<CategoryDefinition> {
     let cache = dirs::cache_dir();
     let in_cache = |leaf: &str| {
