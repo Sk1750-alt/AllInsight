@@ -22,7 +22,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preload" href="/assets/fonts/sora-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/instrument-serif-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/styles.css?v=10">
+<link rel="stylesheet" href="/styles.css?v=11">
 </head>
 <body>
 
@@ -66,56 +66,17 @@
   <div class="wrap">
     <p class="label rise" style="--d:0">The safety model</p>
     <h1 class="page-title rise" style="--d:1">Eight checks.<br><em class="accent">In order. Every time.</em></h1>
-    <p class="lede rise" style="--d:2">What stops AllInsight from deleting something it should not, written to be checked against the code rather than believed.</p>
+    <p class="lede rise" style="--d:2">Nothing is removed until every check has passed.</p>
   </div>
 </section>
 
-<section class="section">
-  <div class="wrap">
-    <header class="head">
-      <p class="label reveal">The order of priorities</p>
-      <h2 class="reveal" style="--d:1">When they conflict, <em class="accent">the earlier one wins.</em></h2>
-      <p class="prose reveal" style="--d:2">Several features are narrower than they could be, for exactly this reason.</p>
-    </header>
-    <p class="priority reveal" id="priority">
-      <span>Safety</span><em>then</em><span>privacy</span><em>then</em><span>correctness</span><em>then</em><span>performance</span><em>then</em><span>features</span>
-    </p>
-  </div>
-</section>
-
-<section class="section section-paper">
-  <div class="wrap">
-    <div class="split">
-      <div>
-        <p class="label reveal">Rule one</p>
-        <h3 class="reveal" style="--d:1">The interface <em class="accent">cannot name a file.</em></h3>
-        <p class="reveal" style="--d:2">The window you click in never sends a file path to anything that deletes. It sends a cleanup category, or an id the backend itself issued. A whole class of mistake becomes impossible, rather than merely unlikely.</p>
-        <p class="reveal" style="--d:3">An id from an older scan is refused outright, and Large Files and Duplicates only ever move files to the Recycle Bin, never delete them permanently.</p>
-      </div>
-      <div class="reveal" style="--d:1">
-<code class="code"><span class="k">pub struct</span> CleanupRequest {
-    <span class="k">pub</span> scan_id: u64,
-    <span class="k">pub</span> categories: Vec&lt;CleanupCategory&gt;, <span class="c">// an enum variant</span>
-    <span class="k">pub</span> candidate_ids: Vec&lt;String&gt;,       <span class="c">// ids the backend issued</span>
-    <span class="k">pub</span> confirmed: bool,
-}
-<span class="c">// No path anywhere. There is no variant
-// of this type that could carry one.</span></code>
-      </div>
-    </div>
-  </div>
-</section>
 <!-- ───────────────────────── Safety ───────────────────────── -->
 <section class="section" id="safety">
   <div class="wrap">
     <header class="head">
       <p class="label reveal">Rule two</p>
       <h2 class="reveal" style="--d:1">A token that <em class="accent">cannot be forged.</em></h2>
-      <p class="prose reveal" style="--d:2">
-        The interface never sends a file path to a destructive command. Removal
-        needs a token only the deletion guard can issue, and the last five checks
-        run at the moment of deletion, not when the preview was built.
-      </p>
+      <p class="prose reveal" style="--d:2">Run at the moment of deletion, not before.</p>
     </header>
 
     <div class="gates" id="gates">
@@ -139,21 +100,6 @@
   </div>
 </section>
 
-
-<section class="section section-paper">
-  <div class="wrap">
-    <header class="head">
-      <p class="label reveal">Auto-Clean</p>
-      <h2 class="reveal" style="--d:1">Automatic, inside <em class="accent">firm boundaries.</em></h2>
-    </header>
-    <ol class="steps">
-      <li class="reveal"><div><h3>Only categories built in as eligible</h3><p>And only those you opted into. The intersection, never the union.</p></div></li>
-      <li class="reveal"><div><h3>Only when space is genuinely low</h3><p>Below your own free-space threshold, and only when no scan you started is running.</p></div></li>
-      <li class="reveal"><div><h3>Only when it is worth it</h3><p>At least 256 MB to reclaim, because interrupting you for less is not worth it.</p></div></li>
-      <li class="reveal"><div><h3>Through the same guard</h3><p>Every removal, automatic or not, passes all eight checks at the moment it happens.</p></div></li>
-    </ol>
-  </div>
-</section>
 
 <section class="cta-band dark">
   <div class="wrap">
@@ -201,6 +147,6 @@
   </div>
 </footer>
 
-<script src="/app.js?v=10" defer></script>
+<script src="/app.js?v=11" defer></script>
 </body>
 </html>

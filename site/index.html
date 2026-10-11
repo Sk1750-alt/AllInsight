@@ -44,7 +44,7 @@
 </script>
 <link rel="preload" href="/assets/fonts/sora-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/instrument-serif-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/styles.css?v=10">
+<link rel="stylesheet" href="/styles.css?v=11">
 </head>
 <body>
 
@@ -83,6 +83,7 @@
 </header>
 
 <main id="main">
+
 <section class="hero" id="top">
   <svg class="hero-mark" id="heroMark" viewBox="0 0 100 100" role="img" aria-label="The AllInsight mark: an A with a lowercase i inside it.">
     <circle class="pulse" cx="50" cy="54" r="7"/>
@@ -110,16 +111,6 @@
 
 
 
-<section class="section">
-  <div class="wrap">
-    <header class="head" style="margin-bottom:0">
-      <p class="label reveal">At a glance</p>
-      <h2 class="reveal" style="--d:1">One app that measures,<br>explains, and <em class="accent">cleans with care.</em></h2>
-      <p class="prose reveal" style="--d:2">AllInsight is a desktop application for Windows and Linux that analyses storage, monitors device health, finds what is genuinely safe to clean, and explains what it finds. All of it happens on the machine it is installed on.</p>
-    </header>
-  </div>
-</section>
-
 <section class="section section-paper">
   <div class="wrap">
     <header class="head">
@@ -128,22 +119,22 @@
     </header>
     <ol class="index">
       <li class="reveal" style="--d:0">
-        <a href="/features"><span class="index-num">I</span><span class="index-title">Features</span><span class="index-text">Fourteen screens, each one an instrument. Four of them, live.</span><span class="index-go" aria-hidden="true">→</span></a>
+        <a href="/features"><span class="index-num">I</span><span class="index-title">Features</span><span class="index-go" aria-hidden="true">→</span></a>
       </li>
       <li class="reveal" style="--d:1">
-        <a href="/privacy"><span class="index-num">II</span><span class="index-title">Privacy</span><span class="index-text">No account, no telemetry, no cloud. Code that does not exist.</span><span class="index-go" aria-hidden="true">→</span></a>
+        <a href="/privacy"><span class="index-num">II</span><span class="index-title">Privacy</span><span class="index-go" aria-hidden="true">→</span></a>
       </li>
       <li class="reveal" style="--d:2">
-        <a href="/safety"><span class="index-num">III</span><span class="index-title">Safety</span><span class="index-text">Eight checks at the moment of deletion. Your documents are never candidates.</span><span class="index-go" aria-hidden="true">→</span></a>
+        <a href="/safety"><span class="index-num">III</span><span class="index-title">Safety</span><span class="index-go" aria-hidden="true">→</span></a>
       </li>
       <li class="reveal" style="--d:3">
-        <a href="/ai"><span class="index-num">IV</span><span class="index-title">AllInsight AI</span><span class="index-text">A local assistant that explains your machine, and cannot act.</span><span class="index-go" aria-hidden="true">→</span></a>
+        <a href="/ai"><span class="index-num">IV</span><span class="index-title">AllInsight AI</span><span class="index-go" aria-hidden="true">→</span></a>
       </li>
       <li class="reveal" style="--d:4">
-        <a href="/about"><span class="index-num">V</span><span class="index-title">About</span><span class="index-text">Rust and React on Tauri. The decisions behind it.</span><span class="index-go" aria-hidden="true">→</span></a>
+        <a href="/about"><span class="index-num">V</span><span class="index-title">About</span><span class="index-go" aria-hidden="true">→</span></a>
       </li>
       <li class="reveal" style="--d:5">
-        <a href="/download"><span class="index-num">VI</span><span class="index-title">Download</span><span class="index-text">Free for Windows 10 and 11 and every major Linux distribution.</span><span class="index-go" aria-hidden="true">→</span></a>
+        <a href="/download"><span class="index-num">VI</span><span class="index-title">Download</span><span class="index-go" aria-hidden="true">→</span></a>
       </li>
     </ol>
   </div>
@@ -154,16 +145,13 @@
     <p class="label reveal">Private by design</p>
     <h2 class="statement reveal" style="--d:1">Nothing leaves<br><em class="accent">your computer.</em></h2>
     <p class="prose reveal" style="--d:2">
-      Not as a setting. As an absence of code. AllInsight has no account, no
-      update checker, no analytics and no cloud service. Pull the network cable
-      and every screen works exactly the same.
+      No account, no analytics, no cloud. Every screen works offline.
     </p>
     <div class="horizon reveal" style="--d:3" id="horizon" aria-hidden="true">
       <span class="horizon-end">This device</span>
       <span class="horizon-line"><i></i></span>
       <span class="horizon-end horizon-far">The internet</span>
     </div>
-    <p class="figure reveal" style="--d:4"><span class="figure-num">0</span><span class="figure-text">bytes sent. Ever.</span></p>
     <p class="reveal" style="--d:5; margin-top:48px"><a class="link" href="/privacy">How privacy works<span class="arrow" aria-hidden="true">→</span></a></p>
   </div>
 </section>
@@ -176,17 +164,17 @@
       <div class="story-step on">
         <p class="numeral">I</p>
         <h3>Measure everything.</h3>
-        <p>A parallel scan maps every folder on the drive, and every file lands in a category you recognise. Links are never followed, so nothing is counted twice.</p>
+        <p>Every folder, mapped and sized.</p>
       </div>
       <div class="story-step">
         <p class="numeral">II</p>
         <h3>Explain it plainly.</h3>
-        <p>Every recommendation comes with the measurement behind it. Where the hardware is silent, AllInsight says Unknown instead of guessing.</p>
+        <p>Every number, in plain language.</p>
       </div>
       <div class="story-step">
         <p class="numeral">III</p>
         <h3>Clean only what regrows.</h3>
-        <p>Caches and temporary files, after a dry run and a confirmation that lists exactly what will and will not be touched. Your documents are never candidates.</p>
+        <p>Caches and temporary files only. Never your documents.</p>
       </div>
     </div>
     <div class="story-stage" aria-hidden="true">
@@ -245,6 +233,6 @@
   </div>
 </footer>
 
-<script src="/app.js?v=10" defer></script>
+<script src="/app.js?v=11" defer></script>
 </body>
 </html>
