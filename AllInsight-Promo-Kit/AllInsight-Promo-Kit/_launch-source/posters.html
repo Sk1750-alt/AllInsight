@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AllInsight Launch Posters</title>
+<script src="shared.js"></script>
+<style>
+  body { position: relative; }
+  .poster { position: absolute; inset: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; }
+  .grain { position: absolute; inset: 0; pointer-events: none; }
+  .kicker { font-size: 19px; letter-spacing: .32em; text-transform: uppercase; font-weight: 400; }
+  .serif { font-family: "Instrument Serif", serif; }
+  h1 { font-weight: 300; letter-spacing: -0.035em; text-align: center; line-height: 1.02; }
+  h1 .serif { font-size: 1.14em; letter-spacing: -0.01em; }
+  .sign { display: flex; align-items: center; gap: 18px; }
+  .sign .m { width: 46px; height: 46px; }
+  .sign b { font-weight: 500; font-size: 34px; letter-spacing: -0.03em; }
+  .fine { font-size: 17px; letter-spacing: .2em; text-transform: uppercase; }
+
+  /* 1 — Understood: the app, lit from below. */
+  #hero { background: radial-gradient(1100px 800px at 50% 95%, rgba(79,183,201,.16), transparent 65%), radial-gradient(1600px 1300px at 50% 30%, #101115, #050506 70%); }
+  #hero .kicker { color: #8b9099; margin-top: var(--top); }
+  #hero h1 { font-size: 104px; margin-top: 34px; }
+  #hero .sub { margin-top: 30px; font-size: 27px; font-weight: 300; color: #a5a9b1; text-align: center; line-height: 1.5; }
+  #hero .stage { position: absolute; left: 50%; top: var(--win); width: 1360px; height: 840px; margin-left: -680px; perspective: 1800px; }
+  #hero .tilt { position: absolute; inset: 0; transform-origin: 50% 0; transform: scale(var(--ws)) rotateX(24deg); }
+  #hero .tilt .aw { left: 0; top: 0; }
+  #hero .floor { position: absolute; left: 90px; right: 90px; bottom: calc(var(--foot) - 30px); height: 220px; border-radius: 50%; background: radial-gradient(closest-side, rgba(79,183,201,.22), transparent); filter: blur(30px); }
+  #hero .foot { position: absolute; bottom: 0; left: 0; right: 0; height: var(--foot); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+    background: linear-gradient(180deg, rgba(5,5,6,0) 0%, rgba(5,5,6,.92) 38%, #050506 100%); }
+  #hero .fine { color: #6f747d; }
+
+  /* 2 — Zero: Paper ground, one enormous numeral. */
+  #zero { background: #f4f2ee; color: #111318; }
+  #zero .kicker { color: #5a606b; margin-top: var(--top); }
+  #zero .zero { position: relative; font-family: "Instrument Serif", serif; font-size: var(--zs); line-height: .8; margin-top: var(--zm); letter-spacing: -0.04em; color: #111318; }
+  #zero .zero i { position: absolute; left: 51.4%; top: 52%; width: var(--zd); height: var(--zd); border-radius: 50%; background: #f5a524; transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 calc(var(--zd) * .9) rgba(245,165,36,.10), 0 0 60px rgba(245,165,36,.45); }
+  #zero h1 { font-size: 78px; margin-top: var(--hm); }
+  #zero .sub { margin-top: 28px; font-size: 25px; color: #5a606b; text-align: center; line-height: 1.55; font-weight: 300; }
+  #zero .bottom { position: absolute; bottom: 72px; left: 80px; right: 80px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #dedcd6; padding-top: 34px; }
+  #zero .fine { color: #9a9ea6; }
+
+  /* 3 — The dot: almost nothing, on purpose. */
+  #dot { background: radial-gradient(1000px 900px at 50% var(--dy), #15130f, #040405 65%); }
+  #dot .halo { position: absolute; left: 50%; top: var(--dy); width: 760px; height: 760px; transform: translate(-50%, -50%); border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(245,165,36,.30), rgba(245,165,36,.07) 45%, transparent); }
+  #dot .ring { position: absolute; left: 50%; top: var(--dy); border-radius: 50%; border: 1px solid rgba(245,165,36,.16); transform: translate(-50%, -50%); }
+  #dot .core { position: absolute; left: 50%; top: var(--dy); width: 34px; height: 34px; border-radius: 50%; transform: translate(-50%, -50%); background: #f5a524; box-shadow: 0 0 30px 6px rgba(245,165,36,.7); }
+  #dot h1 { position: absolute; top: var(--hy); left: 0; right: 0; font-size: 112px; }
+  #dot .sub { position: absolute; top: calc(var(--hy) + 270px); left: 0; right: 0; text-align: center; font-size: 27px; color: #9b9fa7; font-weight: 300; line-height: 1.5; }
+  #dot .bottom { position: absolute; bottom: 86px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+  #dot .fine { color: #6b7079; }
+</style>
+</head>
+<body>
+<script>
+  const q = new URLSearchParams(location.search);
+  const W = +(q.get("w") || 1080), H = +(q.get("h") || 1350), P = q.get("p") || "hero";
+  const tall = H > 1500;
+  document.body.style.width = W + "px"; document.body.style.height = H + "px";
+  const sign = (stroke) => `<div class="sign"><div class="m">${markSVG("sg", stroke)}</div><b>AllInsight</b></div>`;
+  const grain = `<div class="grain" style="background-image:${GRAIN}"></div>`;
+
+  const posters = {
+    hero: () => `<div class="poster" id="hero" style="--top:${tall ? 190 : 110}px;--win:${tall ? 800 : 650}px;--foot:${tall ? 400 : 230}px;--ws:${tall ? 0.78 : 0.74}">
+        <div class="kicker">Introducing</div>
+        <h1>Your device,<br><span class="serif">understood.</span></h1>
+        <div class="sub">Storage, health and performance, explained<br>in plain language. Entirely on your machine.</div>
+        <div class="floor"></div>
+        <div class="stage"><div class="tilt">${appWindowHTML()}</div></div>
+        <div class="foot">${sign("#f4f2ee")}<div class="fine">Free &amp; open source · Windows and Linux</div></div>
+        ${grain}</div>`,
+    zero: () => `<div class="poster" id="zero" style="--top:${tall ? 170 : 96}px;--zs:${tall ? 900 : 640}px;--zm:${tall ? 120 : 50}px;--zd:${tall ? 44 : 32}px;--hm:${tall ? 140 : 70}px">
+        <div class="kicker">Private by design</div>
+        <div class="zero">0<i></i></div>
+        <h1>bytes leave<br>your <span class="serif">device.</span></h1>
+        <div class="sub">No account. No telemetry. No cloud.<br>Every feature works with the network unplugged.</div>
+        <div class="bottom">${sign("#111318")}<div class="fine">allinsight.biz</div></div>
+        ${grain}</div>`,
+    dot: () => {
+      const dy = tall ? 640 : 470;
+      const rings = [180, 300, 440].map((r, i) => `<div class="ring" style="width:${r * 2}px;height:${r * 2}px;opacity:${1 - i * 0.28}"></div>`).join("");
+      return `<div class="poster" id="dot" style="--dy:${dy}px;--hy:${dy + (tall ? 330 : 250)}px">
+        <div class="halo"></div>${rings}<div class="core"></div>
+        <h1>See everything.<br><span class="serif">Send nothing.</span></h1>
+        <div class="bottom">${sign("#f4f2ee")}<div class="fine">Your device, understood.</div></div>
+        ${grain}</div>`;
+    },
+  };
+  document.body.innerHTML = posters[P]();
+  document.querySelectorAll(".sign").forEach((s) => setMark(s, 1, 1, 1, 0.9));
+  const aw = document.querySelector(".aw");
+  if (aw) setAppWindow(aw, 1);
+  if (P === "dot") document.querySelector(".sub")?.remove();
+</script>
+</body>
+</html>
